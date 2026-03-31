@@ -12,16 +12,14 @@ A user can build a multi-cell photo collage from scratch, fill it with images, a
 
 ### Validated
 
-(None yet — ship to validate)
+**Phase 0 — Scaffolding** (Validated in Phase 00: project-scaffolding)
+- [x] Vite + React 18 + TypeScript project initializes and runs
+- [x] All MVP dependencies installed (zustand, immer, tailwindcss, @dnd-kit/core, @dnd-kit/sortable, html-to-image, lucide-react, nanoid)
+- [x] Folder structure matches the specified layout (Editor, Grid, UI, store, lib, types)
+- [x] Tailwind configured with canvas dimensions and safe zone as CSS variables
+- [x] App shell renders editor layout (canvas area, toolbar, sidebar)
 
 ### Active
-
-**Phase 0 — Scaffolding**
-- [ ] Vite + React 18 + TypeScript project initializes and runs
-- [ ] All MVP dependencies installed (zustand, immer, tailwindcss, @dnd-kit/core, @dnd-kit/sortable, html-to-image, lucide-react, nanoid)
-- [ ] Folder structure matches the specified layout (Editor, Grid, UI, store, lib, types)
-- [ ] Tailwind configured with canvas dimensions and safe zone as CSS variables
-- [ ] App shell renders editor layout (canvas area, toolbar, sidebar)
 
 **Phase 1 — Grid Tree Engine**
 - [ ] TypeScript types: GridNode, ContainerNode, LeafNode, MediaItem, SplitDirection
@@ -137,4 +135,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-31 after initialization*
+*Last updated: 2026-04-01 — Phase 00 complete*

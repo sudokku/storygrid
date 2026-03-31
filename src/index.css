@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas-width: 1080px;
+  --canvas-height: 1920px;
+  --safe-zone-top: 250px;
+  --safe-zone-bottom: 250px;
+}

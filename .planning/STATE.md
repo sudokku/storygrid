@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-31T22:03:11.990Z"
+status: executing
+stopped_at: Completed 01-grid-tree-engine 01-01-PLAN.md
+last_updated: "2026-03-31T22:24:02.139Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 3
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 00 — project-scaffolding
+**Current focus:** Phase 01 — grid-tree-engine
 
 ## Current Position
 
-Phase: 1
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 01 (grid-tree-engine) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-03-31
 
 Progress: [░░░░░░░░░░] 0%
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 00-project-scaffolding P01 | 6min | 3 tasks | 25 files |
+| Phase 01-grid-tree-engine P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 00-project-scaffolding]: React pinned to 18.3.1 (Vite scaffold generates React 19; explicitly downgraded per CLAUDE.md)
 - [Phase 00-project-scaffolding]: @dnd-kit/sortable installed at v10.0.0 (not v6.3.1 in CLAUDE.md) — current published major; peer dep @dnd-kit/core ^6.3.0 is compatible
 - [Phase 00-project-scaffolding]: All Editor layout uses Tailwind utility classes only (no inline style) — enables Phase 5 dark theme swap without restructuring
+- [Phase 01-grid-tree-engine]: MIN_CELL_WEIGHT = 0.1 — cells cannot be resized below 10% of parent weight in resizeSiblings()
+- [Phase 01-grid-tree-engine]: Pure tree functions use spread+map recursion (no Immer) — Immer is the store layer's tool, not the tree function layer
+- [Phase 01-grid-tree-engine]: mapNode helper is the universal tree rewrite primitive used by all mutating functions
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T22:03:11.987Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-grid-tree-engine/01-CONTEXT.md
+Last session: 2026-03-31T22:24:02.136Z
+Stopped at: Completed 01-grid-tree-engine 01-01-PLAN.md
+Resume file: None

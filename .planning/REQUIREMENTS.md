@@ -15,16 +15,16 @@
 
 ### Grid Engine
 
-- [ ] **GRID-01**: TypeScript types defined for GridNode, ContainerNode, LeafNode, MediaItem, SplitDirection
-- [ ] **GRID-02**: MediaItem stores a `mediaId` string reference; actual data URI lives in a separate `mediaRegistry` outside the undo-tracked tree
-- [ ] **GRID-03**: Pure tree function `createLeaf()` creates an empty leaf node with a unique ID
-- [ ] **GRID-04**: Pure tree function `splitNode()` replaces a leaf with a container holding the original + new empty leaf; if direction matches existing container, appends instead of nesting
-- [ ] **GRID-05**: Pure tree function `mergeNode()` collapses a container back to a single leaf, preserving first child's media if present
-- [ ] **GRID-06**: Pure tree function `removeNode()` removes a leaf and collapses parent if left with one child
-- [ ] **GRID-07**: Pure tree function `resizeSiblings()` updates size fractions on a container's children
-- [ ] **GRID-08**: Pure tree function `updateLeaf()` immutably updates a leaf's properties
-- [ ] **GRID-09**: Pure tree functions `findNode()`, `findParent()`, `getAllLeaves()` work correctly at any nesting depth
-- [ ] **GRID-10**: All pure tree functions return new tree — never mutate in place
+- [x] **GRID-01**: TypeScript types defined for GridNode, ContainerNode, LeafNode, MediaItem, SplitDirection
+- [x] **GRID-02**: MediaItem stores a `mediaId` string reference; actual data URI lives in a separate `mediaRegistry` outside the undo-tracked tree
+- [x] **GRID-03**: Pure tree function `createLeaf()` creates an empty leaf node with a unique ID
+- [x] **GRID-04**: Pure tree function `splitNode()` replaces a leaf with a container holding the original + new empty leaf; if direction matches existing container, appends instead of nesting
+- [x] **GRID-05**: Pure tree function `mergeNode()` collapses a container back to a single leaf, preserving first child's media if present
+- [x] **GRID-06**: Pure tree function `removeNode()` removes a leaf and collapses parent if left with one child
+- [x] **GRID-07**: Pure tree function `resizeSiblings()` updates size fractions on a container's children
+- [x] **GRID-08**: Pure tree function `updateLeaf()` immutably updates a leaf's properties
+- [x] **GRID-09**: Pure tree functions `findNode()`, `findParent()`, `getAllLeaves()` work correctly at any nesting depth
+- [x] **GRID-10**: All pure tree functions return new tree — never mutate in place
 - [ ] **GRID-11**: Zustand gridStore exposes split/merge/remove/resize/setMedia/updateCell/undo/redo actions
 - [ ] **GRID-12**: Undo/redo uses history snapshot array (structuredClone, capped at 50); media registry excluded from snapshots
 - [ ] **GRID-13**: Zustand editorStore manages selectedNodeId, zoom, showSafeZone, tool state
@@ -124,16 +124,16 @@
 | SCAF-03 | Phase 0 | Complete |
 | SCAF-04 | Phase 0 | Complete |
 | SCAF-05 | Phase 0 | Complete |
-| GRID-01 | Phase 1 | Pending |
-| GRID-02 | Phase 1 | Pending |
-| GRID-03 | Phase 1 | Pending |
-| GRID-04 | Phase 1 | Pending |
-| GRID-05 | Phase 1 | Pending |
-| GRID-06 | Phase 1 | Pending |
-| GRID-07 | Phase 1 | Pending |
-| GRID-08 | Phase 1 | Pending |
-| GRID-09 | Phase 1 | Pending |
-| GRID-10 | Phase 1 | Pending |
+| GRID-01 | Phase 1 | Complete |
+| GRID-02 | Phase 1 | Complete |
+| GRID-03 | Phase 1 | Complete |
+| GRID-04 | Phase 1 | Complete |
+| GRID-05 | Phase 1 | Complete |
+| GRID-06 | Phase 1 | Complete |
+| GRID-07 | Phase 1 | Complete |
+| GRID-08 | Phase 1 | Complete |
+| GRID-09 | Phase 1 | Complete |
+| GRID-10 | Phase 1 | Complete |
 | GRID-11 | Phase 1 | Pending |
 | GRID-12 | Phase 1 | Pending |
 | GRID-13 | Phase 1 | Pending |

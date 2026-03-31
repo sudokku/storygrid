@@ -47,7 +47,7 @@ Plans:
   5. All pure tree functions return new tree references and never mutate the input
 **Plans**: 2 plans
 Plans:
-- [ ] 01-01-PLAN.md — Types + pure tree functions with TDD (GRID-01 through GRID-10)
+- [x] 01-01-PLAN.md — Types + pure tree functions with TDD (GRID-01 through GRID-10)
 - [ ] 01-02-PLAN.md — gridStore + editorStore with undo/redo and TDD (GRID-11, GRID-12, GRID-13)
 
 ### Phase 2: Grid Rendering

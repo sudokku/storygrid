@@ -19,14 +19,16 @@ A user can build a multi-cell photo collage from scratch, fill it with images, a
 - [x] Tailwind configured with canvas dimensions and safe zone as CSS variables
 - [x] App shell renders editor layout (canvas area, toolbar, sidebar)
 
-### Active
+### Validated
 
-**Phase 1 — Grid Tree Engine**
-- [ ] TypeScript types: GridNode, ContainerNode, LeafNode, MediaItem, SplitDirection
-- [ ] Pure tree functions: createLeaf, splitNode, mergeNode, removeNode, resizeSiblings, updateLeaf, findNode, findParent, getAllLeaves
-- [ ] Zustand gridStore with split/merge/remove/resize/setMedia/updateCell/undo/redo actions
-- [ ] Zustand editorStore with selectedNodeId/zoom/showSafeZone/tool state
-- [ ] Undo/redo via history snapshots (push on every mutating action)
+**Phase 1 — Grid Tree Engine** (Validated in Phase 01: grid-tree-engine)
+- [x] TypeScript types: GridNode, ContainerNode, LeafNode, MediaItem, SplitDirection
+- [x] Pure tree functions: createLeaf, splitNode, mergeNode, removeNode, resizeSiblings, updateLeaf, findNode, findParent, getAllLeaves
+- [x] Zustand gridStore with split/merge/remove/resize/setMedia/updateCell/undo/redo actions
+- [x] Zustand editorStore with selectedNodeId/zoom/showSafeZone/tool state
+- [x] Undo/redo via history snapshots (push on every mutating action)
+
+### Active
 
 **Phase 2 — Grid Rendering**
 - [ ] GridNode recursive component dispatches to Container or Leaf
@@ -135,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-01 — Phase 00 complete*
+*Last updated: 2026-04-01 — Phase 01 complete*

@@ -175,12 +175,26 @@
 | POLH-10 | Phase 5 | Pending |
 | POLH-11 | Phase 5 | Pending |
 | POLH-12 | Phase 5 | Pending |
+| VIDE-01 | Phase 6 | Pending |
+| VIDE-02 | Phase 6 | Pending |
+| VIDE-03 | Phase 6 | Pending |
+| VIDE-04 | Phase 6 | Pending |
+| VIDE-05 | Phase 6 | Pending |
+| VIDE-06 | Phase 6 | Pending |
+| VIDE-07 | Phase 6 | Pending |
+| EFCT-01 | Phase 7 | Pending |
+| EFCT-02 | Phase 7 | Pending |
+| EFCT-03 | Phase 7 | Pending |
+| EFCT-04 | Phase 7 | Pending |
+| EFCT-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 57 total
-- Mapped to phases: 57
+- v1 requirements: 57 total (SCAF, GRID, REND, MEDI, EXPO, POLH)
+- v2 requirements: 12 total (VIDE, EFCT)
+- v1 mapped to phases: 57 ✓
+- v2 mapped to phases: 12 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-31*
-*Last updated: 2026-03-31 after initial definition*
+*Last updated: 2026-03-31 after roadmap creation — v2 requirements added to traceability*

@@ -7,11 +7,11 @@
 
 ### Scaffolding
 
-- [ ] **SCAF-01**: Project initializes with Vite 8 + React 18 + TypeScript and runs via `npm run dev` without errors
-- [ ] **SCAF-02**: All MVP dependencies installed and importable (zustand, immer, tailwindcss ^3.4, @dnd-kit/core, @dnd-kit/sortable, html-to-image, lucide-react, nanoid)
-- [ ] **SCAF-03**: Tailwind configured with canvas dimensions (1080×1920) and safe zone values (250px) as CSS variables
-- [ ] **SCAF-04**: Folder structure matches spec (Editor/, Grid/, UI/, store/, lib/, types/)
-- [ ] **SCAF-05**: App shell renders editor layout with placeholder canvas area, toolbar, and sidebar
+- [x] **SCAF-01**: Project initializes with Vite 8 + React 18 + TypeScript and runs via `npm run dev` without errors
+- [x] **SCAF-02**: All MVP dependencies installed and importable (zustand, immer, tailwindcss ^3.4, @dnd-kit/core, @dnd-kit/sortable, html-to-image, lucide-react, nanoid)
+- [x] **SCAF-03**: Tailwind configured with canvas dimensions (1080×1920) and safe zone values (250px) as CSS variables
+- [x] **SCAF-04**: Folder structure matches spec (Editor/, Grid/, UI/, store/, lib/, types/)
+- [x] **SCAF-05**: App shell renders editor layout with placeholder canvas area, toolbar, and sidebar
 
 ### Grid Engine
 
@@ -119,11 +119,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCAF-01 | Phase 0 | Pending |
-| SCAF-02 | Phase 0 | Pending |
-| SCAF-03 | Phase 0 | Pending |
-| SCAF-04 | Phase 0 | Pending |
-| SCAF-05 | Phase 0 | Pending |
+| SCAF-01 | Phase 0 | Complete |
+| SCAF-02 | Phase 0 | Complete |
+| SCAF-03 | Phase 0 | Complete |
+| SCAF-04 | Phase 0 | Complete |
+| SCAF-05 | Phase 0 | Complete |
 | GRID-01 | Phase 1 | Pending |
 | GRID-02 | Phase 1 | Pending |
 | GRID-03 | Phase 1 | Pending |

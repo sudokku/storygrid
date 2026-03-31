@@ -10,7 +10,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - Integer phases (0–7): Planned milestone work
 - Decimal phases (e.g., 2.1): Urgent insertions (marked INSERTED)
 
-- [ ] **Phase 0: Project Scaffolding** - Initialize Vite + React + TypeScript project with full dependency set and editor shell
+- [x] **Phase 0: Project Scaffolding** - Initialize Vite + React + TypeScript project with full dependency set and editor shell (completed 2026-03-31)
 - [ ] **Phase 1: Grid Tree Engine** - Pure tree functions, Zustand stores (grid + editor), mediaId/registry split, undo/redo
 - [ ] **Phase 2: Grid Rendering** - Recursive React components, pointer-event dividers, canvas transform, Safari fixes
 - [ ] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar
@@ -33,7 +33,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
   5. Folder structure matches spec (Editor/, Grid/, UI/, store/, lib/, types/) with index files present
 **Plans**: 1 plan
 Plans:
-- [ ] 00-01-PLAN.md — Scaffold project, install deps, create editor shell, write validation tests
+- [x] 00-01-PLAN.md — Scaffold project, install deps, create editor shell, write validation tests
 
 ### Phase 1: Grid Tree Engine
 **Goal**: A fully tested pure-function tree library and two Zustand stores (gridStore + editorStore) that manage the recursive split-tree with undo/redo and a mediaId/registry separation
@@ -128,7 +128,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Project Scaffolding | 0/1 | Planning complete | - |
+| 0. Project Scaffolding | 1/1 | Complete   | 2026-03-31 |
 | 1. Grid Tree Engine | 0/TBD | Not started | - |
 | 2. Grid Rendering | 0/TBD | Not started | - |
 | 3. Media Upload & Cell Controls | 0/TBD | Not started | - |

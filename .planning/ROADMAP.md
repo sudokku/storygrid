@@ -31,7 +31,9 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
   3. The browser shows a three-region editor layout: canvas area, toolbar, and sidebar (placeholder content is fine)
   4. Tailwind CSS variables for canvas dimensions (1080×1920) and safe zone (250px) are defined and accessible
   5. Folder structure matches spec (Editor/, Grid/, UI/, store/, lib/, types/) with index files present
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 00-01-PLAN.md — Scaffold project, install deps, create editor shell, write validation tests
 
 ### Phase 1: Grid Tree Engine
 **Goal**: A fully tested pure-function tree library and two Zustand stores (gridStore + editorStore) that manage the recursive split-tree with undo/redo and a mediaId/registry separation
@@ -77,10 +79,10 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 **Requirements**: EXPO-01, EXPO-02, EXPO-03, EXPO-04, EXPO-05, EXPO-06, EXPO-07
 **Success Criteria** (what must be TRUE):
   1. Clicking Export downloads a PNG file named `storygrid-{timestamp}.png` that is exactly 1080×1920px when opened in an image viewer
-  2. The export progress UI transitions through "Preparing…" → "Exporting…" → completion (or an error message) — the button never appears to hang
+  2. The export progress UI transitions through "Preparing..." -> "Exporting..." -> completion (or an error message) -- the button never appears to hang
   3. JPEG export at a user-selected quality level produces a smaller file than PNG for the same canvas
   4. The ExportSurface div is always present in the DOM (never conditionally mounted); it is hidden via visibility:hidden and does not affect the editor layout
-  5. Export is blocked (with a clear message) if any cell contains a video — the image-only path never attempts to capture video frames
+  5. Export is blocked (with a clear message) if any cell contains a video -- the image-only path never attempts to capture video frames
 **Plans**: TBD
 
 ### Phase 5: Polish & UX
@@ -88,7 +90,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 **Depends on**: Phase 4
 **Requirements**: POLH-01, POLH-02, POLH-03, POLH-04, POLH-05, POLH-06, POLH-07, POLH-08, POLH-09, POLH-10, POLH-11, POLH-12
 **Success Criteria** (what must be TRUE):
-  1. Clicking a preset template (e.g., 2×2) instantly replaces the canvas with the correct layout and empty cells
+  1. Clicking a preset template (e.g., 2x2) instantly replaces the canvas with the correct layout and empty cells
   2. Moving the gap slider changes spacing between all cells live in the editor; the exported PNG reflects the same spacing
   3. Double-clicking a selected cell enters pan mode; dragging repositions the image within the cell; Escape exits without accidental splits
   4. Dragging a filled cell over another filled cell swaps their images
@@ -97,14 +99,14 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 **UI hint**: yes
 
 ### Phase 6: Video Support (v2)
-**Goal**: Users can add video files to cells, preview them playing in sync, and export the composition as an MP4 using ffmpeg.wasm — with COOP/COEP headers correctly configured for SharedArrayBuffer
+**Goal**: Users can add video files to cells, preview them playing in sync, and export the composition as an MP4 using ffmpeg.wasm -- with COOP/COEP headers correctly configured for SharedArrayBuffer
 **Depends on**: Phase 5
 **Requirements**: VIDE-01, VIDE-02, VIDE-03, VIDE-04, VIDE-05, VIDE-06, VIDE-07
 **Success Criteria** (what must be TRUE):
   1. Dropping a video file onto a cell renders a looping, muted video with the correct object-fit
   2. The timeline bar's play/pause button starts and pauses all video cells simultaneously; scrubbing seeks all videos to the same position
   3. Clicking Export with video cells present triggers ffmpeg.wasm loading (not before); a progress bar reflects ffmpeg encoding progress
-  4. The exported file is a valid MP4 at 1080×1920px that plays in Chrome and Firefox
+  4. The exported file is a valid MP4 at 1080x1920px that plays in Chrome and Firefox
   5. COOP/COEP headers are active in the deployed build and do not break image-only usage (no CORP errors for self-hosted assets)
 **Plans**: TBD
 
@@ -114,19 +116,19 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 **Requirements**: EFCT-01, EFCT-02, EFCT-03, EFCT-04, EFCT-05
 **Success Criteria** (what must be TRUE):
   1. Adjusting a cell's brightness or saturation slider updates the cell's appearance in real-time and is reflected in the exported image
-  2. Adding a text overlay to a cell renders the text at the specified position, font, and color — and the text appears in the exported PNG/MP4
+  2. Adding a text overlay to a cell renders the text at the specified position, font, and color -- and the text appears in the exported PNG/MP4
   3. A project (tree + settings + media registry) can be exported as a `.storygrid.json` file and re-imported to restore the exact same canvas state
-  4. Switching to the 1:1 aspect ratio preset reflows the canvas to 1080×1080px; the grid tree and cell contents are preserved
+  4. Switching to the 1:1 aspect ratio preset reflows the canvas to 1080x1080px; the grid tree and cell contents are preserved
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Project Scaffolding | 0/TBD | Not started | - |
+| 0. Project Scaffolding | 0/1 | Planning complete | - |
 | 1. Grid Tree Engine | 0/TBD | Not started | - |
 | 2. Grid Rendering | 0/TBD | Not started | - |
 | 3. Media Upload & Cell Controls | 0/TBD | Not started | - |

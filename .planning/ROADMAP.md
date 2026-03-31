@@ -45,7 +45,10 @@ Plans:
   3. Media data URIs never appear in undo history snapshots — only `mediaId` strings are snapshotted
   4. `getAllLeaves()` returns the correct set of leaf nodes at any nesting depth with no duplicates
   5. All pure tree functions return new tree references and never mutate the input
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 01-01-PLAN.md — Types + pure tree functions with TDD (GRID-01 through GRID-10)
+- [ ] 01-02-PLAN.md — gridStore + editorStore with undo/redo and TDD (GRID-11, GRID-12, GRID-13)
 
 ### Phase 2: Grid Rendering
 **Goal**: The grid tree renders visually as a nested flex layout; dividers are draggable in real-time via pointer events; the canvas scales correctly in the editor; Safari overflow clipping works
@@ -129,7 +132,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Project Scaffolding | 1/1 | Complete   | 2026-03-31 |
-| 1. Grid Tree Engine | 0/TBD | Not started | - |
+| 1. Grid Tree Engine | 0/2 | Not started | - |
 | 2. Grid Rendering | 0/TBD | Not started | - |
 | 3. Media Upload & Cell Controls | 0/TBD | Not started | - |
 | 4. Export Engine | 0/TBD | Not started | - |

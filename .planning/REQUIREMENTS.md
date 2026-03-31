@@ -25,9 +25,9 @@
 - [x] **GRID-08**: Pure tree function `updateLeaf()` immutably updates a leaf's properties
 - [x] **GRID-09**: Pure tree functions `findNode()`, `findParent()`, `getAllLeaves()` work correctly at any nesting depth
 - [x] **GRID-10**: All pure tree functions return new tree — never mutate in place
-- [ ] **GRID-11**: Zustand gridStore exposes split/merge/remove/resize/setMedia/updateCell/undo/redo actions
-- [ ] **GRID-12**: Undo/redo uses history snapshot array (structuredClone, capped at 50); media registry excluded from snapshots
-- [ ] **GRID-13**: Zustand editorStore manages selectedNodeId, zoom, showSafeZone, tool state
+- [x] **GRID-11**: Zustand gridStore exposes split/merge/remove/resize/setMedia/updateCell/undo/redo actions
+- [x] **GRID-12**: Undo/redo uses history snapshot array (structuredClone, capped at 50); media registry excluded from snapshots
+- [x] **GRID-13**: Zustand editorStore manages selectedNodeId, zoom, showSafeZone, tool state
 
 ### Grid Rendering
 
@@ -134,9 +134,9 @@
 | GRID-08 | Phase 1 | Complete |
 | GRID-09 | Phase 1 | Complete |
 | GRID-10 | Phase 1 | Complete |
-| GRID-11 | Phase 1 | Pending |
-| GRID-12 | Phase 1 | Pending |
-| GRID-13 | Phase 1 | Pending |
+| GRID-11 | Phase 1 | Complete |
+| GRID-12 | Phase 1 | Complete |
+| GRID-13 | Phase 1 | Complete |
 | REND-01 | Phase 2 | Pending |
 | REND-02 | Phase 2 | Pending |
 | REND-03 | Phase 2 | Pending |

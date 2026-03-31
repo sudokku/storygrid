@@ -48,7 +48,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 01-01-PLAN.md — Types + pure tree functions with TDD (GRID-01 through GRID-10)
-- [ ] 01-02-PLAN.md — gridStore + editorStore with undo/redo and TDD (GRID-11, GRID-12, GRID-13)
+- [x] 01-02-PLAN.md — gridStore + editorStore with undo/redo and TDD (GRID-11, GRID-12, GRID-13)
 
 ### Phase 2: Grid Rendering
 **Goal**: The grid tree renders visually as a nested flex layout; dividers are draggable in real-time via pointer events; the canvas scales correctly in the editor; Safari overflow clipping works

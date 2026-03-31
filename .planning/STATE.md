@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-grid-tree-engine 01-01-PLAN.md
-last_updated: "2026-03-31T22:24:02.139Z"
+status: verifying
+stopped_at: Completed 01-grid-tree-engine 01-02-PLAN.md
+last_updated: "2026-03-31T22:29:19.874Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 
 Phase: 01 (grid-tree-engine) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-31
 
 Progress: [░░░░░░░░░░] 0%
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 00-project-scaffolding P01 | 6min | 3 tasks | 25 files |
 | Phase 01-grid-tree-engine P01 | 3min | 2 tasks | 4 files |
+| Phase 01-grid-tree-engine P02 | 4min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 01-grid-tree-engine]: MIN_CELL_WEIGHT = 0.1 — cells cannot be resized below 10% of parent weight in resizeSiblings()
 - [Phase 01-grid-tree-engine]: Pure tree functions use spread+map recursion (no Immer) — Immer is the store layer's tool, not the tree function layer
 - [Phase 01-grid-tree-engine]: mapNode helper is the universal tree rewrite primitive used by all mutating functions
+- [Phase 01-grid-tree-engine]: current() from immer must wrap Draft history entries before structuredClone in undo/redo — history array elements are Immer Proxies inside set() callbacks
+- [Phase 01-grid-tree-engine]: pushSnapshot helper centralizes history management (snapshot-before-mutate, redo-clear, cap-at-50, index update) shared by all 6 mutating actions
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T22:24:02.136Z
-Stopped at: Completed 01-grid-tree-engine 01-01-PLAN.md
+Last session: 2026-03-31T22:29:19.870Z
+Stopped at: Completed 01-grid-tree-engine 01-02-PLAN.md
 Resume file: None

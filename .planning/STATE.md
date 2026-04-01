@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-02-PLAN.md — Phase 4 Export Engine fully complete
-last_updated: "2026-04-01T13:28:04.974Z"
+stopped_at: Completed quick/260401-oca — Canvas API export engine replacing html-to-image
+last_updated: "2026-04-01T14:43:19.612Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
@@ -108,6 +108,7 @@ Recent decisions affecting current work:
 - [Phase 04-export-engine]: Toolbar exportRef fallback { current: null } for tests rendering Toolbar without props — preserves existing test isolation
 - [Phase 04]: ExportSurface uses pointerEvents:none (not visibility:hidden) — visibility:hidden is inherited by all children during html-to-image clone, producing blank PNG / black JPEG
 - [Phase 04]: backgroundColor:'#ffffff' added to export options — prevents transparent pixels encoding as black in JPEG output
+- [Phase quick]: Canvas API used instead of html-to-image: zero-dependency, deterministic, handles object-fit correctly; exportGrid signature changed to accept root+mediaRegistry directly
 
 ### Pending Todos
 
@@ -120,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T13:21:46.948Z
-Stopped at: Completed 04-02-PLAN.md — Phase 4 Export Engine fully complete
+Last session: 2026-04-01T14:43:15.143Z
+Stopped at: Completed quick/260401-oca — Canvas API export engine replacing html-to-image
 Resume file: None

@@ -19,6 +19,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoFitScale, setAutoFitScale] = useState(1);
   const zoom = useEditorStore(s => s.zoom);
+  const setCanvasScale = useEditorStore(s => s.setCanvasScale);
   const showSafeZone = useEditorStore(s => s.showSafeZone);
   const rootId = useGridStore(s => s.root.id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
@@ -38,6 +39,10 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   }, []);
 
   const finalScale = autoFitScale * zoom;
+
+  useEffect(() => {
+    setCanvasScale(finalScale);
+  }, [finalScale, setCanvasScale]);
 
   const handleBgClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Only deselect if the click target is the wrapper itself (D-12)

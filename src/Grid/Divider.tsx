@@ -1,5 +1,6 @@
 import React, { useRef, useCallback } from 'react';
 import { useGridStore } from '../store/gridStore';
+import { useEditorStore } from '../store/editorStore';
 import type { SplitDirection } from '../types';
 
 interface DividerProps {
@@ -20,6 +21,7 @@ export const Divider = React.memo(function Divider({
   onLocalSizesChange,
 }: DividerProps) {
   const resize = useGridStore(s => s.resize);
+  const canvasScale = useEditorStore(s => s.canvasScale);
 
   const dragState = useRef<{
     startPos: number;
@@ -68,11 +70,13 @@ export const Divider = React.memo(function Divider({
       ? containerRef.current.offsetHeight
       : containerRef.current.offsetWidth;
     const totalWeight = dragState.current.startSizes.reduce((a, b) => a + b, 0);
-    const weightDelta = (pixelDelta / containerPixels) * totalWeight;
+    // clientX/Y is in viewport pixels; offsetHeight/Width is in unscaled layout pixels.
+    // Divide by canvasScale to convert viewport delta → layout delta.
+    const weightDelta = (pixelDelta / canvasScale / containerPixels) * totalWeight;
     const newSizes = computeNewSizes(dragState.current.startSizes, siblingIndex, weightDelta);
     lastSizesRef.current = newSizes;
     onLocalSizesChange(newSizes);
-  }, [isVerticalContainer, containerRef, siblingIndex, computeNewSizes, onLocalSizesChange]);
+  }, [isVerticalContainer, containerRef, siblingIndex, computeNewSizes, onLocalSizesChange, canvasScale]);
 
   const handlePointerUp = useCallback(() => {
     const lastSizes = lastSizesRef.current;
@@ -98,7 +102,7 @@ export const Divider = React.memo(function Divider({
       {/* Hit area: 8px wide transparent zone */}
       <div
         className={`
-          absolute z-10
+          group/hit absolute z-10
           ${isVerticalContainer
             ? '-top-[4px] left-0 right-0 h-[8px]'
             : '-left-[4px] top-0 bottom-0 w-[8px]'
@@ -120,15 +124,16 @@ export const Divider = React.memo(function Divider({
             }
           `}
         />
-        {/* Grab handle — appears on this specific divider hover */}
+        {/* Grab handle — appears on this specific divider hover, scaled to constant visual size */}
         <div
           className={`
-            absolute opacity-0 hover:opacity-100 transition-opacity duration-150
+            absolute opacity-0 group-hover/hit:opacity-100 transition-opacity duration-150
             ${isVerticalContainer
               ? 'top-[1px] left-1/2 -translate-x-1/2 w-[24px] h-[6px] rounded-full bg-[#888888]'
               : 'left-[1px] top-1/2 -translate-y-1/2 h-[24px] w-[6px] rounded-full bg-[#888888]'
             }
           `}
+          style={{ transform: `${isVerticalContainer ? 'translateX(-50%)' : 'translateY(-50%)'} scale(${1 / canvasScale})` }}
         />
       </div>
     </div>

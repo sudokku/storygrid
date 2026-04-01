@@ -18,6 +18,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   });
   const isSelected = useEditorStore(s => s.selectedNodeId === id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
+  const canvasScale = useEditorStore(s => s.canvasScale);
   const [isHovered, setIsHovered] = useState(false);
 
   if (!node || node.type !== 'leaf') return null;
@@ -63,13 +64,14 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {mediaUrl && isHovered && (
         <div className="absolute inset-0 bg-black/15 pointer-events-none" />
       )}
-      {/* ActionBar: visible on hover with 150ms fade (D-06) */}
+      {/* ActionBar: visible on hover with 150ms fade (D-06), scaled to constant visual size */}
       <div
         className={`
           absolute top-2 left-1/2 -translate-x-1/2 z-20
           transition-opacity duration-150
           ${isHovered ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}
         `}
+        style={{ transform: `translateX(-50%) scale(${1 / canvasScale})`, transformOrigin: 'top center' }}
       >
         <ActionBar nodeId={id} fit={node.fit} />
       </div>

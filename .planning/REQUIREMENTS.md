@@ -71,8 +71,8 @@
 - [x] **POLH-03**: Global border radius slider (0–24px) applied to all leaf cells
 - [x] **POLH-04**: Border color picker for cell borders
 - [x] **POLH-05**: Canvas background color picker; gradient option (two colors + direction)
-- [ ] **POLH-06**: Per-cell pan/zoom: double-click selected cell to enter pan mode; drag to reposition (updates object-position); scroll to scale within cell; Escape or click outside to exit
-- [ ] **POLH-07**: Cell-swap-by-drag: drag a filled image cell over another cell to swap their media
+- [x] **POLH-06**: Per-cell pan/zoom: double-click selected cell to enter pan mode; drag to reposition (updates object-position); scroll to scale within cell; Escape or click outside to exit
+- [x] **POLH-07**: Cell-swap-by-drag: drag a filled image cell over another cell to swap their media
 - [x] **POLH-08**: Dark editor theme — background #0a0a0a–#141414, surfaces #1a1a1a–#222, borders #333, accent #3b82f6
 - [x] **POLH-09**: Keyboard shortcuts: Ctrl+E (export), Delete/Backspace (remove selected), H (split H), V (split V), F (toggle fit), Escape (deselect)
 - [x] **POLH-10**: First-time onboarding tooltip: "Click a cell to select. Hover for split options. Drop images to fill."
@@ -168,8 +168,8 @@
 | POLH-03 | Phase 5 | Complete |
 | POLH-04 | Phase 5 | Complete |
 | POLH-05 | Phase 5 | Complete |
-| POLH-06 | Phase 5 | Pending |
-| POLH-07 | Phase 5 | Pending |
+| POLH-06 | Phase 5 | Complete |
+| POLH-07 | Phase 5 | Complete |
 | POLH-08 | Phase 5 | Complete |
 | POLH-09 | Phase 5 | Complete |
 | POLH-10 | Phase 5 | Complete |

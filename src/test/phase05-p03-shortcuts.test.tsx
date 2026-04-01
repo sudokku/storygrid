@@ -202,27 +202,24 @@ describe('Keyboard shortcuts — new in Phase 5 (POLH-09)', () => {
   describe('Ctrl+E — export trigger', () => {
     it('pressing Ctrl+E clicks the export button if present in the DOM', () => {
       render(<EditorShell />);
-      // Create a mock export button in the DOM
-      const exportBtn = document.createElement('button');
-      exportBtn.setAttribute('data-testid', 'export-button');
+      // Query the real rendered button (ExportSplitButton now has data-testid="export-button")
+      const exportBtn = document.querySelector('[data-testid="export-button"]') as HTMLElement;
+      expect(exportBtn).not.toBeNull();
       const clickSpy = vi.fn();
       exportBtn.addEventListener('click', clickSpy);
-      document.body.appendChild(exportBtn);
       fireEvent.keyDown(window, { key: 'e', ctrlKey: true });
       expect(clickSpy).toHaveBeenCalledTimes(1);
-      document.body.removeChild(exportBtn);
     });
 
     it('pressing Meta+E (macOS Cmd+E) triggers export', () => {
       render(<EditorShell />);
-      const exportBtn = document.createElement('button');
-      exportBtn.setAttribute('data-testid', 'export-button');
+      // Query the real rendered button (ExportSplitButton now has data-testid="export-button")
+      const exportBtn = document.querySelector('[data-testid="export-button"]') as HTMLElement;
+      expect(exportBtn).not.toBeNull();
       const clickSpy = vi.fn();
       exportBtn.addEventListener('click', clickSpy);
-      document.body.appendChild(exportBtn);
       fireEvent.keyDown(window, { key: 'E', metaKey: true });
       expect(clickSpy).toHaveBeenCalledTimes(1);
-      document.body.removeChild(exportBtn);
     });
   });
 });

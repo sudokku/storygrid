@@ -145,6 +145,7 @@ export function ExportSplitButton() {
           onClick={handleExport}
           disabled={isExporting}
           aria-label={`Export ${exportFormat.toUpperCase()}`}
+          data-testid="export-button"
           className="flex items-center gap-2 h-8 px-2 rounded-l hover:bg-white/10 transition-colors text-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Download size={16} />

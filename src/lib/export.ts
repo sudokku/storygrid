@@ -1,5 +1,5 @@
 import { getAllLeaves } from './tree';
-import type { GridNode } from '../types';
+import type { GridNode, LeafNode } from '../types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -9,6 +9,28 @@ export type ExportFormat = 'png' | 'jpeg';
 
 type Rect = { x: number; y: number; w: number; h: number };
 type ObjPos = { x: number; y: number };
+
+export type CanvasSettings = {
+  gap: number;
+  borderRadius: number;
+  borderColor: string;
+  backgroundMode: 'solid' | 'gradient';
+  backgroundColor: string;
+  backgroundGradientFrom: string;
+  backgroundGradientTo: string;
+  backgroundGradientDir: 'to-bottom' | 'to-right' | 'diagonal';
+};
+
+const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
+  gap: 0,
+  borderRadius: 0,
+  borderColor: '',
+  backgroundMode: 'solid',
+  backgroundColor: '#ffffff',
+  backgroundGradientFrom: '#ffffff',
+  backgroundGradientTo: '#000000',
+  backgroundGradientDir: 'to-bottom',
+};
 
 // ---------------------------------------------------------------------------
 // parseObjectPosition — converts CSS object-position to 0-1 fractions
@@ -62,6 +84,34 @@ export function loadImage(dataUri: string): Promise<HTMLImageElement> {
     img.onerror = () => reject(new Error(`Failed to load image: ${dataUri.slice(0, 40)}`));
     img.src = dataUri;
   });
+}
+
+// ---------------------------------------------------------------------------
+// roundedRect — Safari 15.0-15.3 fallback for ctx.roundRect
+// ---------------------------------------------------------------------------
+
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  if (r <= 0) {
+    ctx.rect(x, y, w, h);
+    return;
+  }
+  if (typeof (ctx as unknown as { roundRect?: unknown }).roundRect === 'function') {
+    (ctx as unknown as { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +179,52 @@ export function drawContainImage(
 }
 
 // ---------------------------------------------------------------------------
+// drawPannedCoverImage — pan-aware version of drawCoverImage
+// ---------------------------------------------------------------------------
+
+export function drawPannedCoverImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  rect: Rect,
+  objPos: ObjPos,
+  panX: number,
+  panY: number,
+  panScale: number,
+): void {
+  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const cellAspect = rect.w / rect.h;
+
+  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+
+  if (imgAspect > cellAspect) {
+    sw = Math.round(img.naturalHeight * cellAspect);
+    sx = Math.round((img.naturalWidth - sw) * objPos.x);
+  } else if (imgAspect < cellAspect) {
+    sh = Math.round(img.naturalWidth / cellAspect);
+    sy = Math.round((img.naturalHeight - sh) * objPos.y);
+  }
+
+  // Apply panScale: shrink source crop by 1/panScale
+  const scaledSw = Math.round(sw / panScale);
+  const scaledSh = Math.round(sh / panScale);
+
+  // Apply pan offset: shift crop center by panX/panY percentage of remaining headroom
+  const maxOffsetX = (sw - scaledSw) / 2;
+  const maxOffsetY = (sh - scaledSh) / 2;
+  const offsetX = Math.round((panX / 100) * maxOffsetX);
+  const offsetY = Math.round((panY / 100) * maxOffsetY);
+
+  const finalSx = sx + (sw - scaledSw) / 2 + offsetX;
+  const finalSy = sy + (sh - scaledSh) / 2 + offsetY;
+
+  // Clamp to image bounds
+  const clampedSx = Math.max(0, Math.min(img.naturalWidth - scaledSw, finalSx));
+  const clampedSy = Math.max(0, Math.min(img.naturalHeight - scaledSh, finalSy));
+
+  ctx.drawImage(img, clampedSx, clampedSy, scaledSw, scaledSh, rect.x, rect.y, rect.w, rect.h);
+}
+
+// ---------------------------------------------------------------------------
 // renderNode — recursive renderer walking the GridNode tree
 // ---------------------------------------------------------------------------
 
@@ -138,53 +234,88 @@ async function renderNode(
   rect: Rect,
   mediaRegistry: Record<string, string>,
   imageCache: Map<string, HTMLImageElement>,
+  settings: CanvasSettings,
 ): Promise<void> {
   if (node.type === 'leaf') {
-    const dataUri = node.mediaId ? (mediaRegistry[node.mediaId] ?? null) : null;
+    const leaf = node as LeafNode;
+    const dataUri = leaf.mediaId ? (mediaRegistry[leaf.mediaId] ?? null) : null;
+
+    // Apply border radius clipping
+    if (settings.borderRadius > 0) {
+      ctx.save();
+      ctx.beginPath();
+      roundedRect(ctx, rect.x, rect.y, rect.w, rect.h, settings.borderRadius);
+      ctx.clip();
+    }
 
     if (!dataUri) {
       // No media — fill with solid color
-      ctx.fillStyle = node.backgroundColor ?? '#ffffff';
+      ctx.fillStyle = leaf.backgroundColor ?? '#ffffff';
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-      return;
-    }
-
-    // Has media — load image (with cache) and draw
-    let img = imageCache.get(dataUri);
-    if (!img) {
-      img = await loadImage(dataUri);
-      imageCache.set(dataUri, img);
-    }
-
-    const objPos = parseObjectPosition(node.objectPosition ?? 'center center');
-    const bgColor = node.backgroundColor ?? '#ffffff';
-
-    if (node.fit === 'cover') {
-      drawCoverImage(ctx, img, rect, objPos);
     } else {
-      drawContainImage(ctx, img, rect, objPos, bgColor);
+      // Has media — load image (with cache) and draw
+      let img = imageCache.get(dataUri);
+      if (!img) {
+        img = await loadImage(dataUri);
+        imageCache.set(dataUri, img);
+      }
+
+      const objPos = parseObjectPosition(leaf.objectPosition ?? 'center center');
+      const bgColor = leaf.backgroundColor ?? '#ffffff';
+      const hasPan = leaf.panX !== 0 || leaf.panY !== 0 || leaf.panScale !== 1;
+
+      if (leaf.fit === 'cover') {
+        if (hasPan) {
+          drawPannedCoverImage(
+            ctx, img, rect, objPos,
+            leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
+          );
+        } else {
+          drawCoverImage(ctx, img, rect, objPos);
+        }
+      } else {
+        drawContainImage(ctx, img, rect, objPos, bgColor);
+      }
+    }
+
+    if (settings.borderRadius > 0) {
+      ctx.restore();
+    }
+
+    // Draw border stroke
+    if (settings.borderColor) {
+      ctx.save();
+      ctx.beginPath();
+      roundedRect(ctx, rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1, settings.borderRadius);
+      ctx.strokeStyle = settings.borderColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
     }
   } else {
-    // Container — subdivide rect and recurse
+    // Container — subdivide rect with gap and recurse
     const totalWeight = node.sizes.reduce((a, b) => a + b, 0);
+    const gapCount = node.children.length - 1;
+    const totalGap = settings.gap * gapCount;
+    const isHorizontal = node.direction === 'horizontal';
+    const availableSize = (isHorizontal ? rect.w : rect.h) - totalGap;
     let offset = 0;
 
     for (let i = 0; i < node.children.length; i++) {
-      const weight = node.sizes[i];
-      const fraction = weight / totalWeight;
+      const fraction = node.sizes[i] / totalWeight;
       let childRect: Rect;
 
-      if (node.direction === 'horizontal') {
-        const childW = rect.w * fraction;
+      if (isHorizontal) {
+        const childW = availableSize * fraction;
         childRect = { x: rect.x + offset, y: rect.y, w: childW, h: rect.h };
-        offset += childW;
+        offset += childW + settings.gap;
       } else {
-        const childH = rect.h * fraction;
+        const childH = availableSize * fraction;
         childRect = { x: rect.x, y: rect.y + offset, w: rect.w, h: childH };
-        offset += childH;
+        offset += childH + settings.gap;
       }
 
-      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache);
+      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache, settings);
     }
   }
 }
@@ -195,6 +326,7 @@ async function renderNode(
 
 /**
  * Walks the grid tree and draws all cells onto a Canvas element.
+ * Accepts CanvasSettings for gap, border radius, border color, and background.
  * Returns a resolved HTMLCanvasElement ready for toDataURL.
  */
 export async function renderGridToCanvas(
@@ -202,6 +334,7 @@ export async function renderGridToCanvas(
   mediaRegistry: Record<string, string>,
   width = 1080,
   height = 1920,
+  settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
 ): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -210,12 +343,25 @@ export async function renderGridToCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
-  // Fill entire canvas with white
-  ctx.fillStyle = '#ffffff';
+  // Draw background
+  if (settings.backgroundMode === 'gradient') {
+    const dirMap: Record<string, [number, number, number, number]> = {
+      'to-bottom': [0, 0, 0, height],
+      'to-right': [0, 0, width, 0],
+      'diagonal': [0, 0, width, height],
+    };
+    const [x0, y0, x1, y1] = dirMap[settings.backgroundGradientDir] ?? [0, 0, 0, height];
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0, settings.backgroundGradientFrom);
+    grad.addColorStop(1, settings.backgroundGradientTo);
+    ctx.fillStyle = grad as unknown as string;
+  } else {
+    ctx.fillStyle = settings.backgroundColor;
+  }
   ctx.fillRect(0, 0, width, height);
 
   const imageCache = new Map<string, HTMLImageElement>();
-  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache);
+  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache, settings);
 
   return canvas;
 }
@@ -238,9 +384,10 @@ export async function exportGrid(
   format: ExportFormat,
   quality: number,
   onStage: (stage: 'preparing' | 'exporting') => void,
+  settings?: CanvasSettings,
 ): Promise<string> {
   onStage('preparing');
-  const canvas = await renderGridToCanvas(root, mediaRegistry);
+  const canvas = await renderGridToCanvas(root, mediaRegistry, 1080, 1920, settings);
   onStage('exporting');
 
   if (format === 'jpeg') {

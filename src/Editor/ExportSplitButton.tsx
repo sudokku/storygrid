@@ -3,6 +3,7 @@ import { Download, ChevronDown } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 import { useGridStore } from '../store/gridStore';
 import { exportGrid, downloadDataUrl, hasVideoCell } from '../lib/export';
+import type { CanvasSettings } from '../lib/export';
 import { Toast } from './Toast';
 import type { ToastState } from './Toast';
 
@@ -25,6 +26,16 @@ export function ExportSplitButton() {
 
   const root = useGridStore(s => s.root);
   const mediaRegistry = useGridStore(s => s.mediaRegistry);
+
+  // Canvas settings for export
+  const gap = useEditorStore(s => s.gap);
+  const borderRadius = useEditorStore(s => s.borderRadius);
+  const borderColor = useEditorStore(s => s.borderColor);
+  const backgroundMode = useEditorStore(s => s.backgroundMode);
+  const backgroundColor = useEditorStore(s => s.backgroundColor);
+  const backgroundGradientFrom = useEditorStore(s => s.backgroundGradientFrom);
+  const backgroundGradientTo = useEditorStore(s => s.backgroundGradientTo);
+  const backgroundGradientDir = useEditorStore(s => s.backgroundGradientDir);
 
   // -------------------------------------------------------------------------
   // Outside-click and Escape key handler (per RESEARCH Pitfall 6)
@@ -77,12 +88,23 @@ export function ExportSplitButton() {
     setPopoverOpen(false);
 
     try {
+      const canvasSettings: CanvasSettings = {
+        gap,
+        borderRadius,
+        borderColor,
+        backgroundMode,
+        backgroundColor,
+        backgroundGradientFrom,
+        backgroundGradientTo,
+        backgroundGradientDir,
+      };
       const dataUrl = await exportGrid(
         root,
         mediaRegistry,
         exportFormat,
         exportQuality,
         (stage) => setToastState(stage),
+        canvasSettings,
       );
       setToastState(null); // dismiss on success per D-07
       const ext = exportFormat === 'jpeg' ? 'jpg' : 'png';
@@ -101,6 +123,14 @@ export function ExportSplitButton() {
     exportFormat,
     exportQuality,
     setIsExporting,
+    gap,
+    borderRadius,
+    borderColor,
+    backgroundMode,
+    backgroundColor,
+    backgroundGradientFrom,
+    backgroundGradientTo,
+    backgroundGradientDir,
   ]);
 
   // -------------------------------------------------------------------------

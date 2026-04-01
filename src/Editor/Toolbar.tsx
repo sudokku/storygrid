@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '../components/ui/tooltip';
 import { ExportSplitButton } from './ExportSplitButton';
+import { TemplatesPopover } from '../components/TemplatesPopover';
 
 const btnClass =
   'flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors text-neutral-300';
@@ -35,7 +36,7 @@ export function Toolbar() {
   return (
     <header className="flex items-center gap-1 h-12 px-4 bg-[#1c1c1c] border-b border-[#2a2a2a] shrink-0">
       <TooltipProvider delay={300}>
-        {/* Left: Undo / Redo */}
+        {/* Left: Undo / Redo / Templates */}
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger
@@ -68,6 +69,8 @@ export function Toolbar() {
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">Redo (Ctrl+Shift+Z)</TooltipContent>
           </Tooltip>
+
+          <TemplatesPopover />
         </div>
 
         {/* Center: Zoom */}

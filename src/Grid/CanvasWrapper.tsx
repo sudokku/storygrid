@@ -1,11 +1,18 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { useGridStore } from '../store/gridStore';
+import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
+
+const GRADIENT_DIR_MAP = {
+  'to-bottom': 'to bottom',
+  'to-right': 'to right',
+  'diagonal': '135deg',
+} as const;
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
@@ -23,6 +30,14 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const showSafeZone = useEditorStore(s => s.showSafeZone);
   const rootId = useGridStore(s => s.root.id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
+  const { backgroundMode, backgroundColor, backgroundGradientFrom, backgroundGradientTo, backgroundGradientDir } =
+    useEditorStore(useShallow(s => ({
+      backgroundMode: s.backgroundMode,
+      backgroundColor: s.backgroundColor,
+      backgroundGradientFrom: s.backgroundGradientFrom,
+      backgroundGradientTo: s.backgroundGradientTo,
+      backgroundGradientDir: s.backgroundGradientDir,
+    })));
 
   useEffect(() => {
     const el = containerRef.current;
@@ -39,6 +54,10 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   }, []);
 
   const finalScale = autoFitScale * zoom;
+
+  const canvasBackground = backgroundMode === 'solid'
+    ? backgroundColor
+    : `linear-gradient(${GRADIENT_DIR_MAP[backgroundGradientDir]}, ${backgroundGradientFrom}, ${backgroundGradientTo})`;
 
   useEffect(() => {
     setCanvasScale(finalScale);
@@ -64,6 +83,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
           height: CANVAS_H,
           transform: `scale(${finalScale})`,
           transformOrigin: 'top center',
+          background: canvasBackground,
         }}
         onClick={handleBgClick}
         data-testid="canvas-surface"

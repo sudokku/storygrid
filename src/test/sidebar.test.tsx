@@ -65,18 +65,25 @@ describe('Sidebar', () => {
       expect(screen.getByText('Canvas')).toBeInTheDocument();
     });
 
-    it('shows disabled background color input', () => {
-      render(<Sidebar />);
-      const colorInputs = document.querySelectorAll('input[type="color"]');
-      const disabledColorInput = Array.from(colorInputs).find(el => (el as HTMLInputElement).disabled);
-      expect(disabledColorInput).toBeTruthy();
-    });
-
-    it('shows disabled gap slider', () => {
+    it('shows active (enabled) gap slider', () => {
       render(<Sidebar />);
       const sliders = document.querySelectorAll('input[type="range"]');
-      const disabledSlider = Array.from(sliders).find(el => (el as HTMLInputElement).disabled);
-      expect(disabledSlider).toBeTruthy();
+      // Both gap and border radius sliders should be enabled
+      const enabledSlider = Array.from(sliders).find(el => !(el as HTMLInputElement).disabled);
+      expect(enabledSlider).toBeTruthy();
+    });
+
+    it('shows active (enabled) border color input', () => {
+      render(<Sidebar />);
+      const colorInputs = document.querySelectorAll('input[type="color"]');
+      const enabledColorInput = Array.from(colorInputs).find(el => !(el as HTMLInputElement).disabled);
+      expect(enabledColorInput).toBeTruthy();
+    });
+
+    it('shows Solid/Gradient background toggle buttons', () => {
+      render(<Sidebar />);
+      expect(screen.getByText('Solid')).toBeInTheDocument();
+      expect(screen.getByText('Gradient')).toBeInTheDocument();
     });
   });
 
@@ -104,12 +111,14 @@ describe('Sidebar', () => {
       expect(screen.getByText('Contain')).toBeInTheDocument();
     });
 
-    it('does NOT show background color picker in cover mode', () => {
+    it('does NOT show cell background color picker in cover mode', () => {
       render(<Sidebar />);
-      // In cover mode, no enabled color picker should be visible (only contain shows it)
-      const colorInputs = document.querySelectorAll('input[type="color"]');
-      const enabledColorInput = Array.from(colorInputs).find(el => !(el as HTMLInputElement).disabled);
-      expect(enabledColorInput).toBeFalsy();
+      // In cover mode, the cell background color picker should not be visible.
+      // CanvasSettingsPanel shows its own enabled color inputs, but the cell panel
+      // should not render a cell-background color picker in cover mode.
+      // We check by ensuring there's no "Background color" label for the cell panel.
+      const backgroundColorLabel = screen.queryByText('Background color');
+      expect(backgroundColorLabel).not.toBeInTheDocument();
     });
 
     it('shows background color picker when fit is contain', () => {

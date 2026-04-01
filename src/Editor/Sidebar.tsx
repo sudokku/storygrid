@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
+import { useShallow } from 'zustand/react/shallow';
 import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
@@ -52,36 +53,152 @@ function computeCellDimensions(root: GridNode, nodeId: string): { w: number; h: 
 }
 
 // ---------------------------------------------------------------------------
-// No-selection panel (D-09)
+// Canvas settings panel (Phase 5)
 // ---------------------------------------------------------------------------
 
-function NoSelectionPanel() {
+function CanvasSettingsPanel() {
+  const {
+    gap, setGap,
+    borderRadius, setBorderRadius,
+    borderColor, setBorderColor,
+    backgroundMode, setBackgroundMode,
+    backgroundColor, setBackgroundColor,
+    backgroundGradientFrom, setBackgroundGradientFrom,
+    backgroundGradientTo, setBackgroundGradientTo,
+    backgroundGradientDir, setBackgroundGradientDir,
+  } = useEditorStore(useShallow(s => ({
+    gap: s.gap,
+    setGap: s.setGap,
+    borderRadius: s.borderRadius,
+    setBorderRadius: s.setBorderRadius,
+    borderColor: s.borderColor,
+    setBorderColor: s.setBorderColor,
+    backgroundMode: s.backgroundMode,
+    setBackgroundMode: s.setBackgroundMode,
+    backgroundColor: s.backgroundColor,
+    setBackgroundColor: s.setBackgroundColor,
+    backgroundGradientFrom: s.backgroundGradientFrom,
+    setBackgroundGradientFrom: s.setBackgroundGradientFrom,
+    backgroundGradientTo: s.backgroundGradientTo,
+    setBackgroundGradientTo: s.setBackgroundGradientTo,
+    backgroundGradientDir: s.backgroundGradientDir,
+    setBackgroundGradientDir: s.setBackgroundGradientDir,
+  })));
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 border-b border-[#2a2a2a]">
       <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Canvas</p>
-      {/* Background color — Phase 5 stub */}
+
+      {/* Gap slider */}
       <div className="space-y-1.5">
-        <label className="text-xs text-neutral-400">Background color</label>
-        <input
-          type="color"
-          disabled
-          defaultValue="#000000"
-          className="w-full h-8 rounded border border-[#2a2a2a] bg-[#2a2a2a] cursor-not-allowed opacity-40"
-          title="Available in Phase 5"
-        />
-      </div>
-      {/* Gap slider — Phase 5 stub */}
-      <div className="space-y-1.5">
-        <label className="text-xs text-neutral-400">Cell gap</label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-neutral-400">Cell gap</label>
+          <span className="text-xs text-neutral-400 font-mono">{gap}px</span>
+        </div>
         <input
           type="range"
-          disabled
-          defaultValue={0}
+          min={0}
+          max={20}
+          value={gap}
+          onChange={e => setGap(Number(e.target.value))}
+          className="w-full accent-[#3b82f6]"
+          aria-label="Cell gap"
+        />
+      </div>
+
+      {/* Border radius slider */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-neutral-400">Border radius</label>
+          <span className="text-xs text-neutral-400 font-mono">{borderRadius}px</span>
+        </div>
+        <input
+          type="range"
           min={0}
           max={24}
-          className="w-full cursor-not-allowed opacity-40"
-          title="Available in Phase 5"
+          value={borderRadius}
+          onChange={e => setBorderRadius(Number(e.target.value))}
+          className="w-full accent-[#3b82f6]"
+          aria-label="Border radius"
         />
+      </div>
+
+      {/* Border color */}
+      <div className="space-y-1.5">
+        <label className="text-xs text-neutral-400">Border color</label>
+        <input
+          type="color"
+          value={borderColor}
+          onChange={e => setBorderColor(e.target.value)}
+          className="w-full h-8 rounded border border-[#2a2a2a] cursor-pointer bg-transparent"
+          aria-label="Border color"
+        />
+      </div>
+
+      {/* Background section */}
+      <div className="space-y-2">
+        <label className="text-xs text-neutral-400">Background</label>
+
+        {/* Solid / Gradient toggle */}
+        <div className="flex rounded overflow-hidden border border-[#2a2a2a]">
+          <button
+            className={`flex-1 py-1.5 text-xs transition-colors ${backgroundMode === 'solid' ? 'bg-[#3b82f6] text-white' : 'bg-[#2a2a2a] text-neutral-400 hover:bg-[#333333]'}`}
+            onClick={() => setBackgroundMode('solid')}
+          >
+            Solid
+          </button>
+          <button
+            className={`flex-1 py-1.5 text-xs transition-colors ${backgroundMode === 'gradient' ? 'bg-[#3b82f6] text-white' : 'bg-[#2a2a2a] text-neutral-400 hover:bg-[#333333]'}`}
+            onClick={() => setBackgroundMode('gradient')}
+          >
+            Gradient
+          </button>
+        </div>
+
+        {backgroundMode === 'solid' ? (
+          <input
+            type="color"
+            value={backgroundColor}
+            onChange={e => setBackgroundColor(e.target.value)}
+            className="w-full h-8 rounded border border-[#2a2a2a] cursor-pointer bg-transparent"
+            aria-label="Background color"
+          />
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 w-8">From</span>
+              <input
+                type="color"
+                value={backgroundGradientFrom}
+                onChange={e => setBackgroundGradientFrom(e.target.value)}
+                className="flex-1 h-7 rounded border border-[#2a2a2a] cursor-pointer bg-transparent"
+                aria-label="Gradient from color"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 w-8">To</span>
+              <input
+                type="color"
+                value={backgroundGradientTo}
+                onChange={e => setBackgroundGradientTo(e.target.value)}
+                className="flex-1 h-7 rounded border border-[#2a2a2a] cursor-pointer bg-transparent"
+                aria-label="Gradient to color"
+              />
+            </div>
+            {/* Direction toggle */}
+            <div className="flex rounded overflow-hidden border border-[#2a2a2a]">
+              {(['to-bottom', 'to-right', 'diagonal'] as const).map(dir => (
+                <button
+                  key={dir}
+                  className={`flex-1 py-1 text-[10px] transition-colors ${backgroundGradientDir === dir ? 'bg-[#3b82f6] text-white' : 'bg-[#2a2a2a] text-neutral-400 hover:bg-[#333333]'}`}
+                  onClick={() => setBackgroundGradientDir(dir)}
+                >
+                  {dir === 'to-bottom' ? 'Down' : dir === 'to-right' ? 'Right' : 'Diag'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -286,10 +403,9 @@ export function Sidebar() {
       className="w-[280px] shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] overflow-y-auto"
       data-testid="sidebar"
     >
-      {selectedNodeId ? (
+      <CanvasSettingsPanel />
+      {selectedNodeId && (
         <SelectedCellPanel nodeId={selectedNodeId} key={selectedNodeId} />
-      ) : (
-        <NoSelectionPanel />
       )}
     </aside>
   );

@@ -20,6 +20,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const isSelected = useEditorStore(s => s.selectedNodeId === id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
   const canvasScale = useEditorStore(s => s.canvasScale);
+  const borderRadius = useEditorStore(s => s.borderRadius);
+  const borderColor = useEditorStore(s => s.borderColor);
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
@@ -80,6 +82,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         }
         bg-[#1c1c1c]
       `}
+      style={{
+        borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined,
+        outline: `1px solid ${borderColor}`,
+      }}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

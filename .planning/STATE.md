@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-04-01T10:43:21.524Z"
-last_activity: 2026-04-01 -- Phase 03 execution started
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-04-01T10:49:39.885Z"
+last_activity: 2026-04-01
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 ## Current Position
 
 Phase: 03 (media-upload-cell-controls) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 03
-Last activity: 2026-04-01 -- Phase 03 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-grid-rendering P01 | 5min | 2 tasks | 13 files |
 | Phase 02-grid-rendering P02 | 8min | 2 tasks | 7 files |
 | Phase 02-grid-rendering P03 | 20min | 2 tasks | 9 files |
+| Phase 03-media-upload-cell-controls P01 | 230 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 02-grid-rendering]: canvasScale stored in editorStore so Divider and LeafNode can subscribe independently without prop drilling
 - [Phase 02-grid-rendering]: Divider drag fix: divide pixelDelta by canvasScale to convert viewport pixels to canvas layout pixels
 - [Phase 02-grid-rendering]: Grab handle uses group-hover/hit Tailwind variant so handle only appears on direct hit-area hover
+- [Phase 03-media-upload-cell-controls]: FileReader.readAsDataURL used for base64 (never URL.createObjectURL) per MEDI-03
+- [Phase 03-media-upload-cell-controls]: Native HTML5 drag events on LeafNode, not dnd-kit — per CLAUDE.md recommendation for file-drop
+- [Phase 03-media-upload-cell-controls]: clearGrid does NOT push history snapshot — it IS the reset; historyIndex=0, history.length=1 after call
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T09:48:54.530Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-04-01T10:49:39.881Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

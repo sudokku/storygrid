@@ -44,11 +44,11 @@
 
 ### Media & Controls
 
-- [ ] **MEDI-01**: Clicking an empty cell opens a file picker accepting image/* files
-- [ ] **MEDI-02**: Dropping an image file onto a cell loads it into that cell (native drag events, not dnd-kit)
-- [ ] **MEDI-03**: Uploaded images are converted to base64 data URIs at upload time and stored in mediaRegistry (never blob URLs in tree state)
-- [ ] **MEDI-04**: Multi-file selection auto-fills empty cells in document order; creates new cells if files exceed empty cells
-- [ ] **MEDI-05**: Cell hover action bar: Split Horizontal, Split Vertical, Remove Cell, Toggle Fit, Clear Media, Replace Media
+- [x] **MEDI-01**: Clicking an empty cell opens a file picker accepting image/* files
+- [x] **MEDI-02**: Dropping an image file onto a cell loads it into that cell (native drag events, not dnd-kit)
+- [x] **MEDI-03**: Uploaded images are converted to base64 data URIs at upload time and stored in mediaRegistry (never blob URLs in tree state)
+- [x] **MEDI-04**: Multi-file selection auto-fills empty cells in document order; creates new cells if files exceed empty cells
+- [x] **MEDI-05**: Cell hover action bar: Split Horizontal, Split Vertical, Remove Cell, Toggle Fit, Clear Media, Replace Media
 - [ ] **MEDI-06**: Sidebar shows media thumbnail, fit toggle (cover/contain), background color picker (for contain mode), cell dimension info, Remove Cell, Clear Media buttons
 - [ ] **MEDI-07**: Toolbar provides Undo/Redo buttons with Ctrl+Z / Ctrl+Shift+Z keyboard shortcuts
 - [ ] **MEDI-08**: Toolbar provides zoom control (slider or +/– buttons, 50%–150%)
@@ -147,11 +147,11 @@
 | REND-08 | Phase 2 | Complete |
 | REND-09 | Phase 2 | Complete |
 | REND-10 | Phase 2 | Complete |
-| MEDI-01 | Phase 3 | Pending |
-| MEDI-02 | Phase 3 | Pending |
-| MEDI-03 | Phase 3 | Pending |
-| MEDI-04 | Phase 3 | Pending |
-| MEDI-05 | Phase 3 | Pending |
+| MEDI-01 | Phase 3 | Complete |
+| MEDI-02 | Phase 3 | Complete |
+| MEDI-03 | Phase 3 | Complete |
+| MEDI-04 | Phase 3 | Complete |
+| MEDI-05 | Phase 3 | Complete |
 | MEDI-06 | Phase 3 | Pending |
 | MEDI-07 | Phase 3 | Pending |
 | MEDI-08 | Phase 3 | Pending |

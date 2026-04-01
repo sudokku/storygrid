@@ -13,7 +13,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [x] **Phase 0: Project Scaffolding** - Initialize Vite + React + TypeScript project with full dependency set and editor shell (completed 2026-03-31)
 - [ ] **Phase 1: Grid Tree Engine** - Pure tree functions, Zustand stores (grid + editor), mediaId/registry split, undo/redo
 - [ ] **Phase 2: Grid Rendering** - Recursive React components, pointer-event dividers, canvas transform, Safari fixes
-- [ ] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar
+- [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
 - [ ] **Phase 4: Export Engine** - Always-mounted ExportSurface, double-call toPng, PNG/JPEG download, progress UI
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
 - [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
@@ -80,7 +80,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Core data + upload infrastructure: type extension, clearGrid, media utilities, ActionBar + LeafNode wiring (MEDI-01, MEDI-02, MEDI-03, MEDI-04, MEDI-05)
 - [x] 03-02-PLAN.md — Toolbar + Sidebar: wired controls, properties panel, keyboard shortcuts (MEDI-06, MEDI-07, MEDI-08, MEDI-09)
-- [ ] 03-03-PLAN.md — Integration tests: media utilities, ActionBar, Toolbar, Sidebar, keyboard shortcuts (MEDI-01 through MEDI-09)
+- [x] 03-03-PLAN.md — Integration tests: media utilities, ActionBar, Toolbar, Sidebar, keyboard shortcuts (MEDI-01 through MEDI-09)
 
 ### Phase 4: Export Engine
 **Goal**: Users can export the current grid as a pixel-perfect 1080×1920px PNG (or JPEG) that downloads directly from the browser, with progress feedback and graceful error handling
@@ -140,7 +140,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 0. Project Scaffolding | 1/1 | Complete   | 2026-03-31 |
 | 1. Grid Tree Engine | 0/2 | Not started | - |
 | 2. Grid Rendering | 1/3 | In Progress|  |
-| 3. Media Upload & Cell Controls | 1/3 | In Progress|  |
+| 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
 | 4. Export Engine | 0/TBD | Not started | - |
 | 5. Polish & UX | 0/TBD | Not started | - |
 | 6. Video Support (v2) | 0/TBD | Not started | - |

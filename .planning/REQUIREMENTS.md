@@ -66,11 +66,11 @@
 
 ### Polish & UX
 
-- [ ] **POLH-01**: Preset templates panel with: 2×1 (stacked), 1×2 (side-by-side), 2×2 (quad), 3-row, L-shape, Mosaic layouts
-- [ ] **POLH-02**: Global gap slider (0–20px) applies consistent spacing between all cells via CSS gap
-- [ ] **POLH-03**: Global border radius slider (0–24px) applied to all leaf cells
-- [ ] **POLH-04**: Border color picker for cell borders
-- [ ] **POLH-05**: Canvas background color picker; gradient option (two colors + direction)
+- [x] **POLH-01**: Preset templates panel with: 2×1 (stacked), 1×2 (side-by-side), 2×2 (quad), 3-row, L-shape, Mosaic layouts
+- [x] **POLH-02**: Global gap slider (0–20px) applies consistent spacing between all cells via CSS gap
+- [x] **POLH-03**: Global border radius slider (0–24px) applied to all leaf cells
+- [x] **POLH-04**: Border color picker for cell borders
+- [x] **POLH-05**: Canvas background color picker; gradient option (two colors + direction)
 - [ ] **POLH-06**: Per-cell pan/zoom: double-click selected cell to enter pan mode; drag to reposition (updates object-position); scroll to scale within cell; Escape or click outside to exit
 - [ ] **POLH-07**: Cell-swap-by-drag: drag a filled image cell over another cell to swap their media
 - [ ] **POLH-08**: Dark editor theme — background #0a0a0a–#141414, surfaces #1a1a1a–#222, borders #333, accent #3b82f6
@@ -163,11 +163,11 @@
 | EXPO-05 | Phase 4 | Complete |
 | EXPO-06 | Phase 4 | Complete |
 | EXPO-07 | Phase 4 | Complete |
-| POLH-01 | Phase 5 | Pending |
-| POLH-02 | Phase 5 | Pending |
-| POLH-03 | Phase 5 | Pending |
-| POLH-04 | Phase 5 | Pending |
-| POLH-05 | Phase 5 | Pending |
+| POLH-01 | Phase 5 | Complete |
+| POLH-02 | Phase 5 | Complete |
+| POLH-03 | Phase 5 | Complete |
+| POLH-04 | Phase 5 | Complete |
+| POLH-05 | Phase 5 | Complete |
 | POLH-06 | Phase 5 | Pending |
 | POLH-07 | Phase 5 | Pending |
 | POLH-08 | Phase 5 | Pending |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 5 context gathered
-last_updated: "2026-04-01T19:31:38.329Z"
+status: executing
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-04-01T20:28:38.083Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 16
+  completed_plans: 12
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 04 — export-engine
+**Current focus:** Phase 05 — polish-ux
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 05 (polish-ux) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-export-engine P01 | 268 | 2 tasks | 10 files |
 | Phase 04-export-engine P02 | 225 | 2 tasks | 5 files |
 | Phase 04 P02 | 225 | 3 tasks | 8 files |
+| Phase 05-polish-ux P01 | 9min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 04]: ExportSurface uses pointerEvents:none (not visibility:hidden) — visibility:hidden is inherited by all children during html-to-image clone, producing blank PNG / black JPEG
 - [Phase 04]: backgroundColor:'#ffffff' added to export options — prevents transparent pixels encoding as black in JPEG output
 - [Phase quick]: Canvas API used instead of html-to-image: zero-dependency, deterministic, handles object-fit correctly; exportGrid signature changed to accept root+mediaRegistry directly
+- [Phase 05-polish-ux]: LeafNode border uses outline (not border) to avoid layout shifts
+- [Phase 05-polish-ux]: CanvasSettingsPanel always rendered at top of Sidebar — replaces NoSelectionPanel stub
+- [Phase 05-polish-ux]: applyTemplate clears mediaRegistry to avoid dangling media refs from old tree
 
 ### Pending Todos
 
@@ -127,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T19:31:38.320Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-polish-ux/05-CONTEXT.md
+Last session: 2026-04-01T20:28:38.069Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None

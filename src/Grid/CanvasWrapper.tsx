@@ -30,6 +30,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const showSafeZone = useEditorStore(s => s.showSafeZone);
   const rootId = useGridStore(s => s.root.id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
+  const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
   const { backgroundMode, backgroundColor, backgroundGradientFrom, backgroundGradientTo, backgroundGradientDir } =
     useEditorStore(useShallow(s => ({
       backgroundMode: s.backgroundMode,
@@ -67,8 +68,9 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     // Only deselect if the click target is the wrapper itself (D-12)
     if (e.target === e.currentTarget) {
       setSelectedNode(null);
+      setPanModeNodeId(null);
     }
-  }, [setSelectedNode]);
+  }, [setSelectedNode, setPanModeNodeId]);
 
   return (
     <div

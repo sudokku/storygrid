@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -31,6 +32,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+
+  // D-14: make each leaf a droppable target for cell swap
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `cell-drop-${id}`,
+    data: { nodeId: id },
+  });
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -147,6 +154,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   return (
     <div
+      ref={setDropRef}
       className={`
         relative w-full h-full isolate overflow-hidden
         ${ringClass}
@@ -206,6 +214,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {/* D-09: Dim overlay on OTHER cells when some cell is in pan mode */}
       {isPanModeOtherCell && (
         <div className="absolute inset-0 bg-black/40 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
+      )}
+      {/* D-14: Drop target highlight when a cell is dragged over this one */}
+      {isOver && (
+        <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
       )}
       {/* ActionBar: visible on hover, hidden in pan mode (D-12) */}
       <div

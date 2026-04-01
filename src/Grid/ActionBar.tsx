@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
 import type { LeafNode } from '../types';
@@ -16,6 +17,7 @@ import {
   Minimize2,
   Upload,
   ImageOff,
+  GripVertical,
 } from 'lucide-react';
 
 interface ActionBarProps {
@@ -31,6 +33,13 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
   const updateCell = useGridStore(s => s.updateCell);
   const removeMedia = useGridStore(s => s.removeMedia);
   const mediaId = useGridStore(s => (findNode(s.root, nodeId) as LeafNode | null)?.mediaId ?? null);
+
+  // D-13, D-14: drag handle for cell swap via @dnd-kit
+  const { attributes, listeners, setActivatorNodeRef } = useDraggable({
+    id: `cell-drag-${nodeId}`,
+    data: { nodeId },
+    disabled: !hasMedia,
+  });
 
   const handleSplitH = useCallback(() => split(nodeId, 'horizontal'), [split, nodeId]);
   const handleSplitV = useCallback(() => split(nodeId, 'vertical'), [split, nodeId]);
@@ -54,7 +63,27 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
         className="flex items-center gap-1 px-1 py-1 rounded-md bg-black/70 backdrop-blur-sm"
         data-testid={`action-bar-${nodeId}`}
       >
-        {/* Button order (D-07): Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
+        {/* Button order: Drag Handle (if media) → Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
+
+        {hasMedia && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  ref={setActivatorNodeRef}
+                  {...listeners}
+                  {...attributes}
+                  className={`${btnClass} cursor-grab active:cursor-grabbing`}
+                  aria-label="Drag to swap"
+                  data-testid={`drag-handle-${nodeId}`}
+                />
+              }
+            >
+              <GripVertical size={16} className="text-white" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Drag to swap</TooltipContent>
+          </Tooltip>
+        )}
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>

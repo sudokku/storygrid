@@ -44,7 +44,7 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | Not used this phase |
 
 Exceptions:
-- Divider hit area: 10px transparent zone (5px each side of the 2px line) — sized for comfortable grab without occluding cell content. Source: CONTEXT.md §Claude's Discretion.
+- Divider hit area: 8px transparent zone (4px each side of the 2px line) — sized for comfortable grab without occluding cell content. Source: CONTEXT.md §Claude's Discretion.
 - Touch/pointer target minimum for action bar buttons: 32px × 32px (icon 16px + 8px padding each side).
 - Safe zone guide: 250px from top and bottom edges of the 1080×1920 canvas — driven by `--safe-zone-top` / `--safe-zone-bottom` CSS variables already defined in `src/index.css`. Not an 8-point multiple; it is a canvas domain value, not a UI spacing token.
 
@@ -52,16 +52,16 @@ Exceptions:
 
 ## Typography
 
+Active contract — Phase 2 only (2 weights maximum):
+
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px | 400 (regular) | 1.5 | Empty state upload prompt text inside leaf cells |
 | Label | 12px | 500 (medium) | 1.4 | Tooltip labels on action bar buttons |
-| Heading | 16px | 600 (semibold) | 1.2 | Not used this phase (reserved for sidebar section headers Phase 3+) |
-| Display | — | — | — | Not used this phase |
 
-Note: Only two weights are active this phase — regular (400) for body copy inside cells, medium (500) for tooltip labels. Semibold (600) is declared for later phases but not rendered in Phase 2 components.
+All text is rendered via Tailwind utility classes: `text-xs` (12px), `text-sm` (14px), `font-medium`.
 
-All text is rendered via Tailwind utility classes: `text-xs` (12px), `text-sm` (14px), `font-medium`, `font-semibold`.
+Out of scope for Phase 2: A Heading role at 16px / 600 (semibold) / 1.2 line-height is reserved for sidebar section headers in Phase 3+. It is not rendered in any Phase 2 component and is not part of this phase's active contract.
 
 ---
 
@@ -79,6 +79,8 @@ The editor uses a dark theme throughout. Light neutrals used in the Phase 0 plac
 Source: REQUIREMENTS.md POLH-08 (dark theme spec), CONTEXT.md D-06 (action bar), CONTEXT.md D-11 (selection).
 
 **Accent reserved for:** Selected leaf cell border (2px solid `#3b82f6`). No other element uses accent in Phase 2. Action bar hover uses `white/10` (semi-transparent white), not accent.
+
+**Primary visual anchor:** The selected leaf border (`#3b82f6`, 2px solid) is the single focal point of the Phase 2 UI — it draws the eye to the active cell and is the only accent-colored element on screen at any time.
 
 **Additional surface tokens for this phase:**
 
@@ -104,7 +106,7 @@ Components introduced in Phase 2. All live in `src/Grid/`.
 | GridNode | `src/Grid/GridNode.tsx` | Dispatcher — renders ContainerNode or LeafNode based on `node.type`. React.memo'd. |
 | ContainerNode | `src/Grid/ContainerNode.tsx` | Flex row or column; renders children + Dividers between each. React.memo'd per-node slice. |
 | LeafNode | `src/Grid/LeafNode.tsx` | Renders empty state, media state, selection border, action bar on hover. React.memo'd per-node slice. `isolation: isolate` for Safari. |
-| Divider | `src/Grid/Divider.tsx` | 2px line with 10px hit area; setPointerCapture drag; local state only during drag; commits resize on pointerup. |
+| Divider | `src/Grid/Divider.tsx` | 2px line with 8px hit area; setPointerCapture drag; local state only during drag; commits resize on pointerup. |
 | ActionBar | `src/Grid/ActionBar.tsx` | Icon-only floating bar (Split H, Split V, Remove, Toggle Fit). Renders inside LeafNode, position: absolute, top-center. Uses shadcn Tooltip on each button. |
 | CanvasWrapper | `src/Grid/CanvasWrapper.tsx` | 1080×1920px inner div + CSS transform scale via ResizeObserver. Replaces placeholder in CanvasArea.tsx. |
 | SafeZoneOverlay | `src/Grid/SafeZoneOverlay.tsx` | Dashed guide lines at `--safe-zone-top` / `--safe-zone-bottom`. Conditionally rendered when `editorStore.showSafeZone` is true. |

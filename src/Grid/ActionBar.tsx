@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
 import { useGridStore } from '../store/gridStore';
+import { findNode } from '../lib/tree';
+import type { LeafNode } from '../types';
 import {
   Tooltip,
   TooltipContent,
@@ -12,17 +14,23 @@ import {
   Trash2,
   Maximize2,
   Minimize2,
+  Upload,
+  ImageOff,
 } from 'lucide-react';
 
 interface ActionBarProps {
   nodeId: string;
   fit: 'cover' | 'contain';
+  hasMedia: boolean;
+  onUploadClick: () => void;
 }
 
-export const ActionBar = React.memo(function ActionBar({ nodeId, fit }: ActionBarProps) {
+export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, onUploadClick }: ActionBarProps) {
   const split = useGridStore(s => s.split);
   const remove = useGridStore(s => s.remove);
   const updateCell = useGridStore(s => s.updateCell);
+  const removeMedia = useGridStore(s => s.removeMedia);
+  const mediaId = useGridStore(s => (findNode(s.root, nodeId) as LeafNode | null)?.mediaId ?? null);
 
   const handleSplitH = useCallback(() => split(nodeId, 'horizontal'), [split, nodeId]);
   const handleSplitV = useCallback(() => split(nodeId, 'vertical'), [split, nodeId]);
@@ -31,6 +39,12 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit }: ActionBa
     () => updateCell(nodeId, { fit: fit === 'cover' ? 'contain' : 'cover' }),
     [updateCell, nodeId, fit]
   );
+  const handleClearMedia = useCallback(() => {
+    if (mediaId) {
+      removeMedia(mediaId);
+      updateCell(nodeId, { mediaId: null });
+    }
+  }, [removeMedia, updateCell, nodeId, mediaId]);
 
   const btnClass = 'flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors';
 
@@ -40,6 +54,15 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit }: ActionBa
         className="flex items-center gap-1 px-1 py-1 rounded-md bg-black/70 backdrop-blur-sm"
         data-testid={`action-bar-${nodeId}`}
       >
+        {/* Button order (D-07): Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
+
+        <Tooltip>
+          <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>
+            <Upload size={16} className="text-white" />
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
+        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleSplitH} aria-label="Split horizontal" />}>
             <SplitSquareHorizontal size={16} className="text-white" />
@@ -55,13 +78,6 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit }: ActionBa
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
-            <Trash2 size={16} className="text-red-500" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Remove cell</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleToggleFit} aria-label={fit === 'cover' ? 'Switch to contain' : 'Switch to cover'} />}>
             {fit === 'cover'
               ? <Minimize2 size={16} className="text-white" />
@@ -71,6 +87,22 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit }: ActionBa
           <TooltipContent side="bottom" className="text-xs">
             {fit === 'cover' ? 'Switch to contain' : 'Switch to cover'}
           </TooltipContent>
+        </Tooltip>
+
+        {hasMedia && (
+          <Tooltip>
+            <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleClearMedia} aria-label="Clear media" />}>
+              <ImageOff size={16} className="text-white" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Clear media</TooltipContent>
+          </Tooltip>
+        )}
+
+        <Tooltip>
+          <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
+            <Trash2 size={16} className="text-red-500" />
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Remove cell</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

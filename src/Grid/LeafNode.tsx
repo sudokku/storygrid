@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
+import { autoFillCells } from '../lib/media';
 import type { LeafNode } from '../types';
 import { ImageIcon } from 'lucide-react';
 import { ActionBar } from './ActionBar';
@@ -19,15 +20,55 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const isSelected = useEditorStore(s => s.selectedNodeId === id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
   const canvasScale = useEditorStore(s => s.canvasScale);
+  const addMedia = useGridStore(s => s.addMedia);
+  const setMedia = useGridStore(s => s.setMedia);
+  const split = useGridStore(s => s.split);
   const [isHovered, setIsHovered] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   if (!node || node.type !== 'leaf') return null;
+
+  const hasMedia = !!mediaUrl;
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     // D-12: toggle selection — click already-selected deselects
     setSelectedNode(isSelected ? null : id);
   }, [id, isSelected, setSelectedNode]);
+
+  const handleUploadClick = useCallback(() => {
+    inputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+    await autoFillCells(files, {
+      addMedia,
+      setMedia,
+      split,
+      getRoot: () => useGridStore.getState().root,
+    });
+  }, [addMedia, setMedia, split]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = Array.from(e.dataTransfer.files);
+    await autoFillCells(files, {
+      addMedia,
+      setMedia,
+      split,
+      getRoot: () => useGridStore.getState().root,
+    });
+  }, [addMedia, setMedia, split]);
 
   return (
     <div
@@ -42,10 +83,21 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       data-testid={`leaf-${id}`}
       aria-selected={isSelected}
       role="gridcell"
     >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleFileChange}
+        aria-hidden="true"
+      />
       {mediaUrl ? (
         <img
           src={mediaUrl}
@@ -57,7 +109,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       ) : (
         <div className="flex flex-col items-center justify-center w-full h-full gap-2">
           <ImageIcon size={24} className="text-[#666666]" />
-          <span className="text-sm text-[#666666]">Drop image or click to upload</span>
+          <span className="text-sm text-[#666666]">Drop image or use Upload button</span>
         </div>
       )}
       {/* Dim overlay on hover when filled */}
@@ -73,7 +125,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         `}
         style={{ transform: `translateX(-50%) scale(${1 / canvasScale})`, transformOrigin: 'top center' }}
       >
-        <ActionBar nodeId={id} fit={node.fit} />
+        <ActionBar nodeId={id} fit={node.fit} hasMedia={hasMedia} onUploadClick={handleUploadClick} />
       </div>
     </div>
   );

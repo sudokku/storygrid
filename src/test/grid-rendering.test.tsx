@@ -116,11 +116,11 @@ describe('LeafNode empty state (REND-04)', () => {
     expect(leafEl.className).toContain('border-[#333333]');
   });
 
-  it('shows "Drop image or click to upload" text', () => {
+  it('shows "Drop image or use Upload button" text', () => {
     const leaf = makeLeaf({ mediaId: null });
     setStoreRoot(leaf);
     render(<LeafNodeComponent id="leaf-1" />);
-    expect(screen.getByText('Drop image or click to upload')).toBeTruthy();
+    expect(screen.getByText('Drop image or use Upload button')).toBeTruthy();
   });
 });
 

@@ -2,12 +2,12 @@
 
 ## Overview
 
-StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2) and advanced effects (v2+). Every v1 requirement maps to exactly one phase; phases 6–7 are deferred v2 work.
+StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2) and advanced effects (v2+). Every v1 requirement maps to exactly one phase; phases 6-7 are deferred v2 work.
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (0–7): Planned milestone work
+- Integer phases (0-7): Planned milestone work
 - Decimal phases (e.g., 2.1): Urgent insertions (marked INSERTED)
 
 - [x] **Phase 0: Project Scaffolding** - Initialize Vite + React + TypeScript project with full dependency set and editor shell (completed 2026-03-31)
@@ -29,7 +29,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
   1. `npm run dev` starts without errors and opens the app in a browser
   2. All MVP dependencies (zustand, immer, tailwindcss, @dnd-kit/core, html-to-image, lucide-react, nanoid) are importable without TypeScript errors
   3. The browser shows a three-region editor layout: canvas area, toolbar, and sidebar (placeholder content is fine)
-  4. Tailwind CSS variables for canvas dimensions (1080×1920) and safe zone (250px) are defined and accessible
+  4. Tailwind CSS variables for canvas dimensions (1080x1920) and safe zone (250px) are defined and accessible
   5. Folder structure matches spec (Editor/, Grid/, UI/, store/, lib/, types/) with index files present
 **Plans**: 1 plan
 Plans:
@@ -83,16 +83,19 @@ Plans:
 - [x] 03-03-PLAN.md — Integration tests: media utilities, ActionBar, Toolbar, Sidebar, keyboard shortcuts (MEDI-01 through MEDI-09)
 
 ### Phase 4: Export Engine
-**Goal**: Users can export the current grid as a pixel-perfect 1080×1920px PNG (or JPEG) that downloads directly from the browser, with progress feedback and graceful error handling
+**Goal**: Users can export the current grid as a pixel-perfect 1080x1920px PNG (or JPEG) that downloads directly from the browser, with progress feedback and graceful error handling
 **Depends on**: Phase 3
 **Requirements**: EXPO-01, EXPO-02, EXPO-03, EXPO-04, EXPO-05, EXPO-06, EXPO-07
 **Success Criteria** (what must be TRUE):
-  1. Clicking Export downloads a PNG file named `storygrid-{timestamp}.png` that is exactly 1080×1920px when opened in an image viewer
+  1. Clicking Export downloads a PNG file named `storygrid-{timestamp}.png` that is exactly 1080x1920px when opened in an image viewer
   2. The export progress UI transitions through "Preparing..." -> "Exporting..." -> completion (or an error message) -- the button never appears to hang
   3. JPEG export at a user-selected quality level produces a smaller file than PNG for the same canvas
   4. The ExportSurface div is always present in the DOM (never conditionally mounted); it is hidden via visibility:hidden and does not affect the editor layout
   5. Export is blocked (with a clear message) if any cell contains a video -- the image-only path never attempts to capture video frames
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 04-01-PLAN.md — Foundation: ExportModeContext, editorStore export state, Grid component export-mode suppression, ExportSurface, export core logic, EditorShell wiring (EXPO-01, EXPO-02, EXPO-03, EXPO-04, EXPO-07)
+- [ ] 04-02-PLAN.md — Export UI: ExportSplitButton with popover, Toast notifications, Toolbar integration, visual verification (EXPO-05, EXPO-06)
 
 ### Phase 5: Polish & UX
 **Goal**: The editor feels complete: preset templates speed up layout creation, global style controls (gap, radius, background) work in both preview and export, pan/zoom lets users reposition images within cells, and the dark theme + keyboard shortcuts give it a professional feel
@@ -141,7 +144,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Grid Tree Engine | 0/2 | Not started | - |
 | 2. Grid Rendering | 1/3 | In Progress|  |
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
-| 4. Export Engine | 0/TBD | Not started | - |
+| 4. Export Engine | 0/2 | Not started | - |
 | 5. Polish & UX | 0/TBD | Not started | - |
 | 6. Video Support (v2) | 0/TBD | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

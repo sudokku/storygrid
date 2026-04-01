@@ -4,7 +4,6 @@ import { findNode } from '../lib/tree';
 import type { ContainerNode } from '../types';
 import { GridNodeComponent } from './GridNode';
 import { Divider } from './Divider';
-import { useExportMode } from './ExportModeContext';
 
 interface ContainerNodeProps {
   id: string;
@@ -14,7 +13,6 @@ export const ContainerNodeComponent = React.memo(function ContainerNodeComponent
   const node = useGridStore(state => findNode(state.root, id) as ContainerNode | null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [localSizes, setLocalSizes] = useState<number[] | null>(null);
-  const exportMode = useExportMode();
 
   if (!node || node.type !== 'container') return null;
 
@@ -34,7 +32,7 @@ export const ContainerNodeComponent = React.memo(function ContainerNodeComponent
           >
             <GridNodeComponent id={child.id} />
           </div>
-          {!exportMode && i < node.children.length - 1 && (
+          {i < node.children.length - 1 && (
             <Divider
               containerId={id}
               siblingIndex={i}

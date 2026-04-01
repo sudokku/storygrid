@@ -7,18 +7,10 @@ import { Toast } from './Toast';
 import type { ToastState } from './Toast';
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface ExportSplitButtonProps {
-  exportRef: React.RefObject<HTMLDivElement | null>;
-}
-
-// ---------------------------------------------------------------------------
 // ExportSplitButton component
 // ---------------------------------------------------------------------------
 
-export function ExportSplitButton({ exportRef }: ExportSplitButtonProps) {
+export function ExportSplitButton() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [toastState, setToastState] = useState<ToastState>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -81,14 +73,13 @@ export function ExportSplitButton({ exportRef }: ExportSplitButtonProps) {
       return;
     }
 
-    if (!exportRef.current) return;
-
     setIsExporting(true);
     setPopoverOpen(false);
 
     try {
       const dataUrl = await exportGrid(
-        exportRef.current,
+        root,
+        mediaRegistry,
         exportFormat,
         exportQuality,
         (stage) => setToastState(stage),
@@ -107,7 +98,6 @@ export function ExportSplitButton({ exportRef }: ExportSplitButtonProps) {
     isExporting,
     root,
     mediaRegistry,
-    exportRef,
     exportFormat,
     exportQuality,
     setIsExporting,

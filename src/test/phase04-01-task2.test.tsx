@@ -1,77 +1,13 @@
 /**
- * Phase 04 Plan 01 Task 2 — tests
- * export.ts logic, ExportSurface, EditorShell wiring
+ * Phase 04 Plan 01 Task 2 — updated tests
+ * downloadDataUrl, hasVideoCell (unchanged functions)
+ * ExportSurface removed — EditorShell test updated to confirm absence
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import * as htmlToImage from 'html-to-image';
-import { exportGrid, downloadDataUrl, hasVideoCell } from '../lib/export';
-import { useGridStore } from '../store/gridStore';
-import { useEditorStore } from '../store/editorStore';
+import { downloadDataUrl, hasVideoCell } from '../lib/export';
 import type { LeafNode } from '../types';
-
-// ---------------------------------------------------------------------------
-// exportGrid
-// ---------------------------------------------------------------------------
-
-describe('exportGrid', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('calls toPng twice when format is "png"; first result discarded, second returned', async () => {
-    const toPngSpy = vi.spyOn(htmlToImage, 'toPng')
-      .mockResolvedValueOnce('data:image/png;first')
-      .mockResolvedValueOnce('data:image/png;second');
-
-    const node = document.createElement('div');
-    const onStage = vi.fn();
-    const result = await exportGrid(node, 'png', 0.9, onStage);
-
-    expect(toPngSpy).toHaveBeenCalledTimes(2);
-    expect(result).toBe('data:image/png;second');
-  });
-
-  it('calls toJpeg twice when format is "jpeg"; passes quality option', async () => {
-    const toJpegSpy = vi.spyOn(htmlToImage, 'toJpeg')
-      .mockResolvedValueOnce('data:image/jpeg;first')
-      .mockResolvedValueOnce('data:image/jpeg;second');
-
-    const node = document.createElement('div');
-    const onStage = vi.fn();
-    const result = await exportGrid(node, 'jpeg', 0.75, onStage);
-
-    expect(toJpegSpy).toHaveBeenCalledTimes(2);
-    expect(toJpegSpy).toHaveBeenCalledWith(node, expect.objectContaining({ quality: 0.75 }));
-    expect(result).toBe('data:image/jpeg;second');
-  });
-
-  it('calls onStage("preparing") before first call, onStage("exporting") before second', async () => {
-    const callOrder: string[] = [];
-
-    vi.spyOn(htmlToImage, 'toPng').mockImplementation(async () => {
-      callOrder.push('toPng');
-      return 'data:image/png;x';
-    });
-
-    const onStage = vi.fn((stage: string) => {
-      callOrder.push(`stage:${stage}`);
-    });
-
-    const node = document.createElement('div');
-    await exportGrid(node, 'png', 0.9, onStage);
-
-    expect(callOrder).toEqual(['stage:preparing', 'toPng', 'stage:exporting', 'toPng']);
-  });
-
-  it('propagates errors from toPng', async () => {
-    vi.spyOn(htmlToImage, 'toPng').mockRejectedValue(new Error('canvas error'));
-
-    const node = document.createElement('div');
-    await expect(exportGrid(node, 'png', 0.9, vi.fn())).rejects.toThrow('canvas error');
-  });
-});
 
 // ---------------------------------------------------------------------------
 // downloadDataUrl
@@ -136,68 +72,19 @@ describe('hasVideoCell', () => {
 });
 
 // ---------------------------------------------------------------------------
-// ExportSurface
-// ---------------------------------------------------------------------------
-
-import { ExportSurface } from '../Grid/ExportSurface';
-
-describe('ExportSurface', () => {
-  beforeEach(() => {
-    const leaf: LeafNode = { type: 'leaf', id: 'root-leaf', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
-    useGridStore.setState({ root: leaf, mediaRegistry: {}, history: [{ root: leaf }], historyIndex: 0 });
-    useEditorStore.setState({ selectedNodeId: null });
-  });
-
-  it('renders with position absolute and left -9999px', () => {
-    const exportRef = React.createRef<HTMLDivElement>();
-    const { container } = render(<ExportSurface exportRef={exportRef} />);
-    const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface).not.toBeNull();
-    expect(surface.style.position).toBe('absolute');
-    expect(surface.style.left).toBe('-9999px');
-  });
-
-  it('renders at width 1080px and height 1920px', () => {
-    const exportRef = React.createRef<HTMLDivElement>();
-    const { container } = render(<ExportSurface exportRef={exportRef} />);
-    const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface.style.width).toBe('1080px');
-    expect(surface.style.height).toBe('1920px');
-  });
-
-  it('has aria-hidden="true"', () => {
-    const exportRef = React.createRef<HTMLDivElement>();
-    const { container } = render(<ExportSurface exportRef={exportRef} />);
-    const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface.getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('is off-screen and non-interactive (no visibility:hidden that breaks html-to-image)', () => {
-    const exportRef = React.createRef<HTMLDivElement>();
-    const { container } = render(<ExportSurface exportRef={exportRef} />);
-    const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface.style.visibility).not.toBe('hidden');
-    expect(surface.style.pointerEvents).toBe('none');
-  });
-
-  it('renders GridNodeComponent inside ExportModeContext.Provider with value true', () => {
-    const exportRef = React.createRef<HTMLDivElement>();
-    const { container } = render(<ExportSurface exportRef={exportRef} />);
-    // Root leaf should be rendered inside the surface
-    const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface.querySelector('[data-testid="leaf-root-leaf"]')).not.toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// EditorShell includes ExportSurface
+// EditorShell — ExportSurface is NOT present (infrastructure removed)
 // ---------------------------------------------------------------------------
 
 import { EditorShell } from '../Editor/EditorShell';
+import { useGridStore } from '../store/gridStore';
+import { useEditorStore } from '../store/editorStore';
 
-describe('EditorShell includes ExportSurface', () => {
-  it('ExportSurface is present in EditorShell DOM (always mounted per EXPO-07)', () => {
+describe('EditorShell — ExportSurface removed', () => {
+  it('ExportSurface is NOT present in EditorShell DOM (Canvas API replaces DOM capture)', () => {
+    const leaf: LeafNode = { type: 'leaf', id: 'root-leaf', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+    useGridStore.setState({ root: leaf, mediaRegistry: {}, history: [{ root: leaf }], historyIndex: 0 });
+    useEditorStore.setState({ selectedNodeId: null });
     render(<EditorShell />);
-    expect(screen.getByTestId('export-surface')).toBeTruthy();
+    expect(screen.queryByTestId('export-surface')).toBeNull();
   });
 });

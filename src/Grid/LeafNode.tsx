@@ -6,7 +6,6 @@ import { autoFillCells } from '../lib/media';
 import type { LeafNode } from '../types';
 import { ImageIcon } from 'lucide-react';
 import { ActionBar } from './ActionBar';
-import { useExportMode } from './ExportModeContext';
 
 interface LeafNodeProps {
   id: string;
@@ -21,7 +20,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const isSelected = useEditorStore(s => s.selectedNodeId === id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
   const canvasScale = useEditorStore(s => s.canvasScale);
-  const exportMode = useExportMode();
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
@@ -76,32 +74,30 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     <div
       className={`
         relative w-full h-full isolate overflow-hidden
-        ${!exportMode && isSelected
+        ${isSelected
           ? 'ring-2 ring-[#3b82f6] ring-inset'
           : !mediaUrl ? 'border border-dashed border-[#333333]' : ''
         }
         bg-[#1c1c1c]
       `}
       onClick={handleClick}
-      onMouseEnter={exportMode ? undefined : () => setIsHovered(true)}
-      onMouseLeave={exportMode ? undefined : () => setIsHovered(false)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       data-testid={`leaf-${id}`}
       aria-selected={isSelected}
       role="gridcell"
     >
-      {!exportMode && (
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-          aria-hidden="true"
-        />
-      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleFileChange}
+        aria-hidden="true"
+      />
       {mediaUrl ? (
         <img
           src={mediaUrl}
@@ -117,22 +113,20 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         </div>
       )}
       {/* Dim overlay on hover when filled */}
-      {!exportMode && mediaUrl && isHovered && (
+      {mediaUrl && isHovered && (
         <div className="absolute inset-0 bg-black/15 pointer-events-none" />
       )}
       {/* ActionBar: visible on hover with 150ms fade (D-06), scaled to constant visual size */}
-      {!exportMode && (
-        <div
-          className={`
-            absolute top-2 left-1/2 -translate-x-1/2 z-20
-            transition-opacity duration-150
-            ${isHovered ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}
-          `}
-          style={{ transform: `translateX(-50%) scale(${1 / canvasScale})`, transformOrigin: 'top center' }}
-        >
-          <ActionBar nodeId={id} fit={node.fit} hasMedia={hasMedia} onUploadClick={handleUploadClick} />
-        </div>
-      )}
+      <div
+        className={`
+          absolute top-2 left-1/2 -translate-x-1/2 z-20
+          transition-opacity duration-150
+          ${isHovered ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}
+        `}
+        style={{ transform: `translateX(-50%) scale(${1 / canvasScale})`, transformOrigin: 'top center' }}
+      >
+        <ActionBar nodeId={id} fit={node.fit} hasMedia={hasMedia} onUploadClick={handleUploadClick} />
+      </div>
     </div>
   );
 });

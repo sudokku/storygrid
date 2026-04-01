@@ -1,11 +1,11 @@
 /**
- * Phase 04 Plan 02 Task 1 — RED tests
+ * Phase 04 Plan 02 Task 1 — updated tests
  * Toast component and ExportSplitButton with popover
+ * exportRef removed — ExportSplitButton reads from store directly
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
-import * as htmlToImage from 'html-to-image';
 import { useEditorStore } from '../store/editorStore';
 import { useGridStore } from '../store/gridStore';
 import type { LeafNode } from '../types';
@@ -152,8 +152,7 @@ describe('ExportSplitButton', () => {
 
   it('renders two button segments: left export and right chevron', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     expect(screen.getByRole('button', { name: /export png/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /export settings/i })).toBeInTheDocument();
   });
@@ -161,24 +160,21 @@ describe('ExportSplitButton', () => {
   it('left segment shows "Export PNG" text when format is png', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ exportFormat: 'png' });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     expect(screen.getByText('Export PNG')).toBeInTheDocument();
   });
 
   it('left segment shows "Export JPEG" text when format is jpeg', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ exportFormat: 'jpeg' });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     expect(screen.getByText('Export JPEG')).toBeInTheDocument();
   });
 
   it('both segments are disabled when isExporting is true', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ isExporting: true });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     const exportBtn = screen.getByRole('button', { name: /export png/i });
     const settingsBtn = screen.getByRole('button', { name: /export settings/i });
     expect(exportBtn).toBeDisabled();
@@ -187,8 +183,7 @@ describe('ExportSplitButton', () => {
 
   it('clicking right segment (chevron) opens popover', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     const chevronBtn = screen.getByRole('button', { name: /export settings/i });
     fireEvent.click(chevronBtn);
     expect(screen.getByRole('dialog', { name: /export settings/i })).toBeInTheDocument();
@@ -196,8 +191,7 @@ describe('ExportSplitButton', () => {
 
   it('popover contains format toggle with PNG and JPEG options', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     fireEvent.click(screen.getByRole('button', { name: /export settings/i }));
     expect(screen.getByRole('radiogroup')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^PNG$/i })).toBeInTheDocument();
@@ -207,8 +201,7 @@ describe('ExportSplitButton', () => {
   it('selecting JPEG in popover shows quality slider', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ exportFormat: 'jpeg' });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     fireEvent.click(screen.getByRole('button', { name: /export settings/i }));
     const slider = screen.getByRole('slider', { name: /export quality/i });
     expect(slider).toBeVisible();
@@ -217,10 +210,8 @@ describe('ExportSplitButton', () => {
   it('selecting PNG in popover hides quality slider', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ exportFormat: 'png' });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     fireEvent.click(screen.getByRole('button', { name: /export settings/i }));
-    // The slider wrapper should have the 'hidden' class
     const slider = screen.getByRole('slider', { name: /export quality/i });
     // slider is in a div with class 'hidden'
     expect(slider.parentElement).toHaveClass('hidden');
@@ -229,8 +220,7 @@ describe('ExportSplitButton', () => {
   it('quality slider has min 0.7, max 1.0, step 0.05', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     useEditorStore.setState({ exportFormat: 'jpeg' });
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     fireEvent.click(screen.getByRole('button', { name: /export settings/i }));
     const slider = screen.getByRole('slider', { name: /export quality/i });
     expect(slider).toHaveAttribute('min', '0.7');
@@ -240,28 +230,23 @@ describe('ExportSplitButton', () => {
 
   it('chevron button has aria-expanded reflecting popover state', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
-    const exportRef = React.createRef<HTMLDivElement>();
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     const chevronBtn = screen.getByRole('button', { name: /export settings/i });
     expect(chevronBtn).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(chevronBtn);
     expect(chevronBtn).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('left segment click calls exportGrid when exportRef is set', async () => {
+  it('left segment click calls exportGrid with root and mediaRegistry from store', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
-    const toPngSpy = vi.spyOn(htmlToImage, 'toPng').mockResolvedValue('data:image/png;base64,test');
-
-    const exportRef = React.createRef<HTMLDivElement>();
-    // Simulate a DOM node being assigned to the ref
-    const mockDiv = document.createElement('div');
-    (exportRef as React.MutableRefObject<HTMLDivElement>).current = mockDiv;
+    const exportModule = await import('../lib/export');
+    const exportGridSpy = vi.spyOn(exportModule, 'exportGrid').mockResolvedValue('data:image/png;base64,test');
 
     // Render before mocking DOM body operations to avoid intercepting React's own appendChild
-    const { unmount } = render(<ExportSplitButton exportRef={exportRef} />);
+    const { unmount } = render(<ExportSplitButton />);
     const leftBtn = screen.getByRole('button', { name: /export png/i });
 
-    // Now mock anchor download to avoid jsdom navigation errors
+    // Mock anchor download to avoid jsdom navigation errors
     const appendSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((el) => {
       (el as HTMLAnchorElement).click = vi.fn();
       return el;
@@ -271,7 +256,14 @@ describe('ExportSplitButton', () => {
     await act(async () => {
       fireEvent.click(leftBtn);
     });
-    expect(toPngSpy).toHaveBeenCalled();
+
+    expect(exportGridSpy).toHaveBeenCalledWith(
+      expect.anything(), // root
+      expect.anything(), // mediaRegistry
+      'png',
+      0.9,
+      expect.any(Function),
+    );
     appendSpy.mockRestore();
     unmount();
   });
@@ -293,11 +285,7 @@ describe('ExportSplitButton', () => {
       historyIndex: 0,
     });
 
-    const exportRef = React.createRef<HTMLDivElement>();
-    const mockDiv = document.createElement('div');
-    (exportRef as React.MutableRefObject<HTMLDivElement>).current = mockDiv;
-
-    render(<ExportSplitButton exportRef={exportRef} />);
+    render(<ExportSplitButton />);
     const leftBtn = screen.getByRole('button', { name: /export png/i });
     fireEvent.click(leftBtn);
 

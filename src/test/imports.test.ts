@@ -21,9 +21,10 @@ describe('MVP dependency imports', () => {
     expect(mod).toBeDefined();
   });
 
-  it('imports html-to-image', async () => {
-    const mod = await import('html-to-image');
-    expect(mod.toPng).toBeDefined();
+  it('imports export lib (Canvas API renderer)', async () => {
+    const mod = await import('../lib/export');
+    expect(mod.renderGridToCanvas).toBeDefined();
+    expect(mod.exportGrid).toBeDefined();
   });
 
   it('imports lucide-react', async () => {

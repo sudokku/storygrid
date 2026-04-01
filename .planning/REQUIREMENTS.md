@@ -31,15 +31,15 @@
 
 ### Grid Rendering
 
-- [ ] **REND-01**: GridNode component dispatches to Container or Leaf based on node type; is React.memo'd
-- [ ] **REND-02**: Container renders as flex row/column with each child's size driven by `flex: {fraction}` from `sizes[]`
-- [ ] **REND-03**: Divider between siblings is draggable via pointer events (setPointerCapture); updates size ratios in real-time; commits resize action on pointerup
-- [ ] **REND-04**: Leaf renders empty state with dashed border, upload prompt, and drag-drop target
-- [ ] **REND-05**: Leaf renders media state with `<img>` using `object-fit: cover` or `contain` matching `leaf.fit`
-- [ ] **REND-06**: Leaf shows blue selection border when selected; hover state reveals floating action bar (Split H, Split V, Remove, Toggle Fit)
+- [x] **REND-01**: GridNode component dispatches to Container or Leaf based on node type; is React.memo'd
+- [x] **REND-02**: Container renders as flex row/column with each child's size driven by `flex: {fraction}` from `sizes[]`
+- [x] **REND-03**: Divider between siblings is draggable via pointer events (setPointerCapture); updates size ratios in real-time; commits resize action on pointerup
+- [x] **REND-04**: Leaf renders empty state with dashed border, upload prompt, and drag-drop target
+- [x] **REND-05**: Leaf renders media state with `<img>` using `object-fit: cover` or `contain` matching `leaf.fit`
+- [x] **REND-06**: Leaf shows blue selection border when selected; hover state reveals floating action bar (Split H, Split V, Remove, Toggle Fit)
 - [x] **REND-07**: Canvas wrapper maintains 9:16 aspect ratio via CSS transform scale; centered in editor area
 - [x] **REND-08**: Optional safe zone overlay shows dashed guides 250px from top and bottom (toggleable)
-- [ ] **REND-09**: Each ContainerNode and LeafNode uses React.memo with per-node Zustand slice selectors (no whole-tree subscriptions)
+- [x] **REND-09**: Each ContainerNode and LeafNode uses React.memo with per-node Zustand slice selectors (no whole-tree subscriptions)
 - [x] **REND-10**: Each LeafNode container has `isolation: isolate` for Safari overflow/border-radius compatibility
 
 ### Media & Controls
@@ -137,15 +137,15 @@
 | GRID-11 | Phase 1 | Complete |
 | GRID-12 | Phase 1 | Complete |
 | GRID-13 | Phase 1 | Complete |
-| REND-01 | Phase 2 | Pending |
-| REND-02 | Phase 2 | Pending |
-| REND-03 | Phase 2 | Pending |
-| REND-04 | Phase 2 | Pending |
-| REND-05 | Phase 2 | Pending |
-| REND-06 | Phase 2 | Pending |
+| REND-01 | Phase 2 | Complete |
+| REND-02 | Phase 2 | Complete |
+| REND-03 | Phase 2 | Complete |
+| REND-04 | Phase 2 | Complete |
+| REND-05 | Phase 2 | Complete |
+| REND-06 | Phase 2 | Complete |
 | REND-07 | Phase 2 | Complete |
 | REND-08 | Phase 2 | Complete |
-| REND-09 | Phase 2 | Pending |
+| REND-09 | Phase 2 | Complete |
 | REND-10 | Phase 2 | Complete |
 | MEDI-01 | Phase 3 | Pending |
 | MEDI-02 | Phase 3 | Pending |

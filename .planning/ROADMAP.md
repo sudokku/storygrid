@@ -62,7 +62,7 @@ Plans:
   5. No whole-tree re-renders occur on single-node state changes (each node subscribes to its own slice only)
 **Plans**: 3 plans
 Plans:
-- [ ] 02-01-PLAN.md — Foundation: type fix, shadcn init, dark theme, CanvasWrapper, SafeZoneOverlay, test scaffolds
+- [x] 02-01-PLAN.md — Foundation: type fix, shadcn init, dark theme, CanvasWrapper, SafeZoneOverlay, test scaffolds
 - [ ] 02-02-PLAN.md — Core grid components: GridNode, ContainerNode, Divider, LeafNode, ActionBar
 - [ ] 02-03-PLAN.md — Integration tests and visual verification checkpoint
 
@@ -136,7 +136,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 0. Project Scaffolding | 1/1 | Complete   | 2026-03-31 |
 | 1. Grid Tree Engine | 0/2 | Not started | - |
-| 2. Grid Rendering | 0/3 | Not started | - |
+| 2. Grid Rendering | 1/3 | In Progress|  |
 | 3. Media Upload & Cell Controls | 0/TBD | Not started | - |
 | 4. Export Engine | 0/TBD | Not started | - |
 | 5. Polish & UX | 0/TBD | Not started | - |

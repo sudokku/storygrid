@@ -37,10 +37,10 @@
 - [ ] **REND-04**: Leaf renders empty state with dashed border, upload prompt, and drag-drop target
 - [ ] **REND-05**: Leaf renders media state with `<img>` using `object-fit: cover` or `contain` matching `leaf.fit`
 - [ ] **REND-06**: Leaf shows blue selection border when selected; hover state reveals floating action bar (Split H, Split V, Remove, Toggle Fit)
-- [ ] **REND-07**: Canvas wrapper maintains 9:16 aspect ratio via CSS transform scale; centered in editor area
-- [ ] **REND-08**: Optional safe zone overlay shows dashed guides 250px from top and bottom (toggleable)
+- [x] **REND-07**: Canvas wrapper maintains 9:16 aspect ratio via CSS transform scale; centered in editor area
+- [x] **REND-08**: Optional safe zone overlay shows dashed guides 250px from top and bottom (toggleable)
 - [ ] **REND-09**: Each ContainerNode and LeafNode uses React.memo with per-node Zustand slice selectors (no whole-tree subscriptions)
-- [ ] **REND-10**: Each LeafNode container has `isolation: isolate` for Safari overflow/border-radius compatibility
+- [x] **REND-10**: Each LeafNode container has `isolation: isolate` for Safari overflow/border-radius compatibility
 
 ### Media & Controls
 
@@ -143,10 +143,10 @@
 | REND-04 | Phase 2 | Pending |
 | REND-05 | Phase 2 | Pending |
 | REND-06 | Phase 2 | Pending |
-| REND-07 | Phase 2 | Pending |
-| REND-08 | Phase 2 | Pending |
+| REND-07 | Phase 2 | Complete |
+| REND-08 | Phase 2 | Complete |
 | REND-09 | Phase 2 | Pending |
-| REND-10 | Phase 2 | Pending |
+| REND-10 | Phase 2 | Complete |
 | MEDI-01 | Phase 3 | Pending |
 | MEDI-02 | Phase 3 | Pending |
 | MEDI-03 | Phase 3 | Pending |

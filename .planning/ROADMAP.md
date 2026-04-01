@@ -60,8 +60,11 @@ Plans:
   3. Selected leaf shows a blue border; hovering reveals the floating action bar (Split H, Split V, Remove, Toggle Fit)
   4. The canvas maintains a 9:16 aspect ratio and scales via CSS transform to fit the viewport; the optional safe-zone guides toggle on/off
   5. No whole-tree re-renders occur on single-node state changes (each node subscribes to its own slice only)
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
+Plans:
+- [ ] 02-01-PLAN.md — Foundation: type fix, shadcn init, dark theme, CanvasWrapper, SafeZoneOverlay, test scaffolds
+- [ ] 02-02-PLAN.md — Core grid components: GridNode, ContainerNode, Divider, LeafNode, ActionBar
+- [ ] 02-03-PLAN.md — Integration tests and visual verification checkpoint
 
 ### Phase 3: Media Upload & Cell Controls
 **Goal**: Users can fill cells with images via click-to-upload or drag-and-drop; images are stored as base64 data URIs; the sidebar and toolbar provide complete cell management controls
@@ -133,7 +136,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 0. Project Scaffolding | 1/1 | Complete   | 2026-03-31 |
 | 1. Grid Tree Engine | 0/2 | Not started | - |
-| 2. Grid Rendering | 0/TBD | Not started | - |
+| 2. Grid Rendering | 0/3 | Not started | - |
 | 3. Media Upload & Cell Controls | 0/TBD | Not started | - |
 | 4. Export Engine | 0/TBD | Not started | - |
 | 5. Polish & UX | 0/TBD | Not started | - |

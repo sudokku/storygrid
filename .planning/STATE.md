@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-04-01T20:36:11.059Z"
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-04-01T20:46:44.749Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 ## Current Position
 
 Phase: 05 (polish-ux) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-04-01
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04 P02 | 225 | 3 tasks | 8 files |
 | Phase 05-polish-ux P01 | 9min | 2 tasks | 13 files |
 | Phase 05-polish-ux P02 | 334 | 2 tasks | 7 files |
+| Phase 05-polish-ux P04 | 8min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase 05-polish-ux]: applyTemplate clears mediaRegistry to avoid dangling media refs from old tree
 - [Phase 05-polish-ux]: useGridStore.getState() / useEditorStore.getState() in keydown handler — avoids extra useEffect deps, always reads latest state
 - [Phase 05-polish-ux]: window.matchMedia polyfill added to test setup.ts — jsdom lacks native matchMedia; needed globally for useMediaQuery hook tests
+- [Phase 05-polish-ux]: DEFAULT_CANVAS_SETTINGS.borderColor set to empty string — existing tests without settings don't invoke border stroke path; store default remains #000000 for UI
+- [Phase 05-polish-ux]: Onboarding spotlightRect initialized to null — overlay withholds render until document.querySelector resolves target element
 
 ### Pending Todos
 
@@ -134,6 +137,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T20:36:11.048Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-04-01T20:46:44.737Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None

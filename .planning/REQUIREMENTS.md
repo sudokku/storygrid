@@ -73,11 +73,11 @@
 - [x] **POLH-05**: Canvas background color picker; gradient option (two colors + direction)
 - [ ] **POLH-06**: Per-cell pan/zoom: double-click selected cell to enter pan mode; drag to reposition (updates object-position); scroll to scale within cell; Escape or click outside to exit
 - [ ] **POLH-07**: Cell-swap-by-drag: drag a filled image cell over another cell to swap their media
-- [ ] **POLH-08**: Dark editor theme — background #0a0a0a–#141414, surfaces #1a1a1a–#222, borders #333, accent #3b82f6
-- [ ] **POLH-09**: Keyboard shortcuts: Ctrl+E (export), Delete/Backspace (remove selected), H (split H), V (split V), F (toggle fit), Escape (deselect)
-- [ ] **POLH-10**: First-time onboarding tooltip: "Click a cell to select. Hover for split options. Drop images to fill."
-- [ ] **POLH-11**: Gap/border radius/background settings applied correctly in both editor preview and exported PNG
-- [ ] **POLH-12**: Editor is responsive at desktop min 1024px; sidebar collapses gracefully at narrower widths
+- [x] **POLH-08**: Dark editor theme — background #0a0a0a–#141414, surfaces #1a1a1a–#222, borders #333, accent #3b82f6
+- [x] **POLH-09**: Keyboard shortcuts: Ctrl+E (export), Delete/Backspace (remove selected), H (split H), V (split V), F (toggle fit), Escape (deselect)
+- [x] **POLH-10**: First-time onboarding tooltip: "Click a cell to select. Hover for split options. Drop images to fill."
+- [x] **POLH-11**: Gap/border radius/background settings applied correctly in both editor preview and exported PNG
+- [x] **POLH-12**: Editor is responsive at desktop min 1024px; sidebar collapses gracefully at narrower widths
 
 ## v2 Requirements (Video & Effects — Phases 6–7)
 
@@ -170,11 +170,11 @@
 | POLH-05 | Phase 5 | Complete |
 | POLH-06 | Phase 5 | Pending |
 | POLH-07 | Phase 5 | Pending |
-| POLH-08 | Phase 5 | Pending |
-| POLH-09 | Phase 5 | Pending |
-| POLH-10 | Phase 5 | Pending |
-| POLH-11 | Phase 5 | Pending |
-| POLH-12 | Phase 5 | Pending |
+| POLH-08 | Phase 5 | Complete |
+| POLH-09 | Phase 5 | Complete |
+| POLH-10 | Phase 5 | Complete |
+| POLH-11 | Phase 5 | Complete |
+| POLH-12 | Phase 5 | Complete |
 | VIDE-01 | Phase 6 | Pending |
 | VIDE-02 | Phase 6 | Pending |
 | VIDE-03 | Phase 6 | Pending |

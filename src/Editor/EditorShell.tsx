@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Toolbar } from './Toolbar';
 import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';
+import { Onboarding } from './Onboarding';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -82,6 +83,7 @@ export function EditorShell() {
         <CanvasArea />
         <Sidebar />
       </div>
+      <Onboarding />
     </div>
   );
 }

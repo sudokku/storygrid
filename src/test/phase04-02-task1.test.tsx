@@ -263,6 +263,7 @@ describe('ExportSplitButton', () => {
       'png',
       0.9,
       expect.any(Function),
+      expect.any(Object), // canvasSettings
     );
     appendSpy.mockRestore();
     unmount();

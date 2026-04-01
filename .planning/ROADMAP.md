@@ -107,7 +107,13 @@ Plans:
   3. Double-clicking a selected cell enters pan mode; dragging repositions the image within the cell; Escape exits without accidental splits
   4. Dragging a filled cell over another filled cell swaps their images
   5. All 8 keyboard shortcuts (Ctrl+E, Delete, H, V, F, Escape, Ctrl+Z, Ctrl+Shift+Z) work without focus on a text input
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 05-01-PLAN.md — Types, stores, templates popover, canvas settings panel, grid rendering (POLH-01, POLH-02, POLH-03, POLH-04, POLH-05)
+- [ ] 05-02-PLAN.md — Dark theme, keyboard shortcuts, responsive sidebar (POLH-08, POLH-09, POLH-12)
+- [ ] 05-03-PLAN.md — Pan/zoom interaction, cell swap via @dnd-kit drag handle (POLH-06, POLH-07)
+- [ ] 05-04-PLAN.md — Export canvas settings integration, onboarding overlay (POLH-10, POLH-11)
+- [ ] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
 **UI hint**: yes
 
 ### Phase 6: Video Support (v2)
@@ -145,6 +151,6 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Grid Rendering | 1/3 | In Progress|  |
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
-| 5. Polish & UX | 0/TBD | Not started | - |
+| 5. Polish & UX | 0/5 | Not started | - |
 | 6. Video Support (v2) | 0/TBD | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

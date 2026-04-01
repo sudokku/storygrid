@@ -79,7 +79,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 03-01-PLAN.md — Core data + upload infrastructure: type extension, clearGrid, media utilities, ActionBar + LeafNode wiring (MEDI-01, MEDI-02, MEDI-03, MEDI-04, MEDI-05)
-- [ ] 03-02-PLAN.md — Toolbar + Sidebar: wired controls, properties panel, keyboard shortcuts (MEDI-06, MEDI-07, MEDI-08, MEDI-09)
+- [x] 03-02-PLAN.md — Toolbar + Sidebar: wired controls, properties panel, keyboard shortcuts (MEDI-06, MEDI-07, MEDI-08, MEDI-09)
 - [ ] 03-03-PLAN.md — Integration tests: media utilities, ActionBar, Toolbar, Sidebar, keyboard shortcuts (MEDI-01 through MEDI-09)
 
 ### Phase 4: Export Engine

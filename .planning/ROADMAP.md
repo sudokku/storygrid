@@ -14,7 +14,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [ ] **Phase 1: Grid Tree Engine** - Pure tree functions, Zustand stores (grid + editor), mediaId/registry split, undo/redo
 - [ ] **Phase 2: Grid Rendering** - Recursive React components, pointer-event dividers, canvas transform, Safari fixes
 - [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
-- [x] **Phase 4: Export Engine** - Always-mounted ExportSurface, double-call toPng, PNG/JPEG download, progress UI (completed 2026-04-01)
+- [x] **Phase 4: Export Engine** - Canvas API tree renderer, PNG/JPEG download, progress toast, split-button UI (completed 2026-04-01)
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
 - [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
 - [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets

@@ -1,2 +1,3 @@
-// Phase 2 will populate this file with GridNode component.
-export {};
+export { CanvasWrapper } from './CanvasWrapper';
+export { SafeZoneOverlay } from './SafeZoneOverlay';
+// GridNodeComponent, ContainerNode, LeafNode, Divider, ActionBar added in Plan 02

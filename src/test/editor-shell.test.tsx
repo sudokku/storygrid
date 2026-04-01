@@ -11,7 +11,7 @@ describe('EditorShell (SCAF-05)', () => {
 
   it('renders the canvas area', () => {
     render(<EditorShell />);
-    expect(screen.getByText('1080 x 1920')).toBeInTheDocument();
+    expect(screen.getByTestId('canvas-surface')).toBeInTheDocument();
   });
 
   it('renders the sidebar', () => {

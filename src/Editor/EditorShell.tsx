@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 
 export function EditorShell() {
   return (
-    <div className="flex flex-col h-screen w-screen bg-neutral-100">
+    <div className="flex flex-col h-screen w-screen bg-[#111111]">
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
         <CanvasArea />

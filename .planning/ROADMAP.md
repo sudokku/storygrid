@@ -110,7 +110,7 @@ Plans:
 **Plans**: 5 plans
 Plans:
 - [x] 05-01-PLAN.md — Types, stores, templates popover, canvas settings panel, grid rendering (POLH-01, POLH-02, POLH-03, POLH-04, POLH-05)
-- [ ] 05-02-PLAN.md — Dark theme, keyboard shortcuts, responsive sidebar (POLH-08, POLH-09, POLH-12)
+- [x] 05-02-PLAN.md — Dark theme, keyboard shortcuts, responsive sidebar (POLH-08, POLH-09, POLH-12)
 - [ ] 05-03-PLAN.md — Pan/zoom interaction, cell swap via @dnd-kit drag handle (POLH-06, POLH-07)
 - [ ] 05-04-PLAN.md — Export canvas settings integration, onboarding overlay (POLH-10, POLH-11)
 - [ ] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
@@ -151,6 +151,6 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Grid Rendering | 1/3 | In Progress|  |
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
-| 5. Polish & UX | 1/5 | In Progress|  |
+| 5. Polish & UX | 2/5 | In Progress|  |
 | 6. Video Support (v2) | 0/TBD | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

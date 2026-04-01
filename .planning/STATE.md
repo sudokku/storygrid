@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-04-01T20:28:38.083Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-04-01T20:36:11.059Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 ## Current Position
 
 Phase: 05 (polish-ux) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-01
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-export-engine P02 | 225 | 2 tasks | 5 files |
 | Phase 04 P02 | 225 | 3 tasks | 8 files |
 | Phase 05-polish-ux P01 | 9min | 2 tasks | 13 files |
+| Phase 05-polish-ux P02 | 334 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,8 @@ Recent decisions affecting current work:
 - [Phase 05-polish-ux]: LeafNode border uses outline (not border) to avoid layout shifts
 - [Phase 05-polish-ux]: CanvasSettingsPanel always rendered at top of Sidebar — replaces NoSelectionPanel stub
 - [Phase 05-polish-ux]: applyTemplate clears mediaRegistry to avoid dangling media refs from old tree
+- [Phase 05-polish-ux]: useGridStore.getState() / useEditorStore.getState() in keydown handler — avoids extra useEffect deps, always reads latest state
+- [Phase 05-polish-ux]: window.matchMedia polyfill added to test setup.ts — jsdom lacks native matchMedia; needed globally for useMediaQuery hook tests
 
 ### Pending Todos
 
@@ -131,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T20:28:38.069Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-04-01T20:36:11.048Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

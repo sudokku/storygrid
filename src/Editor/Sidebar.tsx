@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -6,6 +6,21 @@ import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2 } from 'lucide-react';
+
+// ---------------------------------------------------------------------------
+// Responsive media query hook
+// ---------------------------------------------------------------------------
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 
 // ---------------------------------------------------------------------------
 // Cell dimension helper
@@ -397,10 +412,28 @@ const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: Sele
 
 export function Sidebar() {
   const selectedNodeId = useEditorStore(s => s.selectedNodeId);
+  const isNarrow = useMediaQuery('(max-width: 1199px)');
+  const isTooSmall = useMediaQuery('(max-width: 1023px)');
+
+  if (isTooSmall) {
+    return (
+      <aside
+        className="w-[200px] shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] flex items-center justify-center"
+        data-testid="sidebar"
+      >
+        <div
+          className="p-4 text-center text-sm text-neutral-400"
+          data-testid="desktop-notice"
+        >
+          StoryGrid works best on desktop (1024px+)
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
-      className="w-[280px] shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] overflow-y-auto"
+      className={`${isNarrow ? 'w-[200px]' : 'w-[280px]'} shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] overflow-y-auto`}
       data-testid="sidebar"
     >
       <CanvasSettingsPanel />

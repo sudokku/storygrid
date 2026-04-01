@@ -46,13 +46,13 @@ A user can build a multi-cell photo collage from scratch, fill it with images, a
 - [x] Sidebar shows: media thumbnail, fit toggle, background color picker, cell info, remove/clear buttons
 - [x] Toolbar: undo/redo (with Ctrl+Z/Ctrl+Shift+Z), zoom control, safe zone toggle, export button, new/clear
 
-**Phase 4 — Export Engine**
-- [ ] Off-screen hidden div renders grid at actual 1080×1920px
-- [ ] html-to-image toPng() captures the off-screen div
-- [ ] PNG downloads via <a> tag with timestamp filename
-- [ ] Export settings: PNG/JPEG format, JPEG quality slider
-- [ ] Export progress indicator shown during capture
-- [ ] Graceful error handling if export fails
+**Phase 4 — Export Engine** (Validated in Phase 04: export-engine)
+- [x] Off-screen hidden div renders grid at actual 1080×1920px
+- [x] html-to-image toPng() captures the off-screen div
+- [x] PNG downloads via <a> tag with timestamp filename
+- [x] Export settings: PNG/JPEG format, JPEG quality slider
+- [x] Export progress indicator shown during capture
+- [x] Graceful error handling if export fails
 
 **Phase 5 — Polish & UX**
 - [ ] Preset templates panel: 2×1, 1×2, 2×2, 3-row, L-shape, Mosaic
@@ -137,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-01 — Phase 01 complete*
+*Last updated: 2026-04-01 — Phase 04 complete*

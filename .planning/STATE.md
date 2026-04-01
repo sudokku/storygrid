@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-04-01T11:48:02.368Z"
+status: executing
+stopped_at: Completed 04-export-engine-04-01-PLAN.md
+last_updated: "2026-04-01T12:25:59.052Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 11
+  completed_plans: 10
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 03 — media-upload-cell-controls
+**Current focus:** Phase 04 — export-engine
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 04 (export-engine) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-media-upload-cell-controls P01 | 230 | 3 tasks | 8 files |
 | Phase 03-media-upload-cell-controls P02 | 216 | 2 tasks | 6 files |
 | Phase 03-media-upload-cell-controls P03 | 10 | 3 tasks | 3 files |
+| Phase 04-export-engine P01 | 268 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 03-media-upload-cell-controls]: SelectedCellPanel wrapped in React.memo with key={selectedNodeId} for clean remounts on cell change
 - [Phase 03-media-upload-cell-controls]: makeMockActions updates tree on setMedia mock — overflow split tests require tree to reflect filled state
 - [Phase 03-media-upload-cell-controls]: vi.spyOn cannot redefine Zustand v5 store actions — use setState({action: vi.fn()}) pattern instead
+- [Phase 04-export-engine]: ExportSurface always mounted (visibility:hidden + off-screen) — prevents blank-PNG race condition (EXPO-07)
+- [Phase 04-export-engine]: Double-call toPng/toJpeg pattern — forces browser paint cycle before real capture (D-14)
+- [Phase 04-export-engine]: Toolbar exportRef is optional with default {} to preserve existing tests that render Toolbar without props
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:48:02.363Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-export-engine/04-UI-SPEC.md
+Last session: 2026-04-01T12:25:59.050Z
+Stopped at: Completed 04-export-engine-04-01-PLAN.md
+Resume file: None

@@ -114,6 +114,12 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260401-oca | Replace the html-to-image export engine with a Canvas API implementation | 2026-04-01 | b801923 | [260401-oca-replace-the-html-to-image-export-engine-](./quick/260401-oca-replace-the-html-to-image-export-engine-/) |
+
 ### Blockers/Concerns
 
 - Phase 6 warrants /gsd:research-phase before planning — SharedArrayBuffer + COOP/COEP + ffmpeg xstack are complex integrations

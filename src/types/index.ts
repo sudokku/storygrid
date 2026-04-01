@@ -11,6 +11,9 @@ export type LeafNode = {
   fit: 'cover' | 'contain';
   objectPosition?: string;
   backgroundColor: string | null;
+  panX: number;    // percentage offset -100 to +100, default 0
+  panY: number;    // percentage offset -100 to +100, default 0
+  panScale: number; // 1.0-3.0, default 1
 };
 
 export type ContainerNode = {

@@ -1,6 +1,12 @@
 import { nanoid } from 'nanoid';
 import type { GridNode, ContainerNode, LeafNode, SplitDirection } from '../types';
 
+// ---------------------------------------------------------------------------
+// Template type
+// ---------------------------------------------------------------------------
+
+export type TemplateName = '2x1' | '1x2' | '2x2' | '3-row' | 'l-shape' | 'mosaic';
+
 export const MIN_CELL_WEIGHT = 0.1;
 
 // ---------------------------------------------------------------------------
@@ -74,7 +80,7 @@ export function getAllLeaves(root: GridNode): LeafNode[] {
  * Creates a new empty leaf node with a unique nanoid id.
  */
 export function createLeaf(): LeafNode {
-  return { type: 'leaf', id: nanoid(), mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+  return { type: 'leaf', id: nanoid(), mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, panX: 0, panY: 0, panScale: 1 };
 }
 
 /**
@@ -226,4 +232,140 @@ export function buildInitialTree(): GridNode {
     sizes: [1, 1],
     children: [createLeaf(), createLeaf()],
   };
+}
+
+/**
+ * Swaps the content (mediaId, fit, backgroundColor, panX, panY, panScale)
+ * between two leaf nodes identified by idA and idB.
+ * Returns root unchanged if either id is not found or is not a leaf.
+ */
+export function swapLeafContent(root: GridNode, idA: string, idB: string): GridNode {
+  const nodeA = findNode(root, idA);
+  const nodeB = findNode(root, idB);
+  if (!nodeA || !nodeB || nodeA.type !== 'leaf' || nodeB.type !== 'leaf') {
+    return root;
+  }
+  const leafA = nodeA as LeafNode;
+  const leafB = nodeB as LeafNode;
+
+  const contentA = {
+    mediaId: leafA.mediaId,
+    fit: leafA.fit,
+    backgroundColor: leafA.backgroundColor,
+    panX: leafA.panX,
+    panY: leafA.panY,
+    panScale: leafA.panScale,
+  };
+  const contentB = {
+    mediaId: leafB.mediaId,
+    fit: leafB.fit,
+    backgroundColor: leafB.backgroundColor,
+    panX: leafB.panX,
+    panY: leafB.panY,
+    panScale: leafB.panScale,
+  };
+
+  let result = updateLeaf(root, idA, contentB);
+  result = updateLeaf(result, idB, contentA);
+  return result;
+}
+
+/**
+ * Builds a preset template tree by name.
+ */
+export function buildTemplate(name: TemplateName): GridNode {
+  switch (name) {
+    case '2x1':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'vertical',
+        sizes: [1, 1],
+        children: [createLeaf(), createLeaf()],
+      };
+
+    case '1x2':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'horizontal',
+        sizes: [1, 1],
+        children: [createLeaf(), createLeaf()],
+      };
+
+    case '2x2':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'vertical',
+        sizes: [1, 1],
+        children: [
+          {
+            type: 'container',
+            id: nanoid(),
+            direction: 'horizontal',
+            sizes: [1, 1],
+            children: [createLeaf(), createLeaf()],
+          },
+          {
+            type: 'container',
+            id: nanoid(),
+            direction: 'horizontal',
+            sizes: [1, 1],
+            children: [createLeaf(), createLeaf()],
+          },
+        ],
+      };
+
+    case '3-row':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'vertical',
+        sizes: [1, 1, 1],
+        children: [createLeaf(), createLeaf(), createLeaf()],
+      };
+
+    case 'l-shape':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'horizontal',
+        sizes: [2, 1],
+        children: [
+          createLeaf(),
+          {
+            type: 'container',
+            id: nanoid(),
+            direction: 'vertical',
+            sizes: [1, 1],
+            children: [createLeaf(), createLeaf()],
+          },
+        ],
+      };
+
+    case 'mosaic':
+      return {
+        type: 'container',
+        id: nanoid(),
+        direction: 'vertical',
+        sizes: [1, 1],
+        children: [
+          {
+            type: 'container',
+            id: nanoid(),
+            direction: 'horizontal',
+            sizes: [1, 1, 1],
+            children: [createLeaf(), createLeaf(), createLeaf()],
+          },
+          {
+            type: 'container',
+            id: nanoid(),
+            direction: 'horizontal',
+            sizes: [1, 1],
+            children: [createLeaf(), createLeaf()],
+          },
+        ],
+      };
+  }
 }

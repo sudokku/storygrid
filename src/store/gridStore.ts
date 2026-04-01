@@ -9,6 +9,7 @@ import {
   resizeSiblings,
   updateLeaf,
   buildInitialTree,
+  swapLeafContent,
 } from '../lib/tree';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,8 @@ type GridStoreState = {
   clearGrid: () => void;
   undo: () => void;
   redo: () => void;
+  applyTemplate: (templateRoot: GridNode) => void;
+  swapCells: (idA: string, idB: string) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -152,6 +155,19 @@ export const useGridStore = create<GridStoreState>()(
         // Use current() to unwrap Immer Draft proxy before structuredClone
         const plainSnap = current(state.history[state.historyIndex]);
         state.root = structuredClone(plainSnap.root);
+      }),
+
+    applyTemplate: (templateRoot: GridNode) =>
+      set(state => {
+        pushSnapshot(state);
+        state.root = templateRoot;
+        state.mediaRegistry = {};
+      }),
+
+    swapCells: (idA: string, idB: string) =>
+      set(state => {
+        pushSnapshot(state);
+        state.root = swapLeafContent(current(state.root), idA, idB);
       }),
   })),
 );

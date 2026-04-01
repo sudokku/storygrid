@@ -74,7 +74,7 @@ export function getAllLeaves(root: GridNode): LeafNode[] {
  * Creates a new empty leaf node with a unique nanoid id.
  */
 export function createLeaf(): LeafNode {
-  return { type: 'leaf', id: nanoid(), mediaId: null, fit: 'cover', objectPosition: 'center center' };
+  return { type: 'leaf', id: nanoid(), mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
 }
 
 /**

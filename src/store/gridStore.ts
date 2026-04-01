@@ -29,6 +29,7 @@ type GridStoreState = {
   updateCell: (nodeId: string, updates: Partial<Omit<LeafNode, 'type' | 'id'>>) => void;
   addMedia: (mediaId: string, dataUri: string) => void;
   removeMedia: (mediaId: string) => void;
+  clearGrid: () => void;
   undo: () => void;
   redo: () => void;
 };
@@ -112,6 +113,16 @@ export const useGridStore = create<GridStoreState>()(
       set(state => {
         pushSnapshot(state);
         state.root = updateLeaf(current(state.root), nodeId, updates);
+      }),
+
+    // clearGrid resets root, mediaRegistry, and history to initial state
+    clearGrid: () =>
+      set(state => {
+        const freshTree = buildInitialTree();
+        state.root = freshTree;
+        state.mediaRegistry = {};
+        state.history = [{ root: structuredClone(freshTree) }];
+        state.historyIndex = 0;
       }),
 
     // addMedia and removeMedia do NOT push to history (mediaRegistry excluded from snapshots)

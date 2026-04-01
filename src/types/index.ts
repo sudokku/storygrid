@@ -10,6 +10,7 @@ export type LeafNode = {
   mediaId: string | null;
   fit: 'cover' | 'contain';
   objectPosition?: string;
+  backgroundColor: string | null;
 };
 
 export type ContainerNode = {

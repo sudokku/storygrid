@@ -38,13 +38,13 @@ A user can build a multi-cell photo collage from scratch, fill it with images, a
 - [ ] Leaf hover actions: Split H, Split V, Remove, Toggle fit
 - [ ] Canvas maintains 9:16 aspect ratio, scales via transform, shows optional safe zone overlay
 
-**Phase 3 — Media Upload & Cell Controls**
-- [ ] Clicking empty cell opens file picker (image/*)
-- [ ] Dragging image file onto cell drops it in
-- [ ] Multi-file upload auto-fills empty cells in order
-- [ ] Cell hover actions: split H/V, remove, toggle fit, clear media, replace media
-- [ ] Sidebar shows: media thumbnail, fit toggle, background color picker, cell info, remove/clear buttons
-- [ ] Toolbar: undo/redo (with Ctrl+Z/Ctrl+Shift+Z), zoom control, safe zone toggle, export button, new/clear
+**Phase 3 — Media Upload & Cell Controls** (Validated in Phase 03: media-upload-cell-controls)
+- [x] Clicking empty cell opens file picker (image/*)
+- [x] Dragging image file onto cell drops it in
+- [x] Multi-file upload auto-fills empty cells in order
+- [x] Cell hover actions: split H/V, remove, toggle fit, clear media, replace media
+- [x] Sidebar shows: media thumbnail, fit toggle, background color picker, cell info, remove/clear buttons
+- [x] Toolbar: undo/redo (with Ctrl+Z/Ctrl+Shift+Z), zoom control, safe zone toggle, export button, new/clear
 
 **Phase 4 — Export Engine**
 - [ ] Off-screen hidden div renders grid at actual 1080×1920px

@@ -36,15 +36,14 @@ Declared values (all multiples of 4):
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon gaps, divider between split button segments, inline badge padding |
-| sm | 8px | Button internal horizontal padding, gap between toolbar button groups |
-| md | 16px | Toolbar horizontal padding (`px-4`), popover internal padding |
+| sm | 8px | Button internal horizontal padding, gap between toolbar button groups, popover internal padding |
+| md | 16px | Toolbar horizontal padding (`px-4`), toast bottom/right offset |
 | lg | 24px | Popover section vertical rhythm |
 | xl | 32px | Not used in this phase |
 | 2xl | 48px | Not used in this phase |
 | 3xl | 64px | Not used in this phase |
 
 Exceptions:
-- Toast bottom offset: 20px (not on scale — matches `bottom-5` Tailwind class for viewport clearance)
 - Split button total height: 32px (`h-8`) — matches existing toolbar button height exactly
 - Toolbar height: 48px (`h-12`) — established in Phase 3, unchanged
 
@@ -98,7 +97,7 @@ Replaces the current placeholder Export button in `Toolbar.tsx` (right group, be
 - **Left segment** — immediate export using last-used settings:
   - Width: auto (`px-2`)
   - Height: 32px (`h-8`)
-  - Contains: `<Download size={16} />` icon + `<span className="text-xs">Export</span>` label (gap 6px / `gap-1.5`)
+  - Contains: `<Download size={16} />` icon + `<span className="text-xs">Export PNG</span>` label (gap 8px / `gap-2`); label reads "Export PNG" when PNG is active format, "Export JPEG" when JPEG is active format
   - States:
     - Default: `text-neutral-300 hover:bg-white/10 transition-colors rounded-l`
     - Disabled (during export): `opacity-40 cursor-not-allowed` — identical pattern to existing Undo/Redo disabled state
@@ -132,12 +131,12 @@ Absolutely-positioned `<div>` toggled by the ▼ button. Closes on outside click
 - Background: `bg-[#1c1c1c]` (matches toolbar)
 - Border: `border border-white/10 rounded-md`
 - Shadow: `shadow-lg`
-- Padding: `p-3` (12px — close to `md` spacing, acceptable for compact popover)
+- Padding: `p-2` (8px — compact popover)
 
 **Contents (top to bottom):**
 
 1. **Format toggle** — segmented control (PNG / JPEG):
-   - Label above: `<span className="text-xs text-neutral-400 mb-1.5 block">Format</span>`
+   - Label above: `<span className="text-xs text-neutral-400 mb-2 block">Format</span>`
    - Two buttons side by side: `w-full flex`
    - Each segment: `flex-1 h-7 text-xs rounded transition-colors`
    - Selected: `bg-white/15 text-white`
@@ -147,19 +146,19 @@ Absolutely-positioned `<div>` toggled by the ▼ button. Closes on outside click
 2. **Quality slider** (visible only when JPEG selected):
    - Label: `<span className="text-xs text-neutral-400">Quality: {Math.round(quality * 100)}%</span>` — value updates live as slider moves
    - Range input: `min={0.7} max={1.0} step={0.05}` — value stored as 0.0–1.0 float in editorStore
-   - Tailwind: `w-full accent-white mt-1.5`
+   - Tailwind: `w-full accent-white mt-2`
    - Wrapper: `mt-3` top margin, hidden with `hidden` class when PNG is selected
 
 3. **Download button:**
    - Full-width: `w-full h-8 mt-3 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors`
-   - Label: "Download" (not "Export" — action is download, not a separate trigger flow)
+   - Label: "Download PNG" when PNG is active format, "Download JPEG" when JPEG is active format
    - Disabled state while exporting: `opacity-40 cursor-not-allowed`
 
 ### 3. Toast Notification (`Toast.tsx`)
 
 Minimal custom component. Fixed position, bottom-right. No external library.
 
-**Position:** `fixed bottom-5 right-5 z-50`
+**Position:** `fixed bottom-4 right-4 z-50`
 
 **Visual:**
 - Container: `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium shadow-lg`
@@ -175,7 +174,7 @@ Minimal custom component. Fixed position, bottom-right. No external library.
 | Exporting | spinner (`Loader2` 14px) | "Exporting…" | `bg-[#1c1c1c]` |
 | Success | — | dismissed (unmounts automatically) | — |
 | Error | `AlertCircle` 14px, `text-destructive` | "Export failed. Try again." | `bg-[#1c1c1c]` |
-| Video blocked | `AlertCircle` 14px, `text-destructive` | "Remove video cells to export." | `bg-[#1c1c1c]` |
+| Video blocked | `AlertCircle` 14px, `text-destructive` | "Export not available: remove video cells first." | `bg-[#1c1c1c]` |
 
 - Success state: toast dismisses automatically when download begins (no "success" toast shown — the download itself is the confirmation).
 - Error toast: persists until user clicks the "Try again" button or dismisses. "Try again" is an inline text button (`text-xs underline text-destructive ml-auto`) that re-triggers the export.
@@ -213,16 +212,18 @@ Applied via inline style (not Tailwind) — these are exact pixel values require
 
 | Element | Copy |
 |---------|------|
-| Primary CTA (left split button) | "Export" |
+| Primary CTA (left split button, PNG active) | "Export PNG" |
+| Primary CTA (left split button, JPEG active) | "Export JPEG" |
 | Settings popover trigger (▼) | "Export settings" (tooltip only — no visible label) |
-| Popover download button | "Download" |
+| Popover download button (PNG active) | "Download PNG" |
+| Popover download button (JPEG active) | "Download JPEG" |
 | Format option A | "PNG" |
 | Format option B | "JPEG" |
 | Quality slider label | "Quality: {N}%" (e.g. "Quality: 90%") |
 | Toast — preparing | "Preparing…" |
 | Toast — exporting | "Exporting…" |
 | Toast — error | "Export failed. Try again." |
-| Toast — video blocked | "Remove video cells to export." |
+| Toast — video blocked | "Export not available: remove video cells first." |
 | Button tooltip — left segment, PNG default | "Export PNG" |
 | Button tooltip — left segment, JPEG selected | "Export JPEG" |
 | Button tooltip — right segment | "Export settings" |
@@ -271,7 +272,7 @@ Toast is a single persistent element that transitions between states — it does
 
 ## Accessibility Contract
 
-- Export split button left segment: `aria-label="Export"` + keyboard Enter/Space
+- Export split button left segment: `aria-label="Export PNG"` (or "Export JPEG") + keyboard Enter/Space
 - Export split button right segment: `aria-label="Export settings"` + `aria-expanded={popoverOpen}`
 - Popover: `role="dialog"` + `aria-label="Export settings"` — closes on Escape key via `keydown` handler
 - Quality slider: `<input type="range" aria-label="Export quality">` — value announced via aria-valuetext: "90 percent"

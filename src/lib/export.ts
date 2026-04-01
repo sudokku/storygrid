@@ -226,7 +226,7 @@ export async function renderGridToCanvas(
 
 /**
  * Renders the grid tree to a Canvas and converts to a data URL.
- * Replaces the html-to-image DOM-capture approach.
+ * Replaces the previous DOM-capture approach with a zero-dependency Canvas API renderer.
  *
  * onStage callback:
  *   'preparing' — fired before canvas render begins

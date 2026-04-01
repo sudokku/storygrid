@@ -95,7 +95,8 @@ describe('Toolbar', () => {
 
   it('renders Export button', () => {
     render(<Toolbar />);
-    const exportBtn = screen.getByRole('button', { name: /export/i });
+    // ExportSplitButton replaces the placeholder; verify the left segment (export action) is present
+    const exportBtn = screen.getByRole('button', { name: /export png/i });
     expect(exportBtn).toBeInTheDocument();
   });
 

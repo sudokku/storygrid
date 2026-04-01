@@ -1,13 +1,14 @@
 import React, { useCallback, RefObject } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
-import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Download, Trash2 } from 'lucide-react';
+import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Trash2 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '../components/ui/tooltip';
+import { ExportSplitButton } from './ExportSplitButton';
 
 const btnClass =
   'flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors text-neutral-300';
@@ -132,22 +133,7 @@ export function Toolbar({ exportRef: _exportRef }: { exportRef?: RefObject<HTMLD
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  className={`${btnClass} flex gap-1.5 px-2 w-auto`}
-                  onClick={() => {}}
-                  aria-label="Export"
-                  title="Export (Phase 4)"
-                />
-              }
-            >
-              <Download size={16} className="text-white" />
-              <span className="text-xs text-neutral-300">Export</span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Export (Phase 4)</TooltipContent>
-          </Tooltip>
+          <ExportSplitButton exportRef={_exportRef ?? { current: null }} />
 
           <Tooltip>
             <TooltipTrigger

@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Checkpoint 04-02 Task 3 — awaiting human verification
-last_updated: "2026-04-01T12:32:16.763Z"
+status: verifying
+stopped_at: Completed 04-02-PLAN.md — Phase 4 Export Engine fully complete
+last_updated: "2026-04-01T13:21:46.959Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 
 Phase: 04 (export-engine) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-media-upload-cell-controls P03 | 10 | 3 tasks | 3 files |
 | Phase 04-export-engine P01 | 268 | 2 tasks | 10 files |
 | Phase 04-export-engine P02 | 225 | 2 tasks | 5 files |
+| Phase 04 P02 | 225 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 04-export-engine]: Toolbar exportRef is optional with default {} to preserve existing tests that render Toolbar without props
 - [Phase 04-export-engine]: Toast state managed locally in ExportSplitButton (not global store) — export progress is ephemeral UI state
 - [Phase 04-export-engine]: Toolbar exportRef fallback { current: null } for tests rendering Toolbar without props — preserves existing test isolation
+- [Phase 04]: ExportSurface uses pointerEvents:none (not visibility:hidden) — visibility:hidden is inherited by all children during html-to-image clone, producing blank PNG / black JPEG
+- [Phase 04]: backgroundColor:'#ffffff' added to export options — prevents transparent pixels encoding as black in JPEG output
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T12:32:07.812Z
-Stopped at: Checkpoint 04-02 Task 3 — awaiting human verification
+Last session: 2026-04-01T13:21:46.948Z
+Stopped at: Completed 04-02-PLAN.md — Phase 4 Export Engine fully complete
 Resume file: None

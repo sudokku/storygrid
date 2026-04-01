@@ -56,13 +56,13 @@
 
 ### Export
 
-- [ ] **EXPO-01**: Export renders the grid in a hidden off-screen div (position: absolute; left: -9999px; visibility: hidden) at actual 1080×1920px with no transform scaling
-- [ ] **EXPO-02**: html-to-image `toPng()` is called twice; first result discarded (blank-PNG workaround); second result triggers download
-- [ ] **EXPO-03**: Export never called on a container with video children (guarded by checking leaf types)
-- [ ] **EXPO-04**: Downloaded PNG is exactly 1080×1920px; filename auto-generated as `storygrid-{timestamp}.png`
-- [ ] **EXPO-05**: Export settings available: PNG (default) or JPEG with quality slider (0.7–1.0)
-- [ ] **EXPO-06**: Progress indicator shown during export ("Preparing…" → "Exporting…"); errors shown as user-friendly message
-- [ ] **EXPO-07**: ExportSurface component is always mounted (not conditionally rendered); hidden via visibility:hidden
+- [x] **EXPO-01**: Export renders the grid in a hidden off-screen div (position: absolute; left: -9999px; visibility: hidden) at actual 1080×1920px with no transform scaling
+- [x] **EXPO-02**: html-to-image `toPng()` is called twice; first result discarded (blank-PNG workaround); second result triggers download
+- [x] **EXPO-03**: Export never called on a container with video children (guarded by checking leaf types)
+- [x] **EXPO-04**: Downloaded PNG is exactly 1080×1920px; filename auto-generated as `storygrid-{timestamp}.png`
+- [x] **EXPO-05**: Export settings available: PNG (default) or JPEG with quality slider (0.7–1.0)
+- [x] **EXPO-06**: Progress indicator shown during export ("Preparing…" → "Exporting…"); errors shown as user-friendly message
+- [x] **EXPO-07**: ExportSurface component is always mounted (not conditionally rendered); hidden via visibility:hidden
 
 ### Polish & UX
 
@@ -156,13 +156,13 @@
 | MEDI-07 | Phase 3 | Complete |
 | MEDI-08 | Phase 3 | Complete |
 | MEDI-09 | Phase 3 | Complete |
-| EXPO-01 | Phase 4 | Pending |
-| EXPO-02 | Phase 4 | Pending |
-| EXPO-03 | Phase 4 | Pending |
-| EXPO-04 | Phase 4 | Pending |
-| EXPO-05 | Phase 4 | Pending |
-| EXPO-06 | Phase 4 | Pending |
-| EXPO-07 | Phase 4 | Pending |
+| EXPO-01 | Phase 4 | Complete |
+| EXPO-02 | Phase 4 | Complete |
+| EXPO-03 | Phase 4 | Complete |
+| EXPO-04 | Phase 4 | Complete |
+| EXPO-05 | Phase 4 | Complete |
+| EXPO-06 | Phase 4 | Complete |
+| EXPO-07 | Phase 4 | Complete |
 | POLH-01 | Phase 5 | Pending |
 | POLH-02 | Phase 5 | Pending |
 | POLH-03 | Phase 5 | Pending |

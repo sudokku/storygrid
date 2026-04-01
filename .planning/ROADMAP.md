@@ -14,7 +14,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [ ] **Phase 1: Grid Tree Engine** - Pure tree functions, Zustand stores (grid + editor), mediaId/registry split, undo/redo
 - [ ] **Phase 2: Grid Rendering** - Recursive React components, pointer-event dividers, canvas transform, Safari fixes
 - [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
-- [ ] **Phase 4: Export Engine** - Always-mounted ExportSurface, double-call toPng, PNG/JPEG download, progress UI
+- [x] **Phase 4: Export Engine** - Always-mounted ExportSurface, double-call toPng, PNG/JPEG download, progress UI (completed 2026-04-01)
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
 - [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
 - [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets
@@ -95,7 +95,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 04-01-PLAN.md — Foundation: ExportModeContext, editorStore export state, Grid component export-mode suppression, ExportSurface, export core logic, EditorShell wiring (EXPO-01, EXPO-02, EXPO-03, EXPO-04, EXPO-07)
-- [ ] 04-02-PLAN.md — Export UI: ExportSplitButton with popover, Toast notifications, Toolbar integration, visual verification (EXPO-05, EXPO-06)
+- [x] 04-02-PLAN.md — Export UI: ExportSplitButton with popover, Toast notifications, Toolbar integration, visual verification (EXPO-05, EXPO-06)
 
 ### Phase 5: Polish & UX
 **Goal**: The editor feels complete: preset templates speed up layout creation, global style controls (gap, radius, background) work in both preview and export, pan/zoom lets users reposition images within cells, and the dark theme + keyboard shortcuts give it a professional feel
@@ -144,7 +144,7 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Grid Tree Engine | 0/2 | Not started | - |
 | 2. Grid Rendering | 1/3 | In Progress|  |
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
-| 4. Export Engine | 1/2 | In Progress|  |
+| 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
 | 5. Polish & UX | 0/TBD | Not started | - |
 | 6. Video Support (v2) | 0/TBD | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

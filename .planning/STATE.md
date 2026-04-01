@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-export-engine-04-01-PLAN.md
-last_updated: "2026-04-01T12:25:59.052Z"
+stopped_at: Checkpoint 04-02 Task 3 — awaiting human verification
+last_updated: "2026-04-01T12:32:16.763Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-media-upload-cell-controls P02 | 216 | 2 tasks | 6 files |
 | Phase 03-media-upload-cell-controls P03 | 10 | 3 tasks | 3 files |
 | Phase 04-export-engine P01 | 268 | 2 tasks | 10 files |
+| Phase 04-export-engine P02 | 225 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 04-export-engine]: ExportSurface always mounted (visibility:hidden + off-screen) — prevents blank-PNG race condition (EXPO-07)
 - [Phase 04-export-engine]: Double-call toPng/toJpeg pattern — forces browser paint cycle before real capture (D-14)
 - [Phase 04-export-engine]: Toolbar exportRef is optional with default {} to preserve existing tests that render Toolbar without props
+- [Phase 04-export-engine]: Toast state managed locally in ExportSplitButton (not global store) — export progress is ephemeral UI state
+- [Phase 04-export-engine]: Toolbar exportRef fallback { current: null } for tests rendering Toolbar without props — preserves existing test isolation
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T12:25:59.050Z
-Stopped at: Completed 04-export-engine-04-01-PLAN.md
+Last session: 2026-04-01T12:32:07.812Z
+Stopped at: Checkpoint 04-02 Task 3 — awaiting human verification
 Resume file: None

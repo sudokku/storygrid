@@ -63,7 +63,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 02-01-PLAN.md — Foundation: type fix, shadcn init, dark theme, CanvasWrapper, SafeZoneOverlay, test scaffolds
-- [ ] 02-02-PLAN.md — Core grid components: GridNode, ContainerNode, Divider, LeafNode, ActionBar
+- [x] 02-02-PLAN.md — Core grid components: GridNode, ContainerNode, Divider, LeafNode, ActionBar
 - [ ] 02-03-PLAN.md — Integration tests and visual verification checkpoint
 
 ### Phase 3: Media Upload & Cell Controls

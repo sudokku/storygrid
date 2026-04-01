@@ -33,6 +33,9 @@ export async function exportGrid(
     height: 1920,
     pixelRatio: 1,
     backgroundColor: '#ffffff',
+    // Reset off-screen positioning on the cloned root so content renders at 0,0
+    // inside the SVG foreignObject (not at left:-9999px which clips to white).
+    style: { position: 'relative' as const, left: '0', top: '0' },
     ...(format === 'jpeg' ? { quality } : {}),
   };
   const captureFn = format === 'jpeg' ? toJpeg : toPng;

@@ -121,8 +121,8 @@ describe('Divider drag interaction (REND-03)', () => {
     // The grab handle element should be inside the hit area
     const grabHandle = hitArea.querySelector('.rounded-full');
     expect(grabHandle).toBeTruthy();
-    // It has hover:opacity-100 class
-    expect(grabHandle?.className).toContain('hover:opacity-100');
+    // It has group-hover/hit:opacity-100 class (grab handle appears on hit area hover)
+    expect(grabHandle?.className).toContain('group-hover/hit:opacity-100');
   });
 
   it('uses col-resize cursor for horizontal containers (vertical divider)', () => {

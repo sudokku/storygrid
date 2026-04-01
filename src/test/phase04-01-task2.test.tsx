@@ -172,11 +172,12 @@ describe('ExportSurface', () => {
     expect(surface.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('has visibility:hidden', () => {
+  it('is off-screen and non-interactive (no visibility:hidden that breaks html-to-image)', () => {
     const exportRef = React.createRef<HTMLDivElement>();
     const { container } = render(<ExportSurface exportRef={exportRef} />);
     const surface = container.querySelector('[data-testid="export-surface"]') as HTMLElement;
-    expect(surface.style.visibility).toBe('hidden');
+    expect(surface.style.visibility).not.toBe('hidden');
+    expect(surface.style.pointerEvents).toBe('none');
   });
 
   it('renders GridNodeComponent inside ExportModeContext.Provider with value true', () => {

@@ -29,7 +29,7 @@ export function ExportSurface({ exportRef }: ExportSurfaceProps) {
         top: 0,
         width: 1080,
         height: 1920,
-        visibility: 'hidden',
+        pointerEvents: 'none',
         overflow: 'hidden',
       }}
       aria-hidden="true"

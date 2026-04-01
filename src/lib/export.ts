@@ -32,6 +32,7 @@ export async function exportGrid(
     width: 1080,
     height: 1920,
     pixelRatio: 1,
+    backgroundColor: '#ffffff',
     ...(format === 'jpeg' ? { quality } : {}),
   };
   const captureFn = format === 'jpeg' ? toJpeg : toPng;

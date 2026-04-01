@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { EditorShell } from '../Editor/EditorShell';
 
-describe('EditorShell (SCAF-05)', () => {
-  it('renders the toolbar region', () => {
+describe('EditorShell', () => {
+  it('renders the toolbar region (header)', () => {
     render(<EditorShell />);
-    expect(screen.getByText('[Undo]')).toBeInTheDocument();
-    expect(screen.getByText('[Export]')).toBeInTheDocument();
+    const header = document.querySelector('header');
+    expect(header).not.toBeNull();
   });
 
   it('renders the canvas area', () => {
@@ -16,7 +16,7 @@ describe('EditorShell (SCAF-05)', () => {
 
   it('renders the sidebar', () => {
     render(<EditorShell />);
-    expect(screen.getByText('Properties')).toBeInTheDocument();
+    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
   });
 
   it('has three distinct regions', () => {

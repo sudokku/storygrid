@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -28,15 +27,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
   const updateCell = useGridStore(s => s.updateCell);
+  const swapCells = useGridStore(s => s.swapCells);
   const [isHovered, setIsHovered] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const divRef = useRef<HTMLDivElement>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
-
-  // D-14: make each leaf a droppable target for cell swap
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
-    id: `cell-drop-${id}`,
-    data: { nodeId: id },
-  });
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -44,13 +40,27 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const isPanMode = panModeNodeId === id;
   const isPanModeOtherCell = panModeNodeId !== null && panModeNodeId !== id;
 
+  // Native wheel listener — React's onWheel is passive in React 17+ and cannot preventDefault
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!isPanMode) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
+      const newScale = Math.max(1, Math.min(3, (n?.panScale ?? 1) + delta));
+      updateCell(id, { panScale: newScale });
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, [isPanMode, id, updateCell]);
+
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    // D-12: toggle selection — click already-selected deselects
     setSelectedNode(isSelected ? null : id);
   }, [id, isSelected, setSelectedNode]);
 
-  // D-08: double-click any media cell to toggle pan mode (no selection required)
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -66,7 +76,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    // Reset input so the same file can be re-selected
     e.target.value = '';
     await autoFillCells(files, {
       addMedia,
@@ -78,32 +87,45 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    const isCellDrag = Array.from(e.dataTransfer.types).includes('text/cell-id');
+    e.dataTransfer.dropEffect = isCellDrag ? 'move' : 'copy';
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
   }, []);
 
   const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const files = Array.from(e.dataTransfer.files);
-    await autoFillCells(files, {
-      addMedia,
-      setMedia,
-      split,
-      getRoot: () => useGridStore.getState().root,
-    });
-  }, [addMedia, setMedia, split]);
+    setIsDragOver(false);
 
-  // D-11: pan drag handlers
+    // Cell swap comes first — drag handle sets text/cell-id
+    const fromId = e.dataTransfer.getData('text/cell-id');
+    if (fromId && fromId !== id) {
+      swapCells(fromId, id);
+      return;
+    }
+
+    // File drop fallback
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await autoFillCells(files, {
+        addMedia,
+        setMedia,
+        split,
+        getRoot: () => useGridStore.getState().root,
+      });
+    }
+  }, [id, swapCells, addMedia, setMedia, split]);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!isPanMode) return;
     e.preventDefault();
     e.stopPropagation();
-    const target = e.target as HTMLElement;
-    if (target.setPointerCapture) {
-      target.setPointerCapture(e.pointerId);
-    }
-    const currentNode = useGridStore.getState().root;
-    const n = findNode(currentNode, id) as LeafNode | null;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
     panStartRef.current = { x: e.clientX, y: e.clientY, panX: n?.panX ?? 0, panY: n?.panY ?? 0 };
   }, [isPanMode, id]);
 
@@ -111,40 +133,19 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     if (!isPanMode || !panStartRef.current) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
-    // 1px mouse movement = ~0.15% pan offset
-    const sensitivity = 0.15;
-    const newPanX = Math.max(-100, Math.min(100, panStartRef.current.panX + dx * sensitivity));
-    const newPanY = Math.max(-100, Math.min(100, panStartRef.current.panY + dy * sensitivity));
+    // Sensitivity: 1px mouse = 1% of cell pan — enough to traverse the full image
+    const newPanX = Math.max(-100, Math.min(100, panStartRef.current.panX + dx));
+    const newPanY = Math.max(-100, Math.min(100, panStartRef.current.panY + dy));
     updateCell(id, { panX: newPanX, panY: newPanY });
   }, [isPanMode, id, updateCell]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (panStartRef.current) {
-      const target = e.target as HTMLElement;
-      if (target.releasePointerCapture) {
-        target.releasePointerCapture(e.pointerId);
-      }
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
       panStartRef.current = null;
     }
   }, []);
 
-  // D-11: wheel zoom handler
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!isPanMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const currentNode = useGridStore.getState().root;
-    const n = findNode(currentNode, id) as LeafNode | null;
-    const currentScale = n?.panScale ?? 1;
-    const newScale = Math.max(1, Math.min(3, currentScale + delta));
-    updateCell(id, { panScale: newScale });
-  }, [isPanMode, id, updateCell]);
-
-  // D-09: ring styling logic
-  // isPanMode → amber ring
-  // isSelected && !isPanMode → blue ring
-  // else → dashed border for empty cells
   const ringClass = isPanMode
     ? 'ring-2 ring-[#f59e0b] ring-inset'
     : isSelected
@@ -153,11 +154,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   return (
     <div
-      ref={setDropRef}
+      ref={divRef}
       className={`
         relative w-full h-full isolate overflow-hidden
         ${ringClass}
-        bg-[#1c1c1c]
+        ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}
       style={{
         borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined,
@@ -167,11 +168,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onWheel={handleWheel}
       data-testid={`leaf-${id}`}
       aria-selected={isSelected}
       role="gridcell"
@@ -185,42 +186,56 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         onChange={handleFileChange}
         aria-hidden="true"
       />
+
       {mediaUrl ? (
-        <img
-          src={mediaUrl}
-          className={`w-full h-full ${node.fit === 'cover' ? 'object-cover' : 'object-contain'}`}
-          style={{
-            objectPosition: node.objectPosition ?? 'center center',
-            transform: (node.panX !== 0 || node.panY !== 0 || node.panScale !== 1)
-              ? `translate(${node.panX}%, ${node.panY}%) scale(${node.panScale})`
-              : undefined,
-            transformOrigin: 'center center',
-          }}
-          alt=""
-          draggable={false}
-        />
+        node.fit === 'cover' ? (
+          // Pan/zoom: size a wrapper to panScale * 100% of the cell and position it so
+          // the cell's overflow-hidden clips to show the correct image region.
+          // Formula matches canvas drawPannedCoverImage: left = (1-panScale)*50 + panX
+          <div
+            className="absolute"
+            style={{
+              width: `${(node.panScale ?? 1) * 100}%`,
+              height: `${(node.panScale ?? 1) * 100}%`,
+              left: `${(1 - (node.panScale ?? 1)) * 50 + (node.panX ?? 0)}%`,
+              top: `${(1 - (node.panScale ?? 1)) * 50 + (node.panY ?? 0)}%`,
+            }}
+          >
+            <img src={mediaUrl} className="w-full h-full object-cover" alt="" draggable={false} />
+          </div>
+        ) : (
+          <img
+            src={mediaUrl}
+            className="w-full h-full object-contain"
+            style={{ objectPosition: node.objectPosition ?? 'center center' }}
+            alt=""
+            draggable={false}
+          />
+        )
       ) : (
         <div className="flex flex-col items-center justify-center w-full h-full gap-2">
           <ImageIcon size={24} className="text-[#666666]" />
           <span className="text-sm text-[#666666]">Drop image or use Upload button</span>
         </div>
       )}
-      {/* Dim overlay on hover when filled (normal mode) */}
+
+      {/* Hover overlay */}
       {mediaUrl && isHovered && !isPanMode && (
         <div className="absolute inset-0 bg-black/15 pointer-events-none" />
       )}
-      {/* D-09: Dim overlay on OTHER cells when some cell is in pan mode */}
+      {/* Dim other cells while any cell is in pan mode */}
       {isPanModeOtherCell && (
         <div className="absolute inset-0 bg-black/65 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
       )}
-      {/* D-14: Drop target highlight when a cell is dragged over this one */}
-      {isOver && (
+      {/* Drop target highlight (cell swap or file drag) */}
+      {isDragOver && (
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
       )}
-      {/* ActionBar: visible on hover, hidden in pan mode (D-12) */}
+
+      {/* ActionBar: visible on hover, hidden in pan mode */}
       <div
         className={`
-          absolute top-2 left-1/2 -translate-x-1/2 z-20
+          absolute top-2 left-1/2 z-20
           transition-opacity duration-150
           ${isHovered && !isPanMode ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}
         `}

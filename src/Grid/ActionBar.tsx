@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { useDraggable } from '@dnd-kit/core';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
 import type { LeafNode } from '../types';
@@ -34,13 +33,6 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
   const removeMedia = useGridStore(s => s.removeMedia);
   const mediaId = useGridStore(s => (findNode(s.root, nodeId) as LeafNode | null)?.mediaId ?? null);
 
-  // D-13, D-14: drag handle for cell swap via @dnd-kit
-  const { attributes, listeners, setActivatorNodeRef } = useDraggable({
-    id: `cell-drag-${nodeId}`,
-    data: { nodeId },
-    disabled: !hasMedia,
-  });
-
   const handleSplitH = useCallback(() => split(nodeId, 'horizontal'), [split, nodeId]);
   const handleSplitV = useCallback(() => split(nodeId, 'vertical'), [split, nodeId]);
   const handleRemove = useCallback(() => remove(nodeId), [remove, nodeId]);
@@ -67,9 +59,11 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
 
         {hasMedia && (
           <button
-            ref={setActivatorNodeRef}
-            {...listeners}
-            {...attributes}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('text/cell-id', nodeId);
+              e.dataTransfer.effectAllowed = 'move';
+            }}
             className={`${btnClass} cursor-grab active:cursor-grabbing`}
             aria-label="Drag to swap"
             title="Drag to swap"

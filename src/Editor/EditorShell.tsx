@@ -1,6 +1,4 @@
 import { useEffect, useCallback } from 'react';
-import { DndContext } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
 import { Toolbar } from './Toolbar';
 import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';
@@ -12,16 +10,6 @@ import { findNode } from '../lib/tree';
 export function EditorShell() {
   const undo = useGridStore(s => s.undo);
   const redo = useGridStore(s => s.redo);
-  const swapCells = useGridStore(s => s.swapCells);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const fromId = event.active.data.current?.nodeId as string | undefined;
-    const toId = event.over?.data.current?.nodeId as string | undefined;
-    if (fromId && toId && fromId !== toId) {
-      swapCells(fromId, toId);
-    }
-  }, [swapCells]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only fire if not typing in an input/textarea
@@ -90,12 +78,10 @@ export function EditorShell() {
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0a0a0a]">
       <Toolbar />
-      <DndContext onDragEnd={handleDragEnd}>
-        <div className="flex flex-1 overflow-hidden">
-          <CanvasArea />
-          <Sidebar />
-        </div>
-      </DndContext>
+      <div className="flex flex-1 overflow-hidden">
+        <CanvasArea />
+        <Sidebar />
+      </div>
       <Onboarding />
     </div>
   );

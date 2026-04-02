@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Completed quick/260402-7j0
 last_updated: "2026-04-02T02:27:41.579Z"
-last_activity: "2026-04-02 - Completed quick task 260402-63e: Fix pan/zoom in LeafNode so cover and contain modes pan through full original image"
+last_activity: "2026-04-02 - Completed quick task 260402-7j0: Fix image rendering in LeafNode: maxWidth none + select-none"
 progress:
   total_phases: 8
   completed_phases: 5
@@ -134,6 +134,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260401-oca | Replace the html-to-image export engine with a Canvas API implementation | 2026-04-01 | b801923 | [260401-oca-replace-the-html-to-image-export-engine-](./quick/260401-oca-replace-the-html-to-image-export-engine-/) |
 | 260402-63e | Fix pan/zoom in LeafNode so cover and contain modes pan through the full original image | 2026-04-02 | 8e9ea18 | [260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co](./quick/260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co/) |
+| 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 
 ### Blockers/Concerns
 

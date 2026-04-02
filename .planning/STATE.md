@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed quick/260402-63e
-last_updated: "2026-04-02T01:30:01.209Z"
-last_activity: 2026-04-01
+stopped_at: Completed quick/260402-7j0
+last_updated: "2026-04-02T02:27:41.579Z"
+last_activity: "2026-04-02 - Completed quick task 260402-63e: Fix pan/zoom in LeafNode so cover and contain modes pan through full original image"
 progress:
   total_phases: 8
   completed_phases: 5
@@ -122,6 +122,7 @@ Recent decisions affecting current work:
 - [Phase 05-polish-ux]: Onboarding spotlightRect initialized to null — overlay withholds render until document.querySelector resolves target element
 - [Phase 05-polish-ux]: setPointerCapture/releasePointerCapture wrapped in existence checks — jsdom lacks these APIs; guards prevent test errors while browser behavior is preserved
 - [Phase 05-polish-ux]: DndContext wraps content div below Toolbar only — Toolbar does not need drag awareness; ActionBar useDraggable disabled=!hasMedia prevents drag when no media
+- [Phase quick]: maxWidth:'none' inline style overrides Tailwind Preflight max-width:100% on absolutely-positioned images in LeafNode
 
 ### Pending Todos
 
@@ -141,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T01:30:01.206Z
-Stopped at: Completed quick/260402-63e
+Last session: 2026-04-02T02:27:38.195Z
+Stopped at: Completed quick/260402-7j0
 Resume file: None

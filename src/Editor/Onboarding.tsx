@@ -99,12 +99,13 @@ export function Onboarding() {
           zIndex: 9998,
         }}
       />
-      {/* Tooltip card positioned below/beside the spotlight */}
+      {/* Tooltip card — fixed to right side, always visible */}
       <div
-        className="absolute bg-[#1a1a1a] border border-[#333] rounded-lg p-4 shadow-xl max-w-[280px]"
+        className="fixed bg-[#1a1a1a] border border-[#333] rounded-lg p-4 shadow-xl w-[240px]"
         style={{
-          top: spotlightRect.bottom + padding + 12,
-          left: Math.max(16, spotlightRect.left),
+          right: 24,
+          top: '50%',
+          transform: 'translateY(-50%)',
           zIndex: 9999,
         }}
         data-testid="onboarding-tooltip"

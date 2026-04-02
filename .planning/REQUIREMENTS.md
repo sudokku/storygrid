@@ -69,7 +69,6 @@
 - [x] **POLH-01**: Preset templates panel with: 2×1 (stacked), 1×2 (side-by-side), 2×2 (quad), 3-row, L-shape, Mosaic layouts
 - [x] **POLH-02**: Global gap slider (0–20px) applies consistent spacing between all cells via CSS gap
 - [x] **POLH-03**: Global border radius slider (0–24px) applied to all leaf cells
-- [x] **POLH-04**: Border color picker for cell borders
 - [x] **POLH-05**: Canvas background color picker; gradient option (two colors + direction)
 - [x] **POLH-06**: Per-cell pan/zoom: double-click selected cell to enter pan mode; drag to reposition (updates object-position); scroll to scale within cell; Escape or click outside to exit
 - [x] **POLH-07**: Cell-swap-by-drag: drag a filled image cell over another cell to swap their media
@@ -166,7 +165,6 @@
 | POLH-01 | Phase 5 | Complete |
 | POLH-02 | Phase 5 | Complete |
 | POLH-03 | Phase 5 | Complete |
-| POLH-04 | Phase 5 | Complete |
 | POLH-05 | Phase 5 | Complete |
 | POLH-06 | Phase 5 | Complete |
 | POLH-07 | Phase 5 | Complete |

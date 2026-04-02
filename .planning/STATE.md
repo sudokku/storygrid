@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 05-polish-ux/05-05-PLAN.md
-last_updated: "2026-04-02T12:48:52.366Z"
+last_updated: "2026-04-02T12:57:09.369Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 8
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 
 ## Current Position
 
-Phase: 05 (polish-ux) — EXECUTING
-Plan: 2 of 5
+Phase: 6
+Plan: Not started
 Status: Ready to execute
 Last activity: 2026-04-02
 
@@ -119,7 +119,6 @@ Recent decisions affecting current work:
 - [Phase 05-polish-ux]: applyTemplate clears mediaRegistry to avoid dangling media refs from old tree
 - [Phase 05-polish-ux]: useGridStore.getState() / useEditorStore.getState() in keydown handler — avoids extra useEffect deps, always reads latest state
 - [Phase 05-polish-ux]: window.matchMedia polyfill added to test setup.ts — jsdom lacks native matchMedia; needed globally for useMediaQuery hook tests
-- [Phase 05-polish-ux]: DEFAULT_CANVAS_SETTINGS.borderColor set to empty string — existing tests without settings don't invoke border stroke path; store default remains #000000 for UI
 - [Phase 05-polish-ux]: Onboarding spotlightRect initialized to null — overlay withholds render until document.querySelector resolves target element
 - [Phase 05-polish-ux]: setPointerCapture/releasePointerCapture wrapped in existence checks — jsdom lacks these APIs; guards prevent test errors while browser behavior is preserved
 - [Phase 05-polish-ux]: DndContext wraps content div below Toolbar only — Toolbar does not need drag awareness; ActionBar useDraggable disabled=!hasMedia prevents drag when no media

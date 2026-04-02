@@ -100,7 +100,7 @@ Plans:
 ### Phase 5: Polish & UX
 **Goal**: The editor feels complete: preset templates speed up layout creation, global style controls (gap, radius, background) work in both preview and export, pan/zoom lets users reposition images within cells, and the dark theme + keyboard shortcuts give it a professional feel
 **Depends on**: Phase 4
-**Requirements**: POLH-01, POLH-02, POLH-03, POLH-04, POLH-05, POLH-06, POLH-07, POLH-08, POLH-09, POLH-10, POLH-11, POLH-12
+**Requirements**: POLH-01, POLH-02, POLH-03, POLH-05, POLH-06, POLH-07, POLH-08, POLH-09, POLH-10, POLH-11, POLH-12
 **Success Criteria** (what must be TRUE):
   1. Clicking a preset template (e.g., 2x2) instantly replaces the canvas with the correct layout and empty cells
   2. Moving the gap slider changes spacing between all cells live in the editor; the exported PNG reflects the same spacing

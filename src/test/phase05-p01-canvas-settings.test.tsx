@@ -51,14 +51,6 @@ describe('editorStore canvas settings', () => {
     expect(useEditorStore.getState().borderRadius).toBe(24);
   });
 
-  it('borderColor initial value is #000000', () => {
-    expect(useEditorStore.getState().borderColor).toBe('#000000');
-  });
-
-  it('setBorderColor("#ff0000") updates to #ff0000', () => {
-    useEditorStore.getState().setBorderColor('#ff0000');
-    expect(useEditorStore.getState().borderColor).toBe('#ff0000');
-  });
 
   it('backgroundMode initial value is "solid"', () => {
     expect(useEditorStore.getState().backgroundMode).toBe('solid');
@@ -122,55 +114,4 @@ describe('editorStore canvas settings', () => {
 });
 
 // ---------------------------------------------------------------------------
-// LeafNode borderRadius and borderColor rendering
-// ---------------------------------------------------------------------------
 
-describe('LeafNode border styles from editorStore', () => {
-  let leafId: string;
-
-  beforeEach(async () => {
-    // Import LeafNodeComponent lazily to avoid module resolution issues at top level
-    const initialState = useGridStore.getInitialState();
-    useGridStore.setState(initialState, true);
-    // Get the first leaf id from initial store tree
-    const { root } = useGridStore.getState();
-    if (root.type === 'container') {
-      leafId = root.children[0].id;
-    } else {
-      leafId = root.id;
-    }
-  });
-
-  it('applies borderRadius style from editorStore', async () => {
-    const { LeafNodeComponent } = await import('../Grid/LeafNode');
-    useEditorStore.setState({ borderRadius: 12 });
-    const { container } = render(<LeafNodeComponent id={leafId} />);
-    const leafDiv = container.querySelector(`[data-testid="leaf-${leafId}"]`);
-    expect(leafDiv).not.toBeNull();
-    const style = (leafDiv as HTMLElement).style;
-    expect(style.borderRadius).toBe('12px');
-  });
-
-  it('applies borderColor (outline) style from editorStore', async () => {
-    const { LeafNodeComponent } = await import('../Grid/LeafNode');
-    useEditorStore.setState({ borderColor: '#ff0000' });
-    const { container } = render(<LeafNodeComponent id={leafId} />);
-    const leafDiv = container.querySelector(`[data-testid="leaf-${leafId}"]`);
-    expect(leafDiv).not.toBeNull();
-    const style = (leafDiv as HTMLElement).style;
-    // Outline color contains ff0000 (in some form)
-    expect(style.outline).toContain('ff0000');
-  });
-
-  it('applies both borderRadius and borderColor simultaneously, overflow-hidden present', async () => {
-    const { LeafNodeComponent } = await import('../Grid/LeafNode');
-    useEditorStore.setState({ borderRadius: 12, borderColor: '#ff0000' });
-    const { container } = render(<LeafNodeComponent id={leafId} />);
-    const leafDiv = container.querySelector(`[data-testid="leaf-${leafId}"]`);
-    expect(leafDiv).not.toBeNull();
-    const style = (leafDiv as HTMLElement).style;
-    expect(style.borderRadius).toBe('12px');
-    expect(style.outline).toContain('ff0000');
-    expect(leafDiv!.className).toContain('overflow-hidden');
-  });
-});

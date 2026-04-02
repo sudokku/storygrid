@@ -30,7 +30,6 @@ export function ExportSplitButton() {
   // Canvas settings for export
   const gap = useEditorStore(s => s.gap);
   const borderRadius = useEditorStore(s => s.borderRadius);
-  const borderColor = useEditorStore(s => s.borderColor);
   const backgroundMode = useEditorStore(s => s.backgroundMode);
   const backgroundColor = useEditorStore(s => s.backgroundColor);
   const backgroundGradientFrom = useEditorStore(s => s.backgroundGradientFrom);
@@ -91,7 +90,6 @@ export function ExportSplitButton() {
       const canvasSettings: CanvasSettings = {
         gap,
         borderRadius,
-        borderColor,
         backgroundMode,
         backgroundColor,
         backgroundGradientFrom,
@@ -125,7 +123,6 @@ export function ExportSplitButton() {
     setIsExporting,
     gap,
     borderRadius,
-    borderColor,
     backgroundMode,
     backgroundColor,
     backgroundGradientFrom,

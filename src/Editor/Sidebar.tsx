@@ -75,7 +75,6 @@ function CanvasSettingsPanel() {
   const {
     gap, setGap,
     borderRadius, setBorderRadius,
-    borderColor, setBorderColor,
     backgroundMode, setBackgroundMode,
     backgroundColor, setBackgroundColor,
     backgroundGradientFrom, setBackgroundGradientFrom,
@@ -86,8 +85,6 @@ function CanvasSettingsPanel() {
     setGap: s.setGap,
     borderRadius: s.borderRadius,
     setBorderRadius: s.setBorderRadius,
-    borderColor: s.borderColor,
-    setBorderColor: s.setBorderColor,
     backgroundMode: s.backgroundMode,
     setBackgroundMode: s.setBackgroundMode,
     backgroundColor: s.backgroundColor,
@@ -135,18 +132,6 @@ function CanvasSettingsPanel() {
           onChange={e => setBorderRadius(Number(e.target.value))}
           className="w-full accent-[#3b82f6]"
           aria-label="Border radius"
-        />
-      </div>
-
-      {/* Border color */}
-      <div className="space-y-1.5">
-        <label className="text-xs text-neutral-400">Border color</label>
-        <input
-          type="color"
-          value={borderColor}
-          onChange={e => setBorderColor(e.target.value)}
-          className="w-full h-8 rounded border border-[#2a2a2a] cursor-pointer bg-transparent"
-          aria-label="Border color"
         />
       </div>
 

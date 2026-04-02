@@ -66,23 +66,17 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
         {/* Button order: Drag Handle (if media) → Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
 
         {hasMedia && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  ref={setActivatorNodeRef}
-                  {...listeners}
-                  {...attributes}
-                  className={`${btnClass} cursor-grab active:cursor-grabbing`}
-                  aria-label="Drag to swap"
-                  data-testid={`drag-handle-${nodeId}`}
-                />
-              }
-            >
-              <GripVertical size={16} className="text-white" />
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Drag to swap</TooltipContent>
-          </Tooltip>
+          <button
+            ref={setActivatorNodeRef}
+            {...listeners}
+            {...attributes}
+            className={`${btnClass} cursor-grab active:cursor-grabbing`}
+            aria-label="Drag to swap"
+            title="Drag to swap"
+            data-testid={`drag-handle-${nodeId}`}
+          >
+            <GripVertical size={16} className="text-white" />
+          </button>
         )}
 
         <Tooltip>

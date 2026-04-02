@@ -22,7 +22,6 @@ type EditorState = {
   panModeNodeId: string | null;
   gap: number;
   borderRadius: number;
-  borderColor: string;
   backgroundMode: BackgroundMode;
   backgroundColor: string;
   backgroundGradientFrom: string;
@@ -41,7 +40,6 @@ type EditorState = {
   setPanModeNodeId: (id: string | null) => void;
   setGap: (v: number) => void;
   setBorderRadius: (v: number) => void;
-  setBorderColor: (v: string) => void;
   setBackgroundMode: (v: BackgroundMode) => void;
   setBackgroundColor: (v: string) => void;
   setBackgroundGradientFrom: (v: string) => void;
@@ -66,7 +64,6 @@ export const useEditorStore = create<EditorState>()(set => ({
   panModeNodeId: null,
   gap: 0,
   borderRadius: 0,
-  borderColor: '#000000',
   backgroundMode: 'solid' as const,
   backgroundColor: '#ffffff',
   backgroundGradientFrom: '#ffffff',
@@ -85,7 +82,6 @@ export const useEditorStore = create<EditorState>()(set => ({
   setPanModeNodeId: (id) => set({ panModeNodeId: id }),
   setGap: (v) => set({ gap: Math.min(20, Math.max(0, v)) }),
   setBorderRadius: (v) => set({ borderRadius: Math.min(24, Math.max(0, v)) }),
-  setBorderColor: (v) => set({ borderColor: v }),
   setBackgroundMode: (v) => set({ backgroundMode: v }),
   setBackgroundColor: (v) => set({ backgroundColor: v }),
   setBackgroundGradientFrom: (v) => set({ backgroundGradientFrom: v }),

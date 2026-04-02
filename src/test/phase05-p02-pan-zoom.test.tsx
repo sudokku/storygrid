@@ -79,7 +79,7 @@ describe('Pan mode entry (D-08)', () => {
     expect(useEditorStore.getState().panModeNodeId).toBeNull();
   });
 
-  it('double-clicking a NOT-selected leaf does NOT enter pan mode', () => {
+  it('double-clicking a NOT-selected leaf DOES enter pan mode (no selection required)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: null }); // not selected
@@ -88,7 +88,7 @@ describe('Pan mode entry (D-08)', () => {
     const leafEl = screen.getByTestId('leaf-leaf-1');
     fireEvent.doubleClick(leafEl);
 
-    expect(useEditorStore.getState().panModeNodeId).toBeNull();
+    expect(useEditorStore.getState().panModeNodeId).toBe('leaf-1');
   });
 });
 
@@ -125,7 +125,7 @@ describe('Pan mode ring styling (D-09)', () => {
 // ---------------------------------------------------------------------------
 
 describe('Dim overlay on other cells (D-09)', () => {
-  it('renders bg-black/40 overlay when panModeNodeId is a DIFFERENT leaf', () => {
+  it('renders bg-black/65 overlay when panModeNodeId is a DIFFERENT leaf', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     // Pan mode is active on some OTHER leaf
@@ -134,7 +134,7 @@ describe('Dim overlay on other cells (D-09)', () => {
     render(<LeafNodeComponent id="leaf-1" />);
     const dimOverlay = screen.queryByTestId('dim-overlay-leaf-1');
     expect(dimOverlay).toBeTruthy();
-    expect(dimOverlay!.className).toContain('bg-black/40');
+    expect(dimOverlay!.className).toContain('bg-black/65');
   });
 
   it('does NOT render dim overlay when panModeNodeId is null', () => {

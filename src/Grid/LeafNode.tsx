@@ -22,7 +22,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
   const canvasScale = useEditorStore(s => s.canvasScale);
   const borderRadius = useEditorStore(s => s.borderRadius);
-  const borderColor = useEditorStore(s => s.borderColor);
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
   const addMedia = useGridStore(s => s.addMedia);
@@ -51,14 +50,14 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     setSelectedNode(isSelected ? null : id);
   }, [id, isSelected, setSelectedNode]);
 
-  // D-08: double-click on selected cell with media enters pan mode
+  // D-08: double-click any media cell to toggle pan mode (no selection required)
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (isSelected && hasMedia) {
-      setPanModeNodeId(id);
+    if (hasMedia) {
+      setPanModeNodeId(isPanMode ? null : id);
     }
-  }, [isSelected, hasMedia, id, setPanModeNodeId]);
+  }, [hasMedia, isPanMode, id, setPanModeNodeId]);
 
   const handleUploadClick = useCallback(() => {
     inputRef.current?.click();
@@ -162,7 +161,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       `}
       style={{
         borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined,
-        outline: `1px solid ${borderColor}`,
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -213,7 +211,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       )}
       {/* D-09: Dim overlay on OTHER cells when some cell is in pan mode */}
       {isPanModeOtherCell && (
-        <div className="absolute inset-0 bg-black/40 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
+        <div className="absolute inset-0 bg-black/65 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
       )}
       {/* D-14: Drop target highlight when a cell is dragged over this one */}
       {isOver && (

@@ -102,7 +102,6 @@ describe('renderGridToCanvas — solid background', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ff0000',
       backgroundGradientFrom: '#fff',
@@ -122,7 +121,6 @@ describe('renderGridToCanvas — solid background', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'gradient',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#ff0000',
@@ -140,7 +138,6 @@ describe('renderGridToCanvas — solid background', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'gradient',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#ff0000',
@@ -159,7 +156,6 @@ describe('renderGridToCanvas — solid background', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'gradient',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#ff0000',
@@ -190,7 +186,6 @@ describe('renderGridToCanvas — gap support', () => {
     await renderGridToCanvas(container, {}, 1080, 1920, {
       gap: 10,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -223,7 +218,6 @@ describe('renderGridToCanvas — gap support', () => {
     await renderGridToCanvas(container, {}, 1080, 1920, {
       gap: 20,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -253,7 +247,6 @@ describe('renderGridToCanvas — gap support', () => {
     await renderGridToCanvas(container, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -286,7 +279,6 @@ describe('renderGridToCanvas — border radius', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 12,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -307,7 +299,6 @@ describe('renderGridToCanvas — border radius', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 0,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -329,7 +320,6 @@ describe('renderGridToCanvas — border radius', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 12,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -351,7 +341,6 @@ describe('renderGridToCanvas — border radius', () => {
     await renderGridToCanvas(leaf, {}, 1080, 1920, {
       gap: 0,
       borderRadius: 12,
-      borderColor: '',
       backgroundMode: 'solid',
       backgroundColor: '#ffffff',
       backgroundGradientFrom: '#fff',
@@ -363,73 +352,7 @@ describe('renderGridToCanvas — border radius', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// renderGridToCanvas — border color (stroke)
-// ---------------------------------------------------------------------------
 
-describe('renderGridToCanvas — border color', () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  it('calls stroke when borderColor is a non-empty string', async () => {
-    const ctx = makeCtx();
-    installCanvasMock(ctx);
-    const { renderGridToCanvas } = await import('../lib/export');
-
-    const leaf = makeLeaf('l1');
-    await renderGridToCanvas(leaf, {}, 1080, 1920, {
-      gap: 0,
-      borderRadius: 0,
-      borderColor: '#ff0000',
-      backgroundMode: 'solid',
-      backgroundColor: '#ffffff',
-      backgroundGradientFrom: '#fff',
-      backgroundGradientTo: '#000',
-      backgroundGradientDir: 'to-bottom',
-    });
-
-    expect(ctx.stroke).toHaveBeenCalled();
-  });
-
-  it('calls stroke when borderColor is #000000 (not silently skipped)', async () => {
-    const ctx = makeCtx();
-    installCanvasMock(ctx);
-    const { renderGridToCanvas } = await import('../lib/export');
-
-    const leaf = makeLeaf('l1');
-    await renderGridToCanvas(leaf, {}, 1080, 1920, {
-      gap: 0,
-      borderRadius: 0,
-      borderColor: '#000000',
-      backgroundMode: 'solid',
-      backgroundColor: '#ffffff',
-      backgroundGradientFrom: '#fff',
-      backgroundGradientTo: '#000',
-      backgroundGradientDir: 'to-bottom',
-    });
-
-    expect(ctx.stroke).toHaveBeenCalled();
-  });
-
-  it('does NOT call stroke when borderColor is empty string', async () => {
-    const ctx = makeCtx();
-    installCanvasMock(ctx);
-    const { renderGridToCanvas } = await import('../lib/export');
-
-    const leaf = makeLeaf('l1');
-    await renderGridToCanvas(leaf, {}, 1080, 1920, {
-      gap: 0,
-      borderRadius: 0,
-      borderColor: '',
-      backgroundMode: 'solid',
-      backgroundColor: '#ffffff',
-      backgroundGradientFrom: '#fff',
-      backgroundGradientTo: '#000',
-      backgroundGradientDir: 'to-bottom',
-    });
-
-    expect(ctx.stroke).not.toHaveBeenCalled();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // drawPannedCoverImage — pan/zoom crop math
@@ -443,71 +366,69 @@ describe('drawPannedCoverImage — pan/zoom', () => {
     expect(typeof (mod as Record<string, unknown>).drawPannedCoverImage).toBe('function');
   });
 
-  it('with panScale=1 and panX=0 panY=0, produces same drawImage call as drawCoverImage', async () => {
-    const ctx = makeCtx();
-    const { drawCoverImage, drawPannedCoverImage } = await import('../lib/export') as {
-      drawCoverImage: (ctx: unknown, img: unknown, rect: unknown, objPos: unknown) => void;
-      drawPannedCoverImage: (ctx: unknown, img: unknown, rect: unknown, objPos: unknown, panX: number, panY: number, panScale: number) => void;
-    };
-
-    const img = { naturalWidth: 1000, naturalHeight: 1000 } as HTMLImageElement;
-    const rect = { x: 0, y: 0, w: 500, h: 500 };
-    const objPos = { x: 0.5, y: 0.5 };
-
-    const ctx1 = { ...ctx, drawImage: vi.fn() };
-    const ctx2 = { ...ctx, drawImage: vi.fn() };
-
-    drawCoverImage(ctx1, img, rect, objPos);
-    drawPannedCoverImage(ctx2, img, rect, objPos, 0, 0, 1);
-
-    // Both should call drawImage with same arguments
-    expect(ctx1.drawImage.mock.calls[0]).toEqual(ctx2.drawImage.mock.calls[0]);
-  });
-
-  it('with panScale=2, zooms in (uses smaller source crop)', async () => {
+  it('with panScale=1 and panX=0 panY=0, calls translate to cell center and scale(1,1)', async () => {
     const { drawPannedCoverImage } = await import('../lib/export') as {
       drawPannedCoverImage: (ctx: unknown, img: unknown, rect: unknown, objPos: unknown, panX: number, panY: number, panScale: number) => void;
     };
 
-    const drawImageMock = vi.fn();
-    const ctx = { drawImage: drawImageMock };
-    // Square image, square cell → no aspect crop, just scale
+    const translateMock = vi.fn();
+    const scaleMock = vi.fn();
+    const ctx = {
+      save: vi.fn(), restore: vi.fn(), beginPath: vi.fn(),
+      rect: vi.fn(), clip: vi.fn(),
+      translate: translateMock, scale: scaleMock, drawImage: vi.fn(),
+    };
+    const img = { naturalWidth: 1000, naturalHeight: 1000 } as HTMLImageElement;
+    const rect = { x: 0, y: 0, w: 500, h: 500 };
+    const objPos = { x: 0.5, y: 0.5 };
+
+    drawPannedCoverImage(ctx, img, rect, objPos, 0, 0, 1);
+
+    // translate to cell center (250, 250) with no pan offset
+    expect(translateMock).toHaveBeenCalledWith(250, 250);
+    // scale(1, 1) — no zoom
+    expect(scaleMock).toHaveBeenCalledWith(1, 1);
+  });
+
+  it('with panScale=2, calls ctx.scale(2, 2)', async () => {
+    const { drawPannedCoverImage } = await import('../lib/export') as {
+      drawPannedCoverImage: (ctx: unknown, img: unknown, rect: unknown, objPos: unknown, panX: number, panY: number, panScale: number) => void;
+    };
+
+    const scaleMock = vi.fn();
+    const ctx = {
+      save: vi.fn(), restore: vi.fn(), beginPath: vi.fn(),
+      rect: vi.fn(), clip: vi.fn(),
+      translate: vi.fn(), scale: scaleMock, drawImage: vi.fn(),
+    };
     const img = { naturalWidth: 1000, naturalHeight: 1000 } as HTMLImageElement;
     const rect = { x: 0, y: 0, w: 500, h: 500 };
     const objPos = { x: 0.5, y: 0.5 };
 
     drawPannedCoverImage(ctx, img, rect, objPos, 0, 0, 2);
 
-    // Source crop should be 500x500 (1000/2) not 1000x1000
-    const call = drawImageMock.mock.calls[0];
-    // args: img, sx, sy, sw, sh, dx, dy, dw, dh
-    expect(call[3]).toBe(500); // sw = 1000/2 = 500
-    expect(call[4]).toBe(500); // sh = 1000/2 = 500
+    expect(scaleMock).toHaveBeenCalledWith(2, 2);
   });
 
-  it('with panX=50, shifts crop center to the right', async () => {
+  it('with panX=50, translate x offset includes panX/100 * rect.w', async () => {
     const { drawPannedCoverImage } = await import('../lib/export') as {
       drawPannedCoverImage: (ctx: unknown, img: unknown, rect: unknown, objPos: unknown, panX: number, panY: number, panScale: number) => void;
     };
 
-    const drawImageMock = vi.fn();
-    const ctx = { drawImage: drawImageMock };
+    const translateMock = vi.fn();
+    const ctx = {
+      save: vi.fn(), restore: vi.fn(), beginPath: vi.fn(),
+      rect: vi.fn(), clip: vi.fn(),
+      translate: translateMock, scale: vi.fn(), drawImage: vi.fn(),
+    };
     const img = { naturalWidth: 1000, naturalHeight: 1000 } as HTMLImageElement;
     const rect = { x: 0, y: 0, w: 500, h: 500 };
     const objPos = { x: 0.5, y: 0.5 };
 
-    // panScale=2, panX=0 (centered)
-    drawPannedCoverImage(ctx, img, rect, objPos, 0, 0, 2);
-    const centeredCall = drawImageMock.mock.calls[0];
-
-    drawImageMock.mockClear();
-
-    // panScale=2, panX=100 (shifted right)
-    drawPannedCoverImage(ctx, img, rect, objPos, 100, 0, 2);
-    const shiftedCall = drawImageMock.mock.calls[0];
-
-    // sx should be different (shifted)
-    expect(shiftedCall[1]).not.toBe(centeredCall[1]);
+    // panX=50: translate x = cx + (50/100)*500 = 250 + 250 = 500
+    drawPannedCoverImage(ctx, img, rect, objPos, 50, 0, 1);
+    const [tx] = translateMock.mock.calls[0];
+    expect(tx).toBe(500); // 250 (center) + 250 (pan offset)
   });
 });
 
@@ -527,7 +448,6 @@ describe('exportGrid — settings pass-through', () => {
     const result = await exportGrid(leaf, {}, 'png', 0.9, vi.fn(), {
       gap: 10,
       borderRadius: 8,
-      borderColor: '#ffffff',
       backgroundMode: 'solid',
       backgroundColor: '#333333',
       backgroundGradientFrom: '#fff',

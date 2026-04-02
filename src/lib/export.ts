@@ -217,6 +217,100 @@ export function drawPannedCoverImage(
 }
 
 // ---------------------------------------------------------------------------
+// drawPannedContainImage — canvas-transform approach for contain mode with pan/zoom
+//
+// Replicates CSS: transform-origin: center center;
+//                 transform: translate(panX%, panY%) scale(panScale);
+//
+// panX/panY are percentages of cell width/height (same unit as CSS translate%).
+// ---------------------------------------------------------------------------
+
+export function drawPannedContainImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  rect: Rect,
+  objPos: ObjPos,
+  bgColor: string,
+  panX: number,
+  panY: number,
+  panScale: number,
+): void {
+  ctx.save();
+
+  // Clip to cell rect to prevent image bleed
+  ctx.beginPath();
+  ctx.rect(rect.x, rect.y, rect.w, rect.h);
+  ctx.clip();
+
+  // Fill background (letterbox)
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+  // Move origin to cell center + CSS translate offset
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  ctx.translate(cx + (panX / 100) * rect.w, cy + (panY / 100) * rect.h);
+  ctx.scale(panScale, panScale);
+
+  // Compute contain dimensions
+  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const cellAspect = rect.w / rect.h;
+
+  let drawW: number, drawH: number;
+  if (imgAspect > cellAspect) {
+    drawW = rect.w;
+    drawH = rect.w / imgAspect;
+  } else {
+    drawH = rect.h;
+    drawW = rect.h * imgAspect;
+  }
+
+  // objPos controls alignment within the contain area; origin is at cell center
+  const drawX = -rect.w / 2 + (rect.w - drawW) * objPos.x;
+  const drawY = -rect.h / 2 + (rect.h - drawH) * objPos.y;
+
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
+// drawLeafToCanvas — unified leaf draw dispatch for both preview and export
+//
+// Does NOT handle borderRadius clipping or empty-cell fill — caller handles those.
+// ---------------------------------------------------------------------------
+
+export function drawLeafToCanvas(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  rect: Rect,
+  leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor'>,
+): void {
+  const objPos = parseObjectPosition(leaf.objectPosition ?? 'center center');
+  const bgColor = leaf.backgroundColor ?? '#ffffff';
+  const hasPan = (leaf.panX ?? 0) !== 0 || (leaf.panY ?? 0) !== 0 || (leaf.panScale ?? 1) !== 1;
+
+  if (leaf.fit === 'cover') {
+    if (hasPan) {
+      drawPannedCoverImage(
+        ctx, img, rect, objPos,
+        leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
+      );
+    } else {
+      drawCoverImage(ctx, img, rect, objPos);
+    }
+  } else {
+    if (hasPan) {
+      drawPannedContainImage(
+        ctx, img, rect, objPos, bgColor,
+        leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
+      );
+    } else {
+      drawContainImage(ctx, img, rect, objPos, bgColor);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // renderNode — recursive renderer walking the GridNode tree
 // ---------------------------------------------------------------------------
 
@@ -249,22 +343,7 @@ async function renderNode(
         imageCache.set(dataUri, img);
       }
 
-      const objPos = parseObjectPosition(leaf.objectPosition ?? 'center center');
-      const bgColor = leaf.backgroundColor ?? '#ffffff';
-      const hasPan = (leaf.panX ?? 0) !== 0 || (leaf.panY ?? 0) !== 0 || (leaf.panScale ?? 1) !== 1;
-
-      if (leaf.fit === 'cover') {
-        if (hasPan) {
-          drawPannedCoverImage(
-            ctx, img, rect, objPos,
-            leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
-          );
-        } else {
-          drawCoverImage(ctx, img, rect, objPos);
-        }
-      } else {
-        drawContainImage(ctx, img, rect, objPos, bgColor);
-      }
+      drawLeafToCanvas(ctx, img, rect, leaf);
     }
 
     if (settings.borderRadius > 0) {

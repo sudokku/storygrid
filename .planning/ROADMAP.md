@@ -15,7 +15,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [ ] **Phase 2: Grid Rendering** - Recursive React components, pointer-event dividers, canvas transform, Safari fixes
 - [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
 - [x] **Phase 4: Export Engine** - Canvas API tree renderer, PNG/JPEG download, progress toast, split-button UI (completed 2026-04-01)
-- [x] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts (completed 2026-04-02)
+- [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
 - [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
 - [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets
 
@@ -113,7 +113,7 @@ Plans:
 - [x] 05-02-PLAN.md — Dark theme, keyboard shortcuts, responsive sidebar (POLH-08, POLH-09, POLH-12)
 - [x] 05-03-PLAN.md — Pan/zoom interaction, cell swap via @dnd-kit drag handle (POLH-06, POLH-07)
 - [x] 05-04-PLAN.md — Export canvas settings integration, onboarding overlay (POLH-10, POLH-11)
-- [x] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
+- [ ] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
 **UI hint**: yes
 
 ### Phase 6: Video Support (v2)

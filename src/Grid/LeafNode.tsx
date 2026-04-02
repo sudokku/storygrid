@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -32,7 +32,65 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [cellSize, setCellSize] = useState({ w: 0, h: 0 });
+
+  // Reset natural size when media URL changes so we re-read on next load
+  useEffect(() => {
+    setNaturalSize(null);
+  }, [mediaUrl]);
+
+  // Track cell container dimensions via ResizeObserver
+  useLayoutEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    setCellSize({ w: el.clientWidth, h: el.clientHeight });
+    const observer = new ResizeObserver(() => {
+      setCellSize({ w: el.clientWidth, h: el.clientHeight });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleImgLoad = useCallback(() => {
+    const img = imgRef.current;
+    if (img) {
+      setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    }
+  }, []);
+
+  // Compute base cover/contain dimensions matching export.ts drawPannedCoverImage formula
+  const imgRenderParams = useMemo(() => {
+    if (!naturalSize || cellSize.w === 0 || cellSize.h === 0) return null;
+    const { w: nw, h: nh } = naturalSize;
+    const { w: cw, h: ch } = cellSize;
+    const imgAspect = nw / nh;
+    const cellAspect = cw / ch;
+    let baseW: number, baseH: number;
+    if (node?.fit === 'contain') {
+      // Contain: fit inside cell
+      if (imgAspect > cellAspect) {
+        baseW = cw;
+        baseH = cw / imgAspect;
+      } else {
+        baseH = ch;
+        baseW = ch * imgAspect;
+      }
+    } else {
+      // Cover (default): fill cell
+      if (imgAspect > cellAspect) {
+        baseH = ch;
+        baseW = ch * imgAspect;
+      } else {
+        baseW = cw;
+        baseH = cw / imgAspect;
+      }
+    }
+    return { baseW, baseH, cw, ch };
+  }, [naturalSize, cellSize, node?.fit]);
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -133,11 +191,46 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     if (!isPanMode || !panStartRef.current) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
-    // Sensitivity: 1px mouse = 1% of cell pan — enough to traverse the full image
-    const newPanX = Math.max(-100, Math.min(100, panStartRef.current.panX + dx));
-    const newPanY = Math.max(-100, Math.min(100, panStartRef.current.panY + dy));
-    updateCell(id, { panX: newPanX, panY: newPanY });
-  }, [isPanMode, id, updateCell]);
+
+    const params = imgRenderParams;
+    const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
+    const scale = n?.panScale ?? 1;
+    const fit = n?.fit ?? 'cover';
+
+    if (params) {
+      const { cw, ch } = params;
+      // Convert pixel deltas to percentage of cell dimensions for consistent sensitivity
+      const dxPct = (dx / cw) * 100;
+      const dyPct = (dy / ch) * 100;
+      let newPanX = panStartRef.current.panX + dxPct;
+      let newPanY = panStartRef.current.panY + dyPct;
+
+      if (fit === 'cover') {
+        const { baseW, baseH } = params;
+        // Clamp so image edges cannot leave cell boundary
+        const maxPanX = ((baseW * scale - cw) / 2 / cw) * 100;
+        const maxPanY = ((baseH * scale - ch) / 2 / ch) * 100;
+        newPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
+        newPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
+      } else {
+        // Contain mode: allow free panning within [-100, 100]
+        newPanX = Math.max(-100, Math.min(100, newPanX));
+        newPanY = Math.max(-100, Math.min(100, newPanY));
+      }
+
+      updateCell(id, { panX: newPanX, panY: newPanY });
+    } else {
+      // Fallback when imgRenderParams not yet available: pixel-to-pct conversion using cell size
+      const el = divRef.current;
+      const cw = el?.clientWidth ?? 1;
+      const ch = el?.clientHeight ?? 1;
+      const dxPct = (dx / cw) * 100;
+      const dyPct = (dy / ch) * 100;
+      const newPanX = Math.max(-100, Math.min(100, panStartRef.current.panX + dxPct));
+      const newPanY = Math.max(-100, Math.min(100, panStartRef.current.panY + dyPct));
+      updateCell(id, { panX: newPanX, panY: newPanY });
+    }
+  }, [isPanMode, id, updateCell, imgRenderParams]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (panStartRef.current) {
@@ -151,6 +244,53 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     : isSelected
       ? 'ring-2 ring-[#3b82f6] ring-inset'
       : !mediaUrl ? 'border border-dashed border-[#333333]' : '';
+
+  // Render the image using absolute positioning that matches the canvas export formula:
+  // center the natural-aspect cover/contain image in the cell, then translate by panX% of cell width.
+  const renderMedia = () => {
+    if (!mediaUrl) return null;
+
+    const panX = node.panX ?? 0;
+    const panY = node.panY ?? 0;
+    const scale = node.panScale ?? 1;
+
+    if (imgRenderParams) {
+      const { baseW, baseH, cw, ch } = imgRenderParams;
+      const scaledW = baseW * scale;
+      const scaledH = baseH * scale;
+      const left = (cw - scaledW) / 2 + (panX / 100) * cw;
+      const top = (ch - scaledH) / 2 + (panY / 100) * ch;
+      return (
+        <img
+          ref={imgRef}
+          src={mediaUrl}
+          onLoad={handleImgLoad}
+          style={{
+            position: 'absolute',
+            width: `${scaledW}px`,
+            height: `${scaledH}px`,
+            left: `${left}px`,
+            top: `${top}px`,
+          }}
+          alt=""
+          draggable={false}
+        />
+      );
+    }
+
+    // Fallback while natural dimensions are loading — capture load event to get dimensions
+    return (
+      <img
+        ref={imgRef}
+        src={mediaUrl}
+        onLoad={handleImgLoad}
+        className={node.fit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
+        style={node.fit === 'contain' ? { objectPosition: node.objectPosition ?? 'center center' } : undefined}
+        alt=""
+        draggable={false}
+      />
+    );
+  };
 
   return (
     <div
@@ -188,30 +328,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       />
 
       {mediaUrl ? (
-        node.fit === 'cover' ? (
-          // Pan/zoom: size a wrapper to panScale * 100% of the cell and position it so
-          // the cell's overflow-hidden clips to show the correct image region.
-          // Formula matches canvas drawPannedCoverImage: left = (1-panScale)*50 + panX
-          <div
-            className="absolute"
-            style={{
-              width: `${(node.panScale ?? 1) * 100}%`,
-              height: `${(node.panScale ?? 1) * 100}%`,
-              left: `${(1 - (node.panScale ?? 1)) * 50 + (node.panX ?? 0)}%`,
-              top: `${(1 - (node.panScale ?? 1)) * 50 + (node.panY ?? 0)}%`,
-            }}
-          >
-            <img src={mediaUrl} className="w-full h-full object-cover" alt="" draggable={false} />
-          </div>
-        ) : (
-          <img
-            src={mediaUrl}
-            className="w-full h-full object-contain"
-            style={{ objectPosition: node.objectPosition ?? 'center center' }}
-            alt=""
-            draggable={false}
-          />
-        )
+        renderMedia()
       ) : (
         <div className="flex flex-col items-center justify-center w-full h-full gap-2">
           <ImageIcon size={24} className="text-[#666666]" />

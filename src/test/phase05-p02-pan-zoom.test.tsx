@@ -180,16 +180,16 @@ describe('ActionBar hidden in pan mode (D-12)', () => {
 // ---------------------------------------------------------------------------
 
 describe('CSS transform on img (D-10)', () => {
-  it('img has no transform style when panX=0, panY=0, panScale=1', () => {
+  it('canvas element is rendered when media is loaded (media rendering via canvas, not img)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', panX: 0, panY: 0, panScale: 1 });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
 
     render(<LeafNodeComponent id="leaf-1" />);
     const leafEl = screen.getByTestId('leaf-leaf-1');
-    const img = leafEl.querySelector('img');
-    expect(img).toBeTruthy();
-    // transform should be undefined or empty when defaults
-    expect(img!.style.transform).toBeFalsy();
+    // Media rendering migrated from <img> to <canvas> for WYSIWYG with export pipeline
+    const canvas = leafEl.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+    expect(canvas!.style.display).not.toBe('none');
   });
 
   it.skip('img has translate transform when panX is non-zero', () => {

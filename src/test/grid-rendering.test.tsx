@@ -129,7 +129,7 @@ describe('LeafNode empty state (REND-04)', () => {
 // ---------------------------------------------------------------------------
 
 describe('LeafNode media state (REND-05)', () => {
-  it('renders img element with object-cover when fit is cover', () => {
+  it('renders canvas element when fit is cover and media is loaded', () => {
     const leaf = makeLeaf({ mediaId: 'test-id', fit: 'cover' });
     useGridStore.setState({
       root: leaf,
@@ -138,14 +138,14 @@ describe('LeafNode media state (REND-05)', () => {
       historyIndex: 0,
     });
     render(<LeafNodeComponent id="leaf-1" />);
-    // Use querySelector since img has empty alt (presentation role in ARIA)
     const leafEl = screen.getByTestId('leaf-leaf-1');
-    const img = leafEl.querySelector('img');
-    expect(img).toBeTruthy();
-    expect(img!.className).toContain('object-cover');
+    // Media is now rendered via <canvas>, not <img>
+    const canvas = leafEl.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+    expect(canvas!.style.display).not.toBe('none');
   });
 
-  it('renders img element with object-contain when leaf.fit is contain', () => {
+  it('renders canvas element when fit is contain and media is loaded', () => {
     const leaf = makeLeaf({ mediaId: 'test-id', fit: 'contain' });
     useGridStore.setState({
       root: leaf,
@@ -155,9 +155,10 @@ describe('LeafNode media state (REND-05)', () => {
     });
     render(<LeafNodeComponent id="leaf-1" />);
     const leafEl = screen.getByTestId('leaf-leaf-1');
-    const img = leafEl.querySelector('img');
-    expect(img).toBeTruthy();
-    expect(img!.className).toContain('object-contain');
+    // Media is now rendered via <canvas>, not <img>
+    const canvas = leafEl.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+    expect(canvas!.style.display).not.toBe('none');
   });
 });
 

@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
+import { loadImage, drawLeafToCanvas } from '../lib/export';
 import type { LeafNode } from '../types';
 import { ImageIcon } from 'lucide-react';
 import { ActionBar } from './ActionBar';
@@ -32,65 +33,140 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Holds the loaded HTMLImageElement — never rendered to DOM
+  const imgElRef = useRef<HTMLImageElement | null>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
-
-  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
-  const [cellSize, setCellSize] = useState({ w: 0, h: 0 });
-
-  // Reset natural size when media URL changes so we re-read on next load
-  useEffect(() => {
-    setNaturalSize(null);
-  }, [mediaUrl]);
+  const cellSizeRef = useRef({ w: 0, h: 0 });
+  const drawRef = useRef<() => void>(() => {});
 
   // Track cell container dimensions via ResizeObserver
   useLayoutEffect(() => {
     const el = divRef.current;
     if (!el) return;
-    setCellSize({ w: el.clientWidth, h: el.clientHeight });
+    cellSizeRef.current = { w: el.clientWidth, h: el.clientHeight };
     const observer = new ResizeObserver(() => {
-      setCellSize({ w: el.clientWidth, h: el.clientHeight });
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      cellSizeRef.current = { w, h };
+      // Update canvas physical pixel dimensions
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      drawRef.current();
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  const handleImgLoad = useCallback(() => {
-    const img = imgRef.current;
-    if (img) {
-      setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
-    }
-  }, []);
+  // Build stable redraw function — reads latest state directly from stores
+  useEffect(() => {
+    drawRef.current = () => {
+      const canvas = canvasRef.current;
+      const img = imgElRef.current;
+      if (!canvas || !img) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-  // Compute base cover/contain dimensions matching export.ts drawPannedCoverImage formula
-  const imgRenderParams = useMemo(() => {
-    if (!naturalSize || cellSize.w === 0 || cellSize.h === 0) return null;
-    const { w: nw, h: nh } = naturalSize;
-    const { w: cw, h: ch } = cellSize;
-    const imgAspect = nw / nh;
-    const cellAspect = cw / ch;
-    let baseW: number, baseH: number;
-    if (node?.fit === 'contain') {
-      // Contain: fit inside cell
-      if (imgAspect > cellAspect) {
-        baseW = cw;
-        baseH = cw / imgAspect;
-      } else {
-        baseH = ch;
-        baseW = ch * imgAspect;
+      const { w: cw, h: ch } = cellSizeRef.current;
+      if (cw === 0 || ch === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const physW = Math.round(cw * dpr);
+      const physH = Math.round(ch * dpr);
+
+      // Ensure canvas dimensions are up to date
+      if (canvas.width !== physW || canvas.height !== physH) {
+        canvas.width = physW;
+        canvas.height = physH;
       }
-    } else {
-      // Cover (default): fill cell
-      if (imgAspect > cellAspect) {
-        baseH = ch;
-        baseW = ch * imgAspect;
-      } else {
-        baseW = cw;
-        baseH = cw / imgAspect;
+
+      // Reset transform and clear
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, physW, physH);
+
+      // Scale context for DPR so all draw calls are in CSS pixels
+      ctx.scale(dpr, dpr);
+
+      const leafState = findNode(useGridStore.getState().root, id) as LeafNode | null;
+      if (!leafState) return;
+
+      const br = useEditorStore.getState().borderRadius;
+      if (br > 0) {
+        ctx.save();
+        ctx.beginPath();
+        const r = Math.min(br, cw / 2, ch / 2);
+        if (typeof (ctx as unknown as { roundRect?: unknown }).roundRect === 'function') {
+          (ctx as unknown as { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(0, 0, cw, ch, r);
+        } else {
+          ctx.moveTo(r, 0);
+          ctx.arcTo(cw, 0, cw, ch, r);
+          ctx.arcTo(cw, ch, 0, ch, r);
+          ctx.arcTo(0, ch, 0, 0, r);
+          ctx.arcTo(0, 0, cw, 0, r);
+          ctx.closePath();
+        }
+        ctx.clip();
       }
+
+      drawLeafToCanvas(ctx, img, { x: 0, y: 0, w: cw, h: ch }, leafState);
+
+      if (br > 0) {
+        ctx.restore();
+      }
+    };
+  }, [id]);
+
+  // Load image when mediaUrl changes and trigger a redraw
+  useEffect(() => {
+    if (!mediaUrl) {
+      imgElRef.current = null;
+      return;
     }
-    return { baseW, baseH, cw, ch };
-  }, [naturalSize, cellSize, node?.fit]);
+    let cancelled = false;
+    loadImage(mediaUrl).then(img => {
+      if (!cancelled) {
+        imgElRef.current = img;
+        drawRef.current();
+      }
+    }).catch(() => {
+      if (!cancelled) imgElRef.current = null;
+    });
+    return () => { cancelled = true; };
+  }, [mediaUrl]);
+
+  // Subscribe to gridStore for per-cell pan/zoom/fit/media changes (bypass React re-render)
+  useEffect(() => {
+    const unsubGrid = useGridStore.subscribe((state, prev) => {
+      const curr = findNode(state.root, id) as LeafNode | null;
+      const prevLeaf = findNode(prev.root, id) as LeafNode | null;
+      if (!curr || !prevLeaf) return;
+      if (
+        curr.panX !== prevLeaf.panX ||
+        curr.panY !== prevLeaf.panY ||
+        curr.panScale !== prevLeaf.panScale ||
+        curr.fit !== prevLeaf.fit ||
+        curr.mediaId !== prevLeaf.mediaId ||
+        curr.objectPosition !== prevLeaf.objectPosition
+      ) {
+        drawRef.current();
+      }
+    });
+
+    const unsubEditor = useEditorStore.subscribe((state, prev) => {
+      if (state.borderRadius !== prev.borderRadius) {
+        drawRef.current();
+      }
+    });
+
+    return () => {
+      unsubGrid();
+      unsubEditor();
+    };
+  }, [id]);
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -108,7 +184,31 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
       const newScale = Math.max(1, Math.min(3, (n?.panScale ?? 1) + delta));
-      updateCell(id, { panScale: newScale });
+
+      // Re-clamp panX/panY for the new scale to prevent cover constraint violation
+      const img = imgElRef.current;
+      const { w: cw, h: ch } = cellSizeRef.current;
+      let clampedPanX = n?.panX ?? 0;
+      let clampedPanY = n?.panY ?? 0;
+
+      if (img && cw > 0 && ch > 0 && (n?.fit ?? 'cover') === 'cover') {
+        const imgAspect = img.naturalWidth / img.naturalHeight;
+        const cellAspect = cw / ch;
+        let baseW: number, baseH: number;
+        if (imgAspect > cellAspect) {
+          baseH = ch;
+          baseW = ch * imgAspect;
+        } else {
+          baseW = cw;
+          baseH = cw / imgAspect;
+        }
+        const maxPanX = ((baseW * newScale - cw) / 2 / cw) * 100;
+        const maxPanY = ((baseH * newScale - ch) / 2 / ch) * 100;
+        clampedPanX = Math.max(-maxPanX, Math.min(maxPanX, clampedPanX));
+        clampedPanY = Math.max(-maxPanY, Math.min(maxPanY, clampedPanY));
+      }
+
+      updateCell(id, { panScale: newScale, panX: clampedPanX, panY: clampedPanY });
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
@@ -178,11 +278,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
   }, [id, swapCells, addMedia, setMedia, split]);
 
+  // Fix: setPointerCapture on the wrapper div, not e.target
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!isPanMode) return;
     e.preventDefault();
     e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    divRef.current?.setPointerCapture?.(e.pointerId);
     const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
     panStartRef.current = { x: e.clientX, y: e.clientY, panX: n?.panX ?? 0, panY: n?.panY ?? 0 };
   }, [isPanMode, id]);
@@ -192,49 +293,49 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
 
-    const params = imgRenderParams;
+    const { w: cw, h: ch } = cellSizeRef.current;
     const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
     const scale = n?.panScale ?? 1;
     const fit = n?.fit ?? 'cover';
+    const img = imgElRef.current;
 
-    if (params) {
-      const { cw, ch } = params;
-      // Convert pixel deltas to percentage of cell dimensions for consistent sensitivity
-      const dxPct = (dx / cw) * 100;
-      const dyPct = (dy / ch) * 100;
-      let newPanX = panStartRef.current.panX + dxPct;
-      let newPanY = panStartRef.current.panY + dyPct;
+    // Use cell dimensions if available; fall back to 1 so percentage conversion still works
+    const effectiveCw = cw > 0 ? cw : 1;
+    const effectiveCh = ch > 0 ? ch : 1;
 
-      if (fit === 'cover') {
-        const { baseW, baseH } = params;
-        // Clamp so image edges cannot leave cell boundary
-        const maxPanX = ((baseW * scale - cw) / 2 / cw) * 100;
-        const maxPanY = ((baseH * scale - ch) / 2 / ch) * 100;
-        newPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
-        newPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
+    const dxPct = (dx / effectiveCw) * 100;
+    const dyPct = (dy / effectiveCh) * 100;
+    let newPanX = panStartRef.current.panX + dxPct;
+    let newPanY = panStartRef.current.panY + dyPct;
+
+    if (fit === 'cover' && img && cw > 0 && ch > 0) {
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      const cellAspect = cw / ch;
+      let baseW: number, baseH: number;
+      if (imgAspect > cellAspect) {
+        baseH = ch;
+        baseW = ch * imgAspect;
       } else {
-        // Contain mode: allow free panning within [-100, 100]
-        newPanX = Math.max(-100, Math.min(100, newPanX));
-        newPanY = Math.max(-100, Math.min(100, newPanY));
+        baseW = cw;
+        baseH = cw / imgAspect;
       }
-
-      updateCell(id, { panX: newPanX, panY: newPanY });
+      // Clamp so image edges cannot leave cell boundary
+      const maxPanX = ((baseW * scale - cw) / 2 / cw) * 100;
+      const maxPanY = ((baseH * scale - ch) / 2 / ch) * 100;
+      newPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
+      newPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
     } else {
-      // Fallback when imgRenderParams not yet available: pixel-to-pct conversion using cell size
-      const el = divRef.current;
-      const cw = el?.clientWidth ?? 1;
-      const ch = el?.clientHeight ?? 1;
-      const dxPct = (dx / cw) * 100;
-      const dyPct = (dy / ch) * 100;
-      const newPanX = Math.max(-100, Math.min(100, panStartRef.current.panX + dxPct));
-      const newPanY = Math.max(-100, Math.min(100, panStartRef.current.panY + dyPct));
-      updateCell(id, { panX: newPanX, panY: newPanY });
+      // Contain mode or no image dimensions: allow free panning within [-100, 100]
+      newPanX = Math.max(-100, Math.min(100, newPanX));
+      newPanY = Math.max(-100, Math.min(100, newPanY));
     }
-  }, [isPanMode, id, updateCell, imgRenderParams]);
+
+    updateCell(id, { panX: newPanX, panY: newPanY });
+  }, [isPanMode, id, updateCell]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (panStartRef.current) {
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      divRef.current?.releasePointerCapture?.(e.pointerId);
       panStartRef.current = null;
     }
   }, []);
@@ -244,54 +345,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     : isSelected
       ? 'ring-2 ring-[#3b82f6] ring-inset'
       : !mediaUrl ? 'border border-dashed border-[#333333]' : '';
-
-  // Render the image using absolute positioning that matches the canvas export formula:
-  // center the natural-aspect cover/contain image in the cell, then translate by panX% of cell width.
-  const renderMedia = () => {
-    if (!mediaUrl) return null;
-
-    const panX = node.panX ?? 0;
-    const panY = node.panY ?? 0;
-    const scale = node.panScale ?? 1;
-
-    if (imgRenderParams) {
-      const { baseW, baseH, cw, ch } = imgRenderParams;
-      const scaledW = baseW * scale;
-      const scaledH = baseH * scale;
-      const left = (cw - scaledW) / 2 + (panX / 100) * cw;
-      const top = (ch - scaledH) / 2 + (panY / 100) * ch;
-      return (
-        <img
-          ref={imgRef}
-          src={mediaUrl}
-          onLoad={handleImgLoad}
-          style={{
-            position: 'absolute',
-            width: `${scaledW}px`,
-            height: `${scaledH}px`,
-            left: `${left}px`,
-            top: `${top}px`,
-            maxWidth: 'none',
-          }}
-          alt=""
-          draggable={false}
-        />
-      );
-    }
-
-    // Fallback while natural dimensions are loading — capture load event to get dimensions
-    return (
-      <img
-        ref={imgRef}
-        src={mediaUrl}
-        onLoad={handleImgLoad}
-        className={node.fit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
-        style={node.fit === 'contain' ? { objectPosition: node.objectPosition ?? 'center center' } : undefined}
-        alt=""
-        draggable={false}
-      />
-    );
-  };
 
   return (
     <div
@@ -303,6 +356,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       `}
       style={{
         borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined,
+        backfaceVisibility: 'hidden',
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -328,9 +382,14 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         aria-hidden="true"
       />
 
-      {mediaUrl ? (
-        renderMedia()
-      ) : (
+      {/* Canvas for media rendering — always present when media is loaded */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ display: mediaUrl ? 'block' : 'none' }}
+      />
+
+      {!mediaUrl && (
         <div className="flex flex-col items-center justify-center w-full h-full gap-2">
           <ImageIcon size={24} className="text-[#666666]" />
           <span className="text-sm text-[#666666]">Drop image or use Upload button</span>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Download, ChevronDown } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 import { useGridStore } from '../store/gridStore';

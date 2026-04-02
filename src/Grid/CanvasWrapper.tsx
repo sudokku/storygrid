@@ -14,9 +14,11 @@ const GRADIENT_DIR_MAP = {
   'diagonal': '135deg',
 } as const;
 
-function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
   }) as T;

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Trash2 } from 'lucide-react';

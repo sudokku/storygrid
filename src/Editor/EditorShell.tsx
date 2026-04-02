@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { Toolbar } from './Toolbar';
 import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';

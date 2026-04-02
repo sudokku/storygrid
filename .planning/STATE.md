@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05 plan 5 ready to execute
-last_updated: "2026-04-02T12:40:00Z"
-last_activity: "2026-04-02 - Completed quick task 260402-lae: canvas migration"
+stopped_at: Completed 05-polish-ux/05-05-PLAN.md
+last_updated: "2026-04-02T12:48:52.366Z"
+last_activity: 2026-04-02
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 ## Current Position
 
 Phase: 05 (polish-ux) — EXECUTING
-Plan: 5 of 5
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-04-02 - Completed quick task 260402-lae: canvas migration
+Last activity: 2026-04-02
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P02 | 334 | 2 tasks | 7 files |
 | Phase 05-polish-ux P04 | 8min | 2 tasks | 7 files |
 | Phase 05-polish-ux P03 | 8min | 2 tasks | 6 files |
+| Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,8 @@ Recent decisions affecting current work:
 - [Phase quick]: LeafNode media rendering uses canvas element (not img) — WYSIWYG with export pipeline guaranteed via shared drawLeafToCanvas()
 - [Phase quick]: setPointerCapture on divRef.current (not e.target) — ensures capture stays on stable wrapper div, not canvas/overlay child
 - [Phase quick]: Pan/zoom redraws bypass React via useGridStore.subscribe + useEditorStore.subscribe — 60fps without setState
+- [Phase 05-polish-ux]: ExportSplitButton reads canvas settings via useEditorStore.getState() at export call time — avoids stale closures in async handlers
+- [Phase 05-polish-ux]: data-testid='export-button' added to main export button to enable Ctrl+E keyboard shortcut querySelector lookup
 
 ### Pending Todos
 
@@ -147,6 +150,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T12:26:45Z
-Stopped at: Completed quick/260402-lae
+Last session: 2026-04-02T12:48:52.363Z
+Stopped at: Completed 05-polish-ux/05-05-PLAN.md
 Resume file: None

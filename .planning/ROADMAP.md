@@ -113,7 +113,7 @@ Plans:
 - [x] 05-02-PLAN.md — Dark theme, keyboard shortcuts, responsive sidebar (POLH-08, POLH-09, POLH-12)
 - [x] 05-03-PLAN.md — Pan/zoom interaction, cell swap via @dnd-kit drag handle (POLH-06, POLH-07)
 - [x] 05-04-PLAN.md — Export canvas settings integration, onboarding overlay (POLH-10, POLH-11)
-- [ ] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
+- [x] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
 **UI hint**: yes
 
 ### Phase 6: Video Support (v2)

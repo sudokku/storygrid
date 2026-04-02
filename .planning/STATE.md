@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed quick/260402-7j0
-last_updated: "2026-04-02T02:27:41.579Z"
-last_activity: "2026-04-02 - Completed quick task 260402-7j0: Fix image rendering in LeafNode: maxWidth none + select-none"
+stopped_at: Completed quick/260402-lae
+last_updated: "2026-04-02T12:26:45Z"
+last_activity: "2026-04-02 - Completed quick task 260402-lae: Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity"
 progress:
   total_phases: 8
   completed_phases: 5
@@ -123,6 +123,9 @@ Recent decisions affecting current work:
 - [Phase 05-polish-ux]: setPointerCapture/releasePointerCapture wrapped in existence checks — jsdom lacks these APIs; guards prevent test errors while browser behavior is preserved
 - [Phase 05-polish-ux]: DndContext wraps content div below Toolbar only — Toolbar does not need drag awareness; ActionBar useDraggable disabled=!hasMedia prevents drag when no media
 - [Phase quick]: maxWidth:'none' inline style overrides Tailwind Preflight max-width:100% on absolutely-positioned images in LeafNode
+- [Phase quick]: LeafNode media rendering uses canvas element (not img) — WYSIWYG with export pipeline guaranteed via shared drawLeafToCanvas()
+- [Phase quick]: setPointerCapture on divRef.current (not e.target) — ensures capture stays on stable wrapper div, not canvas/overlay child
+- [Phase quick]: Pan/zoom redraws bypass React via useGridStore.subscribe + useEditorStore.subscribe — 60fps without setState
 
 ### Pending Todos
 
@@ -135,6 +138,7 @@ None yet.
 | 260401-oca | Replace the html-to-image export engine with a Canvas API implementation | 2026-04-01 | b801923 | [260401-oca-replace-the-html-to-image-export-engine-](./quick/260401-oca-replace-the-html-to-image-export-engine-/) |
 | 260402-63e | Fix pan/zoom in LeafNode so cover and contain modes pan through the full original image | 2026-04-02 | 8e9ea18 | [260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co](./quick/260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co/) |
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
+| 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
 
 ### Blockers/Concerns
 
@@ -143,6 +147,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T02:27:38.195Z
-Stopped at: Completed quick/260402-7j0
+Last session: 2026-04-02T12:26:45Z
+Stopped at: Completed quick/260402-lae
 Resume file: None

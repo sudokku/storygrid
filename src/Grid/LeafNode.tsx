@@ -271,6 +271,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
             height: `${scaledH}px`,
             left: `${left}px`,
             top: `${top}px`,
+            maxWidth: 'none',
           }}
           alt=""
           draggable={false}
@@ -296,7 +297,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     <div
       ref={divRef}
       className={`
-        relative w-full h-full isolate overflow-hidden
+        relative w-full h-full isolate overflow-hidden select-none
         ${ringClass}
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}

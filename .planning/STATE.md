@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-polish-ux/05-05-PLAN.md
-last_updated: "2026-04-02T12:57:09.369Z"
+stopped_at: Completed 05.1-03-PLAN.md — React import fix + D-16 ADR
+last_updated: "2026-04-03T16:29:20.197Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 8
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P04 | 8min | 2 tasks | 7 files |
 | Phase 05-polish-ux P03 | 8min | 2 tasks | 6 files |
 | Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
+| Phase 05.1-mobile-first-ui P03 | 8 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,8 @@ Recent decisions affecting current work:
 - [Phase quick]: Pan/zoom redraws bypass React via useGridStore.subscribe + useEditorStore.subscribe — 60fps without setState
 - [Phase 05-polish-ux]: ExportSplitButton reads canvas settings via useEditorStore.getState() at export call time — avoids stale closures in async handlers
 - [Phase 05-polish-ux]: data-testid='export-button' added to main export button to enable Ctrl+E keyboard shortcut querySelector lookup
+- [Phase 05.1-mobile-first-ui]: React import added to all src/test/*.tsx files — fixes ReferenceError: React is not defined across Phase 05.1 tests
+- [Phase 05.1-mobile-first-ui]: D-16 (cell swap touch) formally deferred: native HTML5 drag events do not fire on iOS/Android; dnd-kit TouchSensor would require non-trivial refactor
 
 ### Pending Todos
 
@@ -149,6 +152,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T12:48:52.363Z
-Stopped at: Completed 05-polish-ux/05-05-PLAN.md
+Last session: 2026-04-03T16:29:20.195Z
+Stopped at: Completed 05.1-03-PLAN.md — React import fix + D-16 ADR
 Resume file: None

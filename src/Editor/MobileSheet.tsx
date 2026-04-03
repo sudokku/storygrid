@@ -12,7 +12,7 @@ import { Undo2, Redo2, Trash2 } from 'lucide-react';
 type SheetSnapState = 'collapsed' | 'half' | 'full';
 
 const SNAP_TRANSLATE: Record<SheetSnapState, string> = {
-  full: 'translateY(0)',
+  full: 'translateY(max(calc(env(safe-area-inset-top) + 56px), 72px))',
   half: 'translateY(60vh)',
   collapsed: 'translateY(calc(100% - 60px))',
 };
@@ -79,10 +79,12 @@ export const MobileSheet = React.memo(function MobileSheet() {
         transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
       }}
       data-testid="mobile-sheet"
+      data-sheet-snap={sheetSnapState}
     >
       {/* Drag handle area — 60px tall, contains handle bar + header row */}
       <div
         className="touch-none cursor-grab select-none"
+        style={{ height: 60 }}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         data-testid="sheet-drag-handle"
@@ -123,7 +125,14 @@ export const MobileSheet = React.memo(function MobileSheet() {
       </div>
 
       {/* Sheet content — scrollable */}
-      <div className="overflow-y-auto" style={{ height: 'calc(100% - 60px)' }}>
+      <div
+        className="overflow-y-auto"
+        style={{
+          height: 'calc(100% - 60px)',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {panModeNodeId ? (
           <div className="p-4">
             <button

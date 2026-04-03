@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05.1-01-PLAN.md — responsive foundation + MobileSheet
-last_updated: "2026-04-03T13:30:01.907Z"
+status: verifying
+stopped_at: Completed 05.1-02-PLAN.md — mobile controls, pinch-to-zoom, MobileWelcomeCard
+last_updated: "2026-04-03T13:36:00.168Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 9
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 
 Phase: 05.1 (mobile-first-ui) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-03
 
 Progress: [░░░░░░░░░░] 0%
@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P03 | 8min | 2 tasks | 6 files |
 | Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
 | Phase 05.1-mobile-first-ui P01 | 9 | 2 tasks | 11 files |
+| Phase 05.1-mobile-first-ui P02 | 8 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,9 @@ Recent decisions affecting current work:
 - [Phase 05.1-mobile-first-ui]: CSS-driven responsive breakpoint (hidden md:flex) used instead of JS conditional rendering — avoids FOUC and aligns with Tailwind conventions
 - [Phase 05.1-mobile-first-ui]: SNAP_TRANSLATE map contains inline translateY() strings — declarative snap state -> CSS transform lookup without branching logic
 - [Phase 05.1-mobile-first-ui]: CanvasSettingsPanel and SelectedCellPanel exported from Sidebar.tsx (not moved) — avoids import cycle, keeps panels co-located with sidebar
+- [Phase 05.1-mobile-first-ui]: Native touchstart/touchmove/touchend listeners used for pinch-to-zoom (passive:false required for preventDefault — React synthetic events cannot support this)
+- [Phase 05.1-mobile-first-ui]: Split buttons added to SelectedCellPanel (not mobile-only) — visible on desktop sidebar AND mobile sheet via MobileSheet import; pure enhancement
+- [Phase 05.1-mobile-first-ui]: MobileWelcomeCard uses shared handleDismiss from Onboarding — writes storygrid_onboarding_done key, satisfying D-17 shared key requirement
 
 ### Pending Todos
 
@@ -157,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T13:30:01.904Z
-Stopped at: Completed 05.1-01-PLAN.md — responsive foundation + MobileSheet
+Last session: 2026-04-03T13:36:00.165Z
+Stopped at: Completed 05.1-02-PLAN.md — mobile controls, pinch-to-zoom, MobileWelcomeCard
 Resume file: None

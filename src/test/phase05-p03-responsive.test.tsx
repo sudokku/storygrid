@@ -3,6 +3,7 @@
  * Tests for responsive sidebar behavior (POLH-12).
  * Coverage: D-25 — desktop notice below 1024px, narrow sidebar at 1024-1199px.
  */
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Sidebar } from '../Editor/Sidebar';

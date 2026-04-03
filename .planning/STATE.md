@@ -152,6 +152,7 @@ None yet.
 | 260402-63e | Fix pan/zoom in LeafNode so cover and contain modes pan through the full original image | 2026-04-02 | 8e9ea18 | [260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co](./quick/260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co/) |
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 | 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
+| 260403-rvh | Fix mobile UI regressions: MobileSheet full snap top gap, Geist font :root scoping, iOS momentum scroll, canvas touch isolation | 2026-04-03 | 80930dd | [260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha](./quick/260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha/) |
 
 ### Roadmap Evolution
 
@@ -164,6 +165,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T16:29:20.195Z
-Stopped at: Completed 05.1-03-PLAN.md — React import fix + D-16 ADR
+Last session: 2026-04-03T17:31:00.000Z
+Stopped at: Completed quick task 260403-rvh — MobileSheet drag handle, font fix, iOS scroll, canvas touch isolation
 Resume file: None

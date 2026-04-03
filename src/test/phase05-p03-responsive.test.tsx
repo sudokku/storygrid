@@ -1,7 +1,7 @@
 /**
  * phase05-p03-responsive.test.tsx
- * Tests for responsive sidebar behavior (POLH-12).
- * Coverage: D-25 — desktop notice below 1024px, narrow sidebar at 1024-1199px.
+ * Tests for responsive sidebar behavior.
+ * Updated for Phase 05.1: D-25 desktop notice removed; sidebar is always hidden on mobile via CSS.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -53,69 +53,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Responsive sidebar (POLH-12)', () => {
-  it('shows desktop-notice when viewport is below 1024px', () => {
-    // Both max-width queries match (below 1024px)
+describe('Responsive sidebar (Phase 05.1)', () => {
+  it('does NOT show desktop-notice at any viewport width (D-02 removed)', () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: mockMatchMedia({
-        '(max-width: 1199px)': true,
-        '(max-width: 1023px)': true,
-      }),
-    });
-    render(<Sidebar />);
-    expect(screen.getByTestId('desktop-notice')).toBeInTheDocument();
-  });
-
-  it('desktop-notice contains helpful message about desktop requirement', () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: mockMatchMedia({
-        '(max-width: 1199px)': true,
-        '(max-width: 1023px)': true,
-      }),
-    });
-    render(<Sidebar />);
-    const notice = screen.getByTestId('desktop-notice');
-    expect(notice.textContent).toContain('desktop');
-  });
-
-  it('does NOT show desktop-notice when viewport is at least 1024px', () => {
-    // Neither query matches (full width)
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: mockMatchMedia({
-        '(max-width: 1199px)': false,
-        '(max-width: 1023px)': false,
+        '(max-width: 767px)': true,
       }),
     });
     render(<Sidebar />);
     expect(screen.queryByTestId('desktop-notice')).not.toBeInTheDocument();
   });
 
-  it('renders sidebar with data-testid="sidebar" at full width (1200px+)', () => {
+  it('does NOT show desktop-notice even at full width', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: mockMatchMedia({}),
+    });
+    render(<Sidebar />);
+    expect(screen.queryByTestId('desktop-notice')).not.toBeInTheDocument();
+  });
+
+  it('renders sidebar with data-testid="sidebar" always (visibility controlled by CSS md:flex)', () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: mockMatchMedia({
-        '(max-width: 1199px)': false,
-        '(max-width: 1023px)': false,
+        '(max-width: 767px)': false,
       }),
     });
     render(<Sidebar />);
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
   });
 
-  it('renders sidebar (not notice) at 1024-1199px narrow mode', () => {
-    // Only max-width: 1199px matches (narrow but not too small)
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: mockMatchMedia({
-        '(max-width: 1199px)': true,
-        '(max-width: 1023px)': false,
-      }),
-    });
+  it('sidebar element has hidden class (CSS controls display, not JS)', () => {
     render(<Sidebar />);
-    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
-    expect(screen.queryByTestId('desktop-notice')).not.toBeInTheDocument();
+    const sidebar = screen.getByTestId('sidebar');
+    expect(sidebar.className).toContain('hidden');
+  });
+
+  it('sidebar element has md:flex class for responsive show on desktop', () => {
+    render(<Sidebar />);
+    const sidebar = screen.getByTestId('sidebar');
+    expect(sidebar.className).toContain('md:flex');
   });
 });

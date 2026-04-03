@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05.1 UI-SPEC approved
-last_updated: "2026-04-03T13:06:30.732Z"
-last_activity: 2026-04-02
+stopped_at: Completed 05.1-01-PLAN.md — responsive foundation + MobileSheet
+last_updated: "2026-04-03T13:30:01.907Z"
+last_activity: 2026-04-03
 progress:
   total_phases: 9
   completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 18
+  completed_plans: 17
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 05 — polish-ux
+**Current focus:** Phase 05.1 — mobile-first-ui
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 05.1 (mobile-first-ui) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-04-02
+Last activity: 2026-04-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P04 | 8min | 2 tasks | 7 files |
 | Phase 05-polish-ux P03 | 8min | 2 tasks | 6 files |
 | Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
+| Phase 05.1-mobile-first-ui P01 | 9 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,9 @@ Recent decisions affecting current work:
 - [Phase quick]: Pan/zoom redraws bypass React via useGridStore.subscribe + useEditorStore.subscribe — 60fps without setState
 - [Phase 05-polish-ux]: ExportSplitButton reads canvas settings via useEditorStore.getState() at export call time — avoids stale closures in async handlers
 - [Phase 05-polish-ux]: data-testid='export-button' added to main export button to enable Ctrl+E keyboard shortcut querySelector lookup
+- [Phase 05.1-mobile-first-ui]: CSS-driven responsive breakpoint (hidden md:flex) used instead of JS conditional rendering — avoids FOUC and aligns with Tailwind conventions
+- [Phase 05.1-mobile-first-ui]: SNAP_TRANSLATE map contains inline translateY() strings — declarative snap state -> CSS transform lookup without branching logic
+- [Phase 05.1-mobile-first-ui]: CanvasSettingsPanel and SelectedCellPanel exported from Sidebar.tsx (not moved) — avoids import cycle, keeps panels co-located with sidebar
 
 ### Pending Todos
 
@@ -153,6 +157,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T13:06:30.725Z
-Stopped at: Phase 05.1 UI-SPEC approved
-Resume file: .planning/phases/05.1-mobile-first-ui/05.1-UI-SPEC.md
+Last session: 2026-04-03T13:30:01.904Z
+Stopped at: Completed 05.1-01-PLAN.md — responsive foundation + MobileSheet
+Resume file: None

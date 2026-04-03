@@ -127,10 +127,10 @@ Plans:
   3. Tapping a cell on mobile selects it and the sheet shows Split H/V, Remove, Fit toggle, Clear buttons
   4. Pinch-to-zoom works within a cell in pan mode on touch devices
   5. First-time mobile users see a "Build your story." welcome card with "Got it" dismiss
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 05.1-01-PLAN.md — Foundation: useMediaQuery extraction, editorStore sheetSnapState, responsive layout (EditorShell/Toolbar/Sidebar/CanvasArea), MobileSheet component, divider hit area expansion
+- [x] 05.1-01-PLAN.md — Foundation: useMediaQuery extraction, editorStore sheetSnapState, responsive layout (EditorShell/Toolbar/Sidebar/CanvasArea), MobileSheet component, divider hit area expansion
 - [ ] 05.1-02-PLAN.md — Mobile controls: ActionBar hidden on mobile, Split H/V in SelectedCellPanel, pinch-to-zoom, MobileWelcomeCard onboarding
 
 ### Phase 6: Video Support (v2)

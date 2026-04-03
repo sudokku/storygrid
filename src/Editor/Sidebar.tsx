@@ -330,7 +330,25 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
         </div>
       )}
 
-      {/* 5. Actions row */}
+      {/* 5. Split actions */}
+      <div className="flex gap-2">
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded text-xs bg-[#2a2a2a] hover:bg-[#333333] text-neutral-300 transition-colors"
+          onClick={() => split(nodeId, 'horizontal')}
+          data-testid="split-horizontal"
+        >
+          Split Horizontal
+        </button>
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded text-xs bg-[#2a2a2a] hover:bg-[#333333] text-neutral-300 transition-colors"
+          onClick={() => split(nodeId, 'vertical')}
+          data-testid="split-vertical"
+        >
+          Split Vertical
+        </button>
+      </div>
+
+      {/* 6. Actions row */}
       <div className="space-y-2 pt-1">
         {/* Upload/Replace */}
         <button

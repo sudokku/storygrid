@@ -37,6 +37,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   // Holds the loaded HTMLImageElement — never rendered to DOM
   const imgElRef = useRef<HTMLImageElement | null>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const pinchStartDistRef = useRef<number>(0);
+  const pinchStartScaleRef = useRef<number>(1);
   const cellSizeRef = useRef({ w: 0, h: 0 });
   const drawRef = useRef<() => void>(() => {});
 
@@ -212,6 +214,51 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
+  }, [isPanMode, id, updateCell]);
+
+  // Pinch-to-zoom touch handlers — registered with passive:false to allow preventDefault
+  useEffect(() => {
+    if (!isPanMode) return;
+    const el = divRef.current;
+    if (!el) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchStartDistRef.current = Math.hypot(
+          e.touches[1].clientX - e.touches[0].clientX,
+          e.touches[1].clientY - e.touches[0].clientY
+        );
+        const n = findNode(useGridStore.getState().root, id) as LeafNode | null;
+        pinchStartScaleRef.current = n?.panScale ?? 1;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault(); // prevent page scroll during pinch
+      const dist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      const ratio = dist / pinchStartDistRef.current;
+      const newScale = Math.max(1, Math.min(3, pinchStartScaleRef.current * ratio));
+      updateCell(id, { panScale: newScale });
+    };
+
+    const handleTouchEnd = () => {
+      pinchStartDistRef.current = 0;
+      pinchStartScaleRef.current = 1;
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
   }, [isPanMode, id, updateCell]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -409,9 +456,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
       )}
 
-      {/* ActionBar: visible on hover, hidden in pan mode */}
+      {/* ActionBar: visible on hover, hidden in pan mode, hidden on mobile */}
       <div
         className={`
+          hidden md:block
           absolute top-2 left-1/2 z-20
           transition-opacity duration-150
           ${isHovered && !isPanMode ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}

@@ -116,6 +116,23 @@ Plans:
 - [x] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
 **UI hint**: yes
 
+### Phase 05.1: Mobile-First UI (INSERTED)
+
+**Goal:** The StoryGrid editor is fully usable on mobile phones: responsive layout swap at 768px, bottom sheet replacing sidebar, minimal mobile toolbar, touch-adapted cell controls, expanded divider hit areas, pinch-to-zoom in pan mode, and mobile onboarding welcome card
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16, D-17, D-18
+**Depends on:** Phase 5
+**Success Criteria** (what must be TRUE):
+  1. At < 768px the desktop sidebar is hidden and a bottom sheet with drag-to-snap is visible
+  2. The mobile toolbar shows only "StoryGrid" wordmark + Export button; all other controls in the sheet
+  3. Tapping a cell on mobile selects it and the sheet shows Split H/V, Remove, Fit toggle, Clear buttons
+  4. Pinch-to-zoom works within a cell in pan mode on touch devices
+  5. First-time mobile users see a "Build your story." welcome card with "Got it" dismiss
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05.1-01-PLAN.md — Foundation: useMediaQuery extraction, editorStore sheetSnapState, responsive layout (EditorShell/Toolbar/Sidebar/CanvasArea), MobileSheet component, divider hit area expansion
+- [ ] 05.1-02-PLAN.md — Mobile controls: ActionBar hidden on mobile, Split H/V in SelectedCellPanel, pinch-to-zoom, MobileWelcomeCard onboarding
+
 ### Phase 6: Video Support (v2)
 **Goal**: Users can add video files to cells, preview them playing in sync, and export the composition as an MP4 using ffmpeg.wasm -- with COOP/COEP headers correctly configured for SharedArrayBuffer
 **Depends on**: Phase 5
@@ -142,7 +159,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -152,5 +169,6 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
 | 5. Polish & UX | 4/5 | In Progress|  |
+| 5.1. Mobile-First UI | 0/2 | Not started | - |
 | 6. Video Support (v2) | 0/TBD | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

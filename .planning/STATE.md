@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 05.1-02-PLAN.md — mobile controls, pinch-to-zoom, MobileWelcomeCard
-last_updated: "2026-04-03T13:36:00.168Z"
+status: executing
+stopped_at: Completed 05.1-03-PLAN.md — React import fix + D-16 ADR
+last_updated: "2026-04-03T16:29:20.197Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 9
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
 | Phase 05.1-mobile-first-ui P01 | 9 | 2 tasks | 11 files |
 | Phase 05.1-mobile-first-ui P02 | 8 | 2 tasks | 5 files |
+| Phase 05.1-mobile-first-ui P03 | 8 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,8 @@ Recent decisions affecting current work:
 - [Phase 05.1-mobile-first-ui]: Native touchstart/touchmove/touchend listeners used for pinch-to-zoom (passive:false required for preventDefault — React synthetic events cannot support this)
 - [Phase 05.1-mobile-first-ui]: Split buttons added to SelectedCellPanel (not mobile-only) — visible on desktop sidebar AND mobile sheet via MobileSheet import; pure enhancement
 - [Phase 05.1-mobile-first-ui]: MobileWelcomeCard uses shared handleDismiss from Onboarding — writes storygrid_onboarding_done key, satisfying D-17 shared key requirement
+- [Phase 05.1-mobile-first-ui]: React import added to all src/test/*.tsx files — fixes ReferenceError: React is not defined across Phase 05.1 tests
+- [Phase 05.1-mobile-first-ui]: D-16 (cell swap touch) formally deferred: native HTML5 drag events do not fire on iOS/Android; dnd-kit TouchSensor would require non-trivial refactor
 
 ### Pending Todos
 
@@ -161,6 +164,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T13:36:00.165Z
-Stopped at: Completed 05.1-02-PLAN.md — mobile controls, pinch-to-zoom, MobileWelcomeCard
+Last session: 2026-04-03T16:29:20.195Z
+Stopped at: Completed 05.1-03-PLAN.md — React import fix + D-16 ADR
 Resume file: None

@@ -3,6 +3,7 @@
  * Tests for responsive sidebar behavior.
  * Updated for Phase 05.1: D-25 desktop notice removed; sidebar is always hidden on mobile via CSS.
  */
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Sidebar } from '../Editor/Sidebar';

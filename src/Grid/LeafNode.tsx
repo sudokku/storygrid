@@ -306,6 +306,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     e.stopPropagation();
     setIsDragOver(false);
 
+    // D-16 (MVP scope): Cell swap uses native HTML5 drag events (dataTransfer text/cell-id).
+    // Native HTML5 drag events do not fire on iOS/Android touch — cell swap is desktop-only.
+    // To support touch, a DndContext with useSensor(TouchSensor) would need to wrap the grid
+    // and the drag-handle approach would need to switch from native ondragstart to useDraggable.
+    // Deferred to post-MVP. See .planning/decisions/adr-cell-swap-touch.md
     // Cell swap comes first — drag handle sets text/cell-id
     const fromId = e.dataTransfer.getData('text/cell-id');
     if (fromId && fromId !== id) {

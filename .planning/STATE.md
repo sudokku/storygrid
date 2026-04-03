@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-polish-ux/05-05-PLAN.md
-last_updated: "2026-04-02T12:57:09.369Z"
+stopped_at: Phase 05.1 UI-SPEC approved
+last_updated: "2026-04-03T13:06:30.732Z"
 last_activity: 2026-04-02
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 6
   total_plans: 16
   completed_plans: 16
@@ -142,6 +142,10 @@ None yet.
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 | 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
 
+### Roadmap Evolution
+
+- Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
+
 ### Blockers/Concerns
 
 - Phase 6 warrants /gsd:research-phase before planning — SharedArrayBuffer + COOP/COEP + ffmpeg xstack are complex integrations
@@ -149,6 +153,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T12:48:52.363Z
-Stopped at: Completed 05-polish-ux/05-05-PLAN.md
-Resume file: None
+Last session: 2026-04-03T13:06:30.725Z
+Stopped at: Phase 05.1 UI-SPEC approved
+Resume file: .planning/phases/05.1-mobile-first-ui/05.1-UI-SPEC.md

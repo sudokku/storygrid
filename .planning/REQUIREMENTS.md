@@ -176,10 +176,10 @@
 | VIDE-01 | Phase 6 | Complete |
 | VIDE-02 | Phase 6 | Complete |
 | VIDE-03 | Phase 6 | Complete |
-| VIDE-04 | Phase 6 | Pending |
-| VIDE-05 | Phase 6 | Pending |
+| VIDE-04 | Phase 6 | Complete |
+| VIDE-05 | Phase 6 | Complete |
 | VIDE-06 | Phase 6 | Complete |
-| VIDE-07 | Phase 6 | Pending |
+| VIDE-07 | Phase 6 | Complete |
 | EFCT-01 | Phase 7 | Pending |
 | EFCT-02 | Phase 7 | Pending |
 | EFCT-03 | Phase 7 | Pending |

@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 06-04 tasks 1-2, checkpoint at task 3 (human-verify)
-last_updated: "2026-04-05T14:47:06.453Z"
-last_activity: 2026-04-05
+stopped_at: "Completed quick-260405-s9u: WebCodecs + Mediabunny video export"
+last_updated: "2026-04-05T18:34:56.495Z"
+last_activity: "2026-04-05 - Completed quick task 260405-oqc: cleanupStaleBlobMedia wired on EditorShell mount"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -154,6 +154,7 @@ Recent decisions affecting current work:
 - [Phase 06-video-support-v2]: ffmpeg loaded via dynamic import to keep it out of initial bundle
 - [Phase 06-video-support-v2]: video-blocked toast state removed; auto-detect export path replaces guard pattern
 - [Phase 06-video-support-v2]: buildVideoElementsByMediaId maps nodeId->mediaId for renderGridToCanvas video cell rendering
+- [Phase quick-260405-s9u]: VP9 forced on Firefox (H.264 DOMException bug Bugzilla #1918769); stable canvas pattern bridges CanvasSource with renderGridToCanvas; mediabunny replaces ffmpeg.wasm — no COOP/COEP or 25MB WASM download required
 
 ### Pending Todos
 
@@ -182,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T13:26:46.110Z
-Stopped at: Completed 06-04 tasks 1-2, checkpoint at task 3 (human-verify)
+Last session: 2026-04-05T18:34:51.991Z
+Stopped at: Completed quick-260405-s9u: WebCodecs + Mediabunny video export
 Resume file: None

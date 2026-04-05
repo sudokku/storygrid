@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: "Completed quick-260405-s9u: WebCodecs + Mediabunny video export"
-last_updated: "2026-04-05T18:34:56.495Z"
-last_activity: "2026-04-05 - Completed quick task 260405-s9u: replaced ffmpeg.wasm with WebCodecs + Mediabunny"
+stopped_at: "Completed quick-260405-uiy: fix video export loop flicker when short"
+last_updated: "2026-04-05T19:06:00Z"
+last_activity: "2026-04-05 - Completed quick task 260405-uiy: modulo-based seek in seekAllVideosTo fixes shorter video loop flicker during export"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -155,6 +155,7 @@ Recent decisions affecting current work:
 - [Phase 06-video-support-v2]: video-blocked toast state removed; auto-detect export path replaces guard pattern
 - [Phase 06-video-support-v2]: buildVideoElementsByMediaId maps nodeId->mediaId for renderGridToCanvas video cell rendering
 - [Phase quick-260405-s9u]: VP9 forced on Firefox (H.264 DOMException bug Bugzilla #1918769); stable canvas pattern bridges CanvasSource with renderGridToCanvas; mediabunny replaces ffmpeg.wasm — no COOP/COEP or 25MB WASM download required
+- [Phase quick-260405-uiy]: computeLoopedTime (timeSeconds % duration) replicates video.loop=true during frame-by-frame export; extracted as pure helper for testability; edge case guard covers zero/NaN/Infinity duration
 
 ### Pending Todos
 
@@ -172,6 +173,7 @@ None yet.
 | 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | — | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
 | 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
+| 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 84ec61f | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
 
 ### Roadmap Evolution
 

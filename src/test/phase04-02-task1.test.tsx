@@ -270,3 +270,47 @@ describe('ExportSplitButton', () => {
     expect(screen.getByRole('button', { name: /export mp4/i })).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// exportVideoGrid — VideoEncoder availability guard
+// ---------------------------------------------------------------------------
+
+describe('exportVideoGrid', () => {
+  it('throws when VideoEncoder is not available', async () => {
+    const { exportVideoGrid } = await import('../lib/videoExport');
+
+    // Temporarily remove VideoEncoder from the global scope
+    const original = (globalThis as Record<string, unknown>).VideoEncoder;
+    delete (globalThis as Record<string, unknown>).VideoEncoder;
+
+    const leaf: LeafNode = {
+      type: 'leaf',
+      id: 'root',
+      mediaId: null,
+      fit: 'cover',
+      objectPosition: 'center center',
+      backgroundColor: null,
+    };
+
+    await expect(
+      exportVideoGrid(
+        leaf,
+        {},
+        {
+          gap: 0,
+          borderRadius: 0,
+          backgroundMode: 'solid',
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#000000',
+          backgroundGradientDir: 'to-bottom',
+        },
+        5,
+        vi.fn(),
+      ),
+    ).rejects.toThrow('Video export requires Chrome 94+ or Firefox 130+.');
+
+    // Restore
+    (globalThis as Record<string, unknown>).VideoEncoder = original;
+  });
+});

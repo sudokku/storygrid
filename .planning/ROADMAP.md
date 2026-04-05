@@ -2,7 +2,7 @@
 
 ## Overview
 
-StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2) and advanced effects (v2+). Every v1 requirement maps to exactly one phase; phases 6-7 are deferred v2 work.
+StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2). Every v1 requirement maps to exactly one phase; phase 6 is the deferred v2 work.
 
 ## Phases
 
@@ -17,7 +17,6 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [x] **Phase 4: Export Engine** - Canvas API tree renderer, PNG/JPEG download, progress toast, split-button UI (completed 2026-04-01)
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
 - [x] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers (completed 2026-04-05)
-- [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets
 
 ## Phase Details
 
@@ -152,21 +151,10 @@ Plans:
 - [x] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
 - [x] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
 
-### Phase 7: Effects & Advanced (v2+)
-**Goal**: Power users can apply per-cell CSS filters, add text overlays, work with multiple story slides, save/load projects as JSON, and switch between Instagram aspect ratio presets
-**Depends on**: Phase 6
-**Requirements**: EFCT-01, EFCT-02, EFCT-03, EFCT-04, EFCT-05
-**Success Criteria** (what must be TRUE):
-  1. Adjusting a cell's brightness or saturation slider updates the cell's appearance in real-time and is reflected in the exported image
-  2. Adding a text overlay to a cell renders the text at the specified position, font, and color -- and the text appears in the exported PNG/MP4
-  3. A project (tree + settings + media registry) can be exported as a `.storygrid.json` file and re-imported to restore the exact same canvas state
-  4. Switching to the 1:1 aspect ratio preset reflows the canvas to 1080x1080px; the grid tree and cell contents are preserved
-**Plans**: TBD
-
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7
+Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -178,4 +166,3 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7
 | 5. Polish & UX | 4/5 | In Progress|  |
 | 5.1. Mobile-First UI | 0/2 | Not started | - |
 | 6. Video Support (v2) | 4/4 | Complete   | 2026-04-05 |
-| 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

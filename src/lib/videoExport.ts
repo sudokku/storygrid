@@ -13,7 +13,7 @@ async function loadFFmpeg(): Promise<any> {
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
   const { toBlobURL } = await import('@ffmpeg/util');
   const ffmpeg = new FFmpeg();
-  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),

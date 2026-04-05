@@ -173,7 +173,7 @@ None yet.
 | 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | — | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
 | 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
-| 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 84ec61f | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
+| 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
 
 ### Roadmap Evolution
 

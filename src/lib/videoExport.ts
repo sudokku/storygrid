@@ -102,22 +102,27 @@ export async function exportVideoGrid(
 ): Promise<Blob> {
   // Safari guard — crossOriginIsolated requires COOP/COEP headers
   if (!crossOriginIsolated) {
-    throw new Error(
-      'Video export requires Chrome or Firefox. Safari is not supported.',
-    );
+    const err = new Error('Video export requires Chrome or Firefox. Safari is not supported.');
+    console.error('[videoExport] Export failed:', err);
+    throw err;
   }
 
+  try {
+  console.debug('[videoExport] Loading ffmpeg...');
   onProgress('loading-ffmpeg');
   const ffmpeg = await loadFFmpeg();
+  console.debug('[videoExport] ffmpeg loaded');
 
   const FPS = 30;
   // Guard against 0-duration (e.g., still loading) — use at least 1 second
   const duration = Math.max(totalDuration, 1);
   const totalFrames = Math.ceil(duration * FPS);
+  console.debug(`[videoExport] Starting export: duration=${duration}s, totalFrames=${totalFrames}, FPS=${FPS}`);
 
   // Set up log-based progress tracking (progress event is unreliable per research)
   let progressFromLog = 0;
   ffmpeg.on('log', ({ message }: { message: string }) => {
+    console.debug('[ffmpeg]', message);
     if (message.includes('time=') && message.includes('speed=')) {
       const match = message.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
       if (match) {
@@ -157,6 +162,9 @@ export async function exportVideoGrid(
     );
 
     const pngData = await canvasToUint8Array(frameCanvas);
+    if (frame % 10 === 0) {
+      console.debug(`[videoExport] Writing frame ${frame}/${totalFrames}`);
+    }
     await ffmpeg.writeFile(
       `frame${String(frame).padStart(6, '0')}.png`,
       pngData,
@@ -168,20 +176,28 @@ export async function exportVideoGrid(
 
   // Encode MP4 (H.264, CRF 23, yuv420p for broad compatibility)
   onProgress('encoding', 80);
-  await ffmpeg.exec([
-    '-r', String(FPS),
-    '-i', 'frame%06d.png',
-    '-c:v', 'libx264',
-    '-crf', '23',
-    '-pix_fmt', 'yuv420p',
-    '-movflags', '+faststart',
-    'output.mp4',
-  ]);
+  console.debug('[videoExport] Starting ffmpeg encode...');
+  try {
+    await ffmpeg.exec([
+      '-r', String(FPS),
+      '-i', 'frame%06d.png',
+      '-c:v', 'libx264',
+      '-crf', '23',
+      '-pix_fmt', 'yuv420p',
+      '-movflags', '+faststart',
+      'output.mp4',
+    ]);
+  } catch (encodeErr) {
+    console.error('[videoExport] ffmpeg encode failed:', encodeErr);
+    throw encodeErr;
+  }
+  console.debug('[videoExport] Encode complete, reading output...');
   onProgress('encoding', 95);
 
   // Read output file from virtual FS
   const data = await ffmpeg.readFile('output.mp4');
   const blob = new Blob([data], { type: 'video/mp4' });
+  console.debug(`[videoExport] Output blob size: ${blob.size} bytes`);
 
   // Cleanup virtual FS
   for (let i = 0; i < totalFrames; i++) {
@@ -194,4 +210,8 @@ export async function exportVideoGrid(
 
   onProgress('encoding', 100);
   return blob;
+  } catch (err) {
+    console.error('[videoExport] Export failed:', err);
+    throw err;
+  }
 }

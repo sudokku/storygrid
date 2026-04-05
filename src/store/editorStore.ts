@@ -29,6 +29,10 @@ type EditorState = {
   backgroundGradientDir: GradientDir;
   // Phase 05.1 mobile sheet
   sheetSnapState: 'collapsed' | 'half' | 'full';
+  // Phase 06 video playback state
+  isPlaying: boolean;
+  playheadTime: number;
+  totalDuration: number;
   // Actions
   setSelectedNode: (id: string | null) => void;
   setZoom: (z: number) => void;
@@ -49,6 +53,10 @@ type EditorState = {
   setBackgroundGradientDir: (v: GradientDir) => void;
   // Phase 05.1 setters
   setSheetSnapState: (v: 'collapsed' | 'half' | 'full') => void;
+  // Phase 06 video setters
+  setIsPlaying: (v: boolean) => void;
+  setPlayheadTime: (v: number) => void;
+  setTotalDuration: (v: number) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -75,6 +83,10 @@ export const useEditorStore = create<EditorState>()(set => ({
   backgroundGradientDir: 'to-bottom' as const,
   // Phase 05.1
   sheetSnapState: 'collapsed' as const,
+  // Phase 06 video playback initial values
+  isPlaying: false,
+  playheadTime: 0,
+  totalDuration: 0,
   // Existing setters
   setSelectedNode: (id) => set({ selectedNodeId: id }),
   setZoom: (z) => set({ zoom: Math.min(1.5, Math.max(0.5, z)) }),
@@ -95,4 +107,8 @@ export const useEditorStore = create<EditorState>()(set => ({
   setBackgroundGradientDir: (v) => set({ backgroundGradientDir: v }),
   // Phase 05.1 setters
   setSheetSnapState: (v) => set({ sheetSnapState: v }),
+  // Phase 06 video setters
+  setIsPlaying: (v) => set({ isPlaying: v }),
+  setPlayheadTime: (v) => set({ playheadTime: v }),
+  setTotalDuration: (v) => set({ totalDuration: v }),
 }));

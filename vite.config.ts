@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     allowedHosts: true,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
   resolve: {
     alias: {

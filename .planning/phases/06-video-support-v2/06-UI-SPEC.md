@@ -1,7 +1,8 @@
 ---
 phase: 6
 slug: video-support-v2
-status: draft
+status: approved
+reviewed_at: 2026-04-05T00:00:00Z
 shadcn_initialized: true
 preset: base-nova
 created: 2026-04-05

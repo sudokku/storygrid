@@ -149,7 +149,7 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md — Infrastructure: store updates (mediaTypeMap, playback state), videoRegistry, COOP/COEP headers, video upload flow (VIDE-01, VIDE-06)
 - [x] 06-02-PLAN.md — Video preview: LeafNode video element, canvas rAF loop, registry integration (VIDE-01, VIDE-02)
-- [ ] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
+- [x] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
 - [ ] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
 
 ### Phase 7: Effects & Advanced (v2+)

@@ -175,7 +175,7 @@
 | POLH-12 | Phase 5 | Complete |
 | VIDE-01 | Phase 6 | Complete |
 | VIDE-02 | Phase 6 | Complete |
-| VIDE-03 | Phase 6 | Pending |
+| VIDE-03 | Phase 6 | Complete |
 | VIDE-04 | Phase 6 | Pending |
 | VIDE-05 | Phase 6 | Pending |
 | VIDE-06 | Phase 6 | Complete |

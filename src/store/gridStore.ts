@@ -199,7 +199,7 @@ export const useGridStore = create<GridStoreState>()(
         state.root = swapLeafContent(current(state.root), idA, idB);
       }),
 
-    // D-03: Cleanup stale blob media on app startup. Call from App.tsx on mount.
+    // D-03: Cleanup stale blob media on app startup. Call from EditorShell on mount.
     // Blob URLs don't survive page reloads; clear any leaves that reference them.
     cleanupStaleBlobMedia: () =>
       set(state => {

@@ -11,6 +11,13 @@ import { findNode } from '../lib/tree';
 export function EditorShell() {
   const undo = useGridStore(s => s.undo);
   const redo = useGridStore(s => s.redo);
+
+  // Cleanup stale blob media on mount — blob URLs don't survive page reloads.
+  // Persisted store may contain blob entries that are now dead; null them out.
+  useEffect(() => {
+    useGridStore.getState().cleanupStaleBlobMedia();
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only fire if not typing in an input/textarea

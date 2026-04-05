@@ -306,4 +306,66 @@ describe('gridStore', () => {
       expect(mediaRegistry['m1']).toBe('data:image/png;base64,abc');
     });
   });
+
+  describe('cleanupStaleBlobMedia', () => {
+    it('removes blob: entries from mediaRegistry and mediaTypeMap, leaves base64 entries untouched', () => {
+      // Seed: two leaves, one with base64 media and one with blob media
+      const container = useGridStore.getState().root as ContainerNode;
+      const leaf1 = container.children[0] as LeafNode;
+      const leaf2 = container.children[1] as LeafNode;
+
+      // Add base64 and blob media entries
+      useGridStore.getState().addMedia('img-base64', 'data:image/png;base64,abc123', 'image');
+      useGridStore.getState().addMedia('vid-blob', 'blob:http://localhost/fake-video-id', 'video');
+
+      // Assign media to leaves
+      useGridStore.getState().setMedia(leaf1.id, 'img-base64');
+      useGridStore.getState().setMedia(leaf2.id, 'vid-blob');
+
+      // Run cleanup
+      useGridStore.getState().cleanupStaleBlobMedia();
+
+      const { mediaRegistry, mediaTypeMap, root } = useGridStore.getState();
+
+      // Blob entry removed
+      expect(mediaRegistry['vid-blob']).toBeUndefined();
+      expect(mediaTypeMap['vid-blob']).toBeUndefined();
+
+      // Base64 entry untouched
+      expect(mediaRegistry['img-base64']).toBe('data:image/png;base64,abc123');
+      expect(mediaTypeMap['img-base64']).toBe('image');
+
+      // Leaf referencing blob now has null mediaId
+      const updatedContainer = root as ContainerNode;
+      const updatedLeaf2 = updatedContainer.children[1] as LeafNode;
+      expect(updatedLeaf2.mediaId).toBeNull();
+
+      // Leaf referencing base64 is unchanged
+      const updatedLeaf1 = updatedContainer.children[0] as LeafNode;
+      expect(updatedLeaf1.mediaId).toBe('img-base64');
+    });
+
+    it('is a no-op when no blob entries exist (base64 images left alone)', () => {
+      const container = useGridStore.getState().root as ContainerNode;
+      const leaf1 = container.children[0] as LeafNode;
+
+      useGridStore.getState().addMedia('img-only', 'data:image/png;base64,xyz789', 'image');
+      useGridStore.getState().setMedia(leaf1.id, 'img-only');
+
+      const stateBefore = useGridStore.getState();
+
+      useGridStore.getState().cleanupStaleBlobMedia();
+
+      const { mediaRegistry, mediaTypeMap, root } = useGridStore.getState();
+
+      // Nothing changed
+      expect(mediaRegistry['img-only']).toBe('data:image/png;base64,xyz789');
+      expect(mediaTypeMap['img-only']).toBe('image');
+      const updatedLeaf1 = (root as ContainerNode).children[0] as LeafNode;
+      expect(updatedLeaf1.mediaId).toBe('img-only');
+
+      // History length unchanged (cleanup is a no-op, no snapshot pushed)
+      expect(useGridStore.getState().history.length).toBe(stateBefore.history.length);
+    });
+  });
 });

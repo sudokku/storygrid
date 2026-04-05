@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-04-05T13:14:17.136Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-04-05T13:17:52.336Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 23
-  completed_plans: 20
+  completed_plans: 21
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 ## Current Position
 
 Phase: 06 (video-support-v2) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -73,6 +73,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05.1-mobile-first-ui P02 | 8 | 2 tasks | 5 files |
 | Phase 05.1-mobile-first-ui P03 | 8 | 2 tasks | 7 files |
 | Phase 06-video-support-v2 P01 | 261 | 2 tasks | 10 files |
+| Phase 06-video-support-v2 P02 | 12 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,8 @@ Recent decisions affecting current work:
 - [Phase 06-video-support-v2]: Videos use blob URLs (URL.createObjectURL), images keep base64 — blob URLs revoked on removeMedia/clearGrid/applyTemplate
 - [Phase 06-video-support-v2]: COOP/COEP headers configured in all three environments: vite dev server, vercel.json, public/_headers (Netlify)
 - [Phase 06-video-support-v2]: hasVideoCell signature changed to accept mediaTypeMap instead of mediaRegistry — no string prefix scan needed
+- [Phase 06-video-support-v2]: drawRef updated to prefer videoElRef over imgElRef for video cells — single draw path handles both media types
+- [Phase 06-video-support-v2]: rAF loop keyed on [isPlaying, isVideo] effect — clean start/stop semantics via effect return value
 
 ### Pending Todos
 
@@ -170,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T13:14:17.131Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-04-05T13:17:52.333Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

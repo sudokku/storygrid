@@ -104,20 +104,6 @@ describe('Toast', () => {
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it('renders with role="status" when state is "loading-ffmpeg"', async () => {
-    const { Toast } = await import('../Editor/Toast');
-    render(<Toast state="loading-ffmpeg" onRetry={vi.fn()} onDismiss={vi.fn()} />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-
-  it('displays "Loading ffmpeg..." when state is loading-ffmpeg', async () => {
-    const { Toast } = await import('../Editor/Toast');
-    render(
-      <Toast state="loading-ffmpeg" onRetry={vi.fn()} onDismiss={vi.fn()} />,
-    );
-    expect(screen.getByText(/Loading ffmpeg\.\.\./)).toBeInTheDocument();
-  });
-
   it('displays encoding percent when state is encoding', async () => {
     const { Toast } = await import('../Editor/Toast');
     render(

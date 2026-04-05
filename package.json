@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "copy-ffmpeg": "cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js public/ffmpeg-core.js && cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm public/ffmpeg-core.wasm",
-    "dev": "npm run copy-ffmpeg && vite",
-    "build": "npm run copy-ffmpeg && tsc -b && vite build",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest"
@@ -36,8 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@ffmpeg/core": "^0.12.10",
-    "@testing-library/jest-dom": "^6.9.1",
+"@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.12.0",

@@ -11,12 +11,12 @@ import { videoElementRegistry } from './videoRegistry';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadFFmpeg(): Promise<any> {
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+  const { toBlobURL } = await import('@ffmpeg/util');
   const ffmpeg = new FFmpeg();
-  // Load from same origin — avoids CDN/CORS/blob-URL issues under COEP.
-  // Files are copied from node_modules/@ffmpeg/core/dist/umd/ to public/ at build time.
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
   await ffmpeg.load({
-    coreURL: '/ffmpeg-core.js',
-    wasmURL: '/ffmpeg-core.wasm',
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
   });
   return ffmpeg;
 }

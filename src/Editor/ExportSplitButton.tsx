@@ -105,8 +105,8 @@ export function ExportSplitButton() {
           mediaRegistry,
           canvasSettings,
           totalDuration,
-          (stage, percent) => {
-            setToastState(stage);
+          (_stage, percent) => {
+            setToastState('encoding');
             if (percent !== undefined) setEncodingPercent(percent);
           },
         );

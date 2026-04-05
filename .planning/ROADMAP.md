@@ -143,7 +143,14 @@ Plans:
   3. Clicking Export with video cells present triggers ffmpeg.wasm loading (not before); a progress bar reflects ffmpeg encoding progress
   4. The exported file is a valid MP4 at 1080x1920px that plays in Chrome and Firefox
   5. COOP/COEP headers are active in the deployed build and do not break image-only usage (no CORP errors for self-hosted assets)
-**Plans**: TBD
+**Plans**: 4 plans
+**UI hint**: yes
+
+Plans:
+- [ ] 06-01-PLAN.md — Infrastructure: store updates (mediaTypeMap, playback state), videoRegistry, COOP/COEP headers, video upload flow (VIDE-01, VIDE-06)
+- [ ] 06-02-PLAN.md — Video preview: LeafNode video element, canvas rAF loop, registry integration (VIDE-01, VIDE-02)
+- [ ] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
+- [ ] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
 
 ### Phase 7: Effects & Advanced (v2+)
 **Goal**: Power users can apply per-cell CSS filters, add text overlays, work with multiple story slides, save/load projects as JSON, and switch between Instagram aspect ratio presets
@@ -170,5 +177,5 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
 | 5. Polish & UX | 4/5 | In Progress|  |
 | 5.1. Mobile-First UI | 0/2 | Not started | - |
-| 6. Video Support (v2) | 0/TBD | Not started | - |
+| 6. Video Support (v2) | 0/4 | Not started | - |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

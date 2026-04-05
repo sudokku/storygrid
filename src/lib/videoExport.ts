@@ -1,13 +1,12 @@
 import { getAllLeaves } from './tree';
 import type { GridNode } from '../types';
-import { renderGridToCanvas, type CanvasSettings } from './export';
+import { renderGridIntoContext, type CanvasSettings } from './export';
 import { videoElementRegistry } from './videoRegistry';
 import {
   Output,
   Mp4OutputFormat,
   BufferTarget,
   CanvasSource,
-  QUALITY_HIGH,
 } from 'mediabunny';
 
 // ---------------------------------------------------------------------------
@@ -64,7 +63,10 @@ async function seekAllVideosTo(timeSeconds: number): Promise<void> {
         // manually seeks frame-by-frame, bypassing the browser's loop mechanism.
         const effectiveTime = computeLoopedTime(timeSeconds, video.duration);
 
-        if (Math.abs(video.currentTime - effectiveTime) < 0.01) {
+        // Skip seek if already within half a frame of the target position.
+        // FRAME_DURATION_SEC * 0.5 (0.0167s at 30fps) is more useful than the
+        // previous hardcoded 0.01 — prevents unnecessary seeks on consecutive frames.
+        if (Math.abs(video.currentTime - effectiveTime) < FRAME_DURATION_SEC * 0.5) {
           resolve();
           return;
         }
@@ -73,11 +75,12 @@ async function seekAllVideosTo(timeSeconds: number): Promise<void> {
           resolve();
         };
         video.addEventListener('seeked', onSeeked);
-        // Safety timeout in case the seeked event never fires
+        // Safety timeout reduced from 500ms to 100ms.
+        // For local blob URL videos (already buffered), seeks complete in <50ms.
         const timer = setTimeout(() => {
           video.removeEventListener('seeked', onSeeked);
           resolve();
-        }, 500);
+        }, 100);
         video.addEventListener('seeked', () => clearTimeout(timer), { once: true });
         video.currentTime = effectiveTime;
       }),
@@ -85,6 +88,13 @@ async function seekAllVideosTo(timeSeconds: number): Promise<void> {
   }
   await Promise.all(promises);
 }
+
+// ---------------------------------------------------------------------------
+// Frame rate constants — used by both seekAllVideosTo and exportVideoGrid
+// ---------------------------------------------------------------------------
+
+const FPS = 30;
+const FRAME_DURATION_SEC = 1 / FPS;
 
 // ---------------------------------------------------------------------------
 // exportVideoGrid — main entry point
@@ -106,8 +116,6 @@ export async function exportVideoGrid(
   const isFirefox = navigator.userAgent.includes('Firefox');
   const codec = isFirefox ? 'vp9' : 'avc';
 
-  const FPS = 30;
-  const FRAME_DURATION_SEC = 1 / FPS;
   const totalFrames = Math.max(1, Math.ceil(totalDuration * FPS));
 
   // CanvasSource requires a single stable canvas element across all add() calls.
@@ -124,12 +132,18 @@ export async function exportVideoGrid(
 
   const videoSource = new CanvasSource(stableCanvas, {
     codec,
-    bitrate: QUALITY_HIGH,
+    bitrate: 6_000_000,                    // 6 Mbps — sufficient for Instagram Story
+    hardwareAcceleration: 'prefer-hardware',
+    latencyMode: 'quality',
+    keyFrameInterval: 2,
   });
   output.addVideoTrack(videoSource);
   await output.start();
 
   const videoElementsByMediaId = buildVideoElementsByMediaId(root);
+
+  // Image cache persists across all frames — images decoded once, not per frame.
+  const imageCache = new Map<string, HTMLImageElement>();
 
   for (let frame = 0; frame < totalFrames; frame++) {
     const timeSeconds = frame * FRAME_DURATION_SEC;
@@ -139,20 +153,10 @@ export async function exportVideoGrid(
       await seekAllVideosTo(timeSeconds);
     }
 
-    // Render the grid into a temporary canvas
-    const frameCanvas = await renderGridToCanvas(
-      root,
-      mediaRegistry,
-      1080,
-      1920,
-      settings,
-      videoElementsByMediaId,
-    );
+    // Render directly into the stable canvas — no intermediate canvas allocation.
+    // CanvasSource reads stableCanvas pixel data after this call.
+    await renderGridIntoContext(stableCtx, root, mediaRegistry, 1080, 1920, settings, videoElementsByMediaId, imageCache);
 
-    // Copy rendered frame onto the stable canvas that CanvasSource holds
-    stableCtx.drawImage(frameCanvas, 0, 0);
-
-    // CanvasSource reads stableCanvas pixel data at this point.
     // Timestamps and durations are in SECONDS (not microseconds).
     await videoSource.add(timeSeconds, FRAME_DURATION_SEC);
 

@@ -11,6 +11,26 @@ import {
 } from 'mediabunny';
 
 // ---------------------------------------------------------------------------
+// computeLoopedTime — pure helper for modulo-based video looping
+//
+// The editor uses `video.loop = true` so the browser handles looping natively
+// during playback. The export pipeline manually seeks frame-by-frame via
+// `video.currentTime = X`, bypassing the browser's loop mechanism entirely.
+// This function replicates what `loop=true` would do during a manual seek.
+//
+// Edge cases:
+//   - duration === 0: metadata not loaded — fall back to 0
+//   - duration is NaN or Infinity: invalid metadata — fall back to 0
+// ---------------------------------------------------------------------------
+
+export function computeLoopedTime(timeSeconds: number, duration: number): number {
+  if (!duration || !isFinite(duration) || duration <= 0) {
+    return 0;
+  }
+  return timeSeconds % duration;
+}
+
+// ---------------------------------------------------------------------------
 // buildVideoElementsByMediaId
 //
 // videoElementRegistry maps nodeId -> HTMLVideoElement.
@@ -39,7 +59,12 @@ async function seekAllVideosTo(timeSeconds: number): Promise<void> {
   for (const video of videoElementRegistry.values()) {
     promises.push(
       new Promise<void>((resolve) => {
-        if (Math.abs(video.currentTime - timeSeconds) < 0.01) {
+        // Wrap the seek target so shorter videos loop seamlessly.
+        // The editor uses video.loop=true for playback, but the export pipeline
+        // manually seeks frame-by-frame, bypassing the browser's loop mechanism.
+        const effectiveTime = computeLoopedTime(timeSeconds, video.duration);
+
+        if (Math.abs(video.currentTime - effectiveTime) < 0.01) {
           resolve();
           return;
         }
@@ -54,7 +79,7 @@ async function seekAllVideosTo(timeSeconds: number): Promise<void> {
           resolve();
         }, 500);
         video.addEventListener('seeked', () => clearTimeout(timer), { once: true });
-        video.currentTime = timeSeconds;
+        video.currentTime = effectiveTime;
       }),
     );
   }

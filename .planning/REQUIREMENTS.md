@@ -83,10 +83,10 @@
 ### Video Support (Phase 6)
 
 - **VIDE-01**: Video files (video/*) accepted in media upload flow
-- **VIDE-02**: Video cells render `<video>` with autoplay/muted/loop and object-fit matching leaf.fit
+- **VIDE-02**: Video cells render via canvas rAF loop using a hidden video element (muted, playsInline, loop attributes) as drawImage source, respecting leaf.fit via the drawLeafToCanvas pipeline
 - **VIDE-03**: Timeline bar at bottom: master play/pause syncs all video cells; scrubbing seeks all simultaneously
 - **VIDE-04**: @ffmpeg/ffmpeg lazy-loaded only when video cells exist and user clicks Export
-- **VIDE-05**: Video export produces valid MP4 (H.264) at 1080×1920 using ffmpeg xstack filter
+- **VIDE-05**: Video export produces valid MP4 (H.264) at 1080×1920 via canvas frame-sequence rendering at 30fps encoded with libx264 CRF 23
 - **VIDE-06**: COOP/COEP headers configured in vercel.json / _headers for SharedArrayBuffer support
 - **VIDE-07**: Export progress shown via ffmpeg progress callback
 

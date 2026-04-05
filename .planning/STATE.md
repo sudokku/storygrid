@@ -5,7 +5,7 @@ milestone_name: milestone
 status: verifying
 stopped_at: "Completed quick-260405-uiy: fix video export loop flicker when short"
 last_updated: "2026-04-05T19:06:00Z"
-last_activity: "2026-04-05 - Completed quick task 260405-uiy: modulo-based seek in seekAllVideosTo fixes shorter video loop flicker during export"
+last_activity: "2026-04-05 - Completed quick task 260405-v3y: WebCodecs + Mediabunny export performance — hardware accel, canvas reuse, image cache, reduced seek timeout"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -174,6 +174,7 @@ None yet.
 | 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
 | 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
+| 260405-v3y | optimize WebCodecs and Mediabunny video export performance for 1080x1920px portrait videos | 2026-04-05 | 0388f4c | [260405-v3y-optimize-webcodecs-and-mediabunny-video-](./quick/260405-v3y-optimize-webcodecs-and-mediabunny-video-/) |
 
 ### Roadmap Evolution
 

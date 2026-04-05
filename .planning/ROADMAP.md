@@ -16,7 +16,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
 - [x] **Phase 4: Export Engine** - Canvas API tree renderer, PNG/JPEG download, progress toast, split-button UI (completed 2026-04-01)
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
-- [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
+- [x] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers (completed 2026-04-05)
 - [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets
 
 ## Phase Details
@@ -150,7 +150,7 @@ Plans:
 - [x] 06-01-PLAN.md — Infrastructure: store updates (mediaTypeMap, playback state), videoRegistry, COOP/COEP headers, video upload flow (VIDE-01, VIDE-06)
 - [x] 06-02-PLAN.md — Video preview: LeafNode video element, canvas rAF loop, registry integration (VIDE-01, VIDE-02)
 - [x] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
-- [ ] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
+- [x] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
 
 ### Phase 7: Effects & Advanced (v2+)
 **Goal**: Power users can apply per-cell CSS filters, add text overlays, work with multiple story slides, save/load projects as JSON, and switch between Instagram aspect ratio presets
@@ -177,5 +177,5 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6 -> 7
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
 | 5. Polish & UX | 4/5 | In Progress|  |
 | 5.1. Mobile-First UI | 0/2 | Not started | - |
-| 6. Video Support (v2) | 1/4 | In Progress|  |
+| 6. Video Support (v2) | 4/4 | Complete   | 2026-04-05 |
 | 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |

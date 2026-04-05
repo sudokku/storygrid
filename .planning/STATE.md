@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-04-05T13:20:32.113Z"
+status: verifying
+stopped_at: Completed 06-04 tasks 1-2, checkpoint at task 3 (human-verify)
+last_updated: "2026-04-05T13:26:46.113Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 
 Phase: 06 (video-support-v2) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -75,6 +75,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06-video-support-v2 P01 | 261 | 2 tasks | 10 files |
 | Phase 06-video-support-v2 P02 | 12 | 1 tasks | 1 files |
 | Phase 06-video-support-v2 P03 | 66 | 2 tasks | 2 files |
+| Phase 06-video-support-v2 P04 | 247 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,9 @@ Recent decisions affecting current work:
 - [Phase 06-video-support-v2]: rAF loop keyed on [isPlaying, isVideo] effect — clean start/stop semantics via effect return value
 - [Phase 06-video-support-v2]: max={totalDuration || 1} on scrubber prevents invalid range when totalDuration is 0 at mount
 - [Phase 06-video-support-v2]: useEditorStore.getState() used in PlaybackTimeline handlePlayPause to avoid stale closure on isPlaying
+- [Phase 06-video-support-v2]: ffmpeg loaded via dynamic import to keep it out of initial bundle
+- [Phase 06-video-support-v2]: video-blocked toast state removed; auto-detect export path replaces guard pattern
+- [Phase 06-video-support-v2]: buildVideoElementsByMediaId maps nodeId->mediaId for renderGridToCanvas video cell rendering
 
 ### Pending Todos
 
@@ -176,6 +180,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T13:20:32.110Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-04-05T13:26:46.110Z
+Stopped at: Completed 06-04 tasks 1-2, checkpoint at task 3 (human-verify)
 Resume file: None

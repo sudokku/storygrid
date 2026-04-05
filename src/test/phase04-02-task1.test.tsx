@@ -104,35 +104,12 @@ describe('Toast', () => {
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it('renders with role="alert" when state is "video-blocked"', async () => {
-    const { Toast } = await import('../Editor/Toast');
-    render(<Toast state="video-blocked" onRetry={vi.fn()} onDismiss={vi.fn()} />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-  });
-
-  it('displays "Export not available: remove video cells first." when state is video-blocked', async () => {
+  it('displays encoding percent when state is encoding', async () => {
     const { Toast } = await import('../Editor/Toast');
     render(
-      <Toast state="video-blocked" onRetry={vi.fn()} onDismiss={vi.fn()} />,
+      <Toast state="encoding" encodingPercent={42} onRetry={vi.fn()} onDismiss={vi.fn()} />,
     );
-    expect(
-      screen.getByText(/Export not available: remove video cells first\./),
-    ).toBeInTheDocument();
-  });
-
-  it('calls onDismiss after 4 seconds when state is video-blocked', async () => {
-    vi.useFakeTimers();
-    const { Toast } = await import('../Editor/Toast');
-    const onDismiss = vi.fn();
-    render(
-      <Toast state="video-blocked" onRetry={vi.fn()} onDismiss={onDismiss} />,
-    );
-    expect(onDismiss).not.toHaveBeenCalled();
-    await act(async () => {
-      vi.advanceTimersByTime(4000);
-    });
-    expect(onDismiss).toHaveBeenCalledOnce();
-    vi.useRealTimers();
+    expect(screen.getByText(/Encoding 42%\.\.\./)).toBeInTheDocument();
   });
 });
 
@@ -269,7 +246,7 @@ describe('ExportSplitButton', () => {
     unmount();
   });
 
-  it('export is blocked with video-blocked toast when hasVideoCell returns true', async () => {
+  it('shows "Export MP4" button when video cells are present', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     const leafWithVideo: LeafNode = {
       type: 'leaf',
@@ -282,16 +259,63 @@ describe('ExportSplitButton', () => {
     useGridStore.setState({
       root: leafWithVideo,
       mediaRegistry: { vid1: 'data:video/mp4;base64,abc' },
+      mediaTypeMap: { vid1: 'video' },
       history: [{ root: leafWithVideo }],
       historyIndex: 0,
     });
 
     render(<ExportSplitButton />);
-    const leftBtn = screen.getByRole('button', { name: /export png/i });
-    fireEvent.click(leftBtn);
 
-    expect(
-      await screen.findByText(/Export not available: remove video cells first\./),
-    ).toBeInTheDocument();
+    // When video cells are present, button should show "Export Video"
+    expect(screen.getByRole('button', { name: /export video/i })).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// exportVideoGrid — MediaRecorder availability guard
+// ---------------------------------------------------------------------------
+
+describe('exportVideoGrid', () => {
+  it('throws when MediaRecorder does not support required mimeTypes', async () => {
+    const { exportVideoGrid } = await import('../lib/videoExport');
+
+    // jsdom does not implement MediaRecorder.isTypeSupported — mock it to
+    // return false for all mimeTypes to simulate an unsupported browser.
+    const originalIsTypeSupported = (globalThis as Record<string, unknown>).MediaRecorder as
+      | { isTypeSupported?: (mt: string) => boolean }
+      | undefined;
+    const mockMediaRecorder = { isTypeSupported: () => false };
+    (globalThis as Record<string, unknown>).MediaRecorder = mockMediaRecorder;
+
+    const leaf: LeafNode = {
+      type: 'leaf',
+      id: 'root',
+      mediaId: null,
+      fit: 'cover',
+      objectPosition: 'center center',
+      backgroundColor: null,
+    };
+
+    await expect(
+      exportVideoGrid(
+        leaf,
+        {},
+        {},
+        {
+          gap: 0,
+          borderRadius: 0,
+          backgroundMode: 'solid',
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#000000',
+          backgroundGradientDir: 'to-bottom',
+        },
+        5,
+        vi.fn(),
+      ),
+    ).rejects.toThrow('Video export requires a browser that supports MediaRecorder');
+
+    // Restore
+    (globalThis as Record<string, unknown>).MediaRecorder = originalIsTypeSupported;
   });
 });

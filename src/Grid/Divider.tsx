@@ -104,8 +104,8 @@ export const Divider = React.memo(function Divider({
         className={`
           group/hit absolute z-10
           ${isVerticalContainer
-            ? '-top-[4px] left-0 right-0 h-[8px]'
-            : '-left-[4px] top-0 bottom-0 w-[8px]'
+            ? '-top-[11px] left-0 right-0 h-[22px]'
+            : '-left-[11px] top-0 bottom-0 w-[22px]'
           }
           ${cursorClass}
         `}
@@ -119,8 +119,8 @@ export const Divider = React.memo(function Divider({
           className={`
             absolute opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${isVerticalContainer
-              ? 'top-[3px] left-0 right-0 h-[2px] bg-[#444444]'
-              : 'left-[3px] top-0 bottom-0 w-[2px] bg-[#444444]'
+              ? 'top-[10px] left-0 right-0 h-[2px] bg-[#444444]'
+              : 'left-[10px] top-0 bottom-0 w-[2px] bg-[#444444]'
             }
           `}
         />
@@ -129,8 +129,8 @@ export const Divider = React.memo(function Divider({
           className={`
             absolute opacity-0 group-hover/hit:opacity-100 transition-opacity duration-150
             ${isVerticalContainer
-              ? 'top-[1px] left-1/2 -translate-x-1/2 w-[24px] h-[6px] rounded-full bg-[#888888]'
-              : 'left-[1px] top-1/2 -translate-y-1/2 h-[24px] w-[6px] rounded-full bg-[#888888]'
+              ? 'top-[8px] left-1/2 -translate-x-1/2 w-[24px] h-[6px] rounded-full bg-[#888888]'
+              : 'left-[8px] top-1/2 -translate-y-1/2 h-[24px] w-[6px] rounded-full bg-[#888888]'
             }
           `}
           style={{ transform: `${isVerticalContainer ? 'translateX(-50%)' : 'translateY(-50%)'} scale(${1 / canvasScale})` }}

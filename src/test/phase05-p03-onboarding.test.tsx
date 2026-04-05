@@ -2,6 +2,7 @@
  * Phase 05 Plan 04 Task 2: Onboarding Overlay
  * Tests for: localStorage gate, step progression, skip, dismiss, content
  */
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Onboarding } from '../Editor/Onboarding';

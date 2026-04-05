@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "immer": "^10.2.0",
     "lucide-react": "^1.7.0",
+    "mediabunny": "^1.40.1",
     "nanoid": "^5.1.7",
     "postcss": "^8.5.8",
     "react": "^18.3.1",

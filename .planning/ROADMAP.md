@@ -2,7 +2,7 @@
 
 ## Overview
 
-StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2) and advanced effects (v2+). Every v1 requirement maps to exactly one phase; phases 6-7 are deferred v2 work.
+StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foundation, implementing the recursive split-tree engine and its Zustand stores, rendering the grid with live-draggable dividers, wiring up media upload and cell controls, shipping a pixel-perfect PNG export engine, polishing the UX with templates and pan/zoom, then extending to video support (v2). Every v1 requirement maps to exactly one phase; phase 6 is the deferred v2 work.
 
 ## Phases
 
@@ -16,8 +16,7 @@ StoryGrid builds in eight phases: scaffolding the Vite + React + TypeScript foun
 - [x] **Phase 3: Media Upload & Cell Controls** - File picker, drag-drop, base64 conversion, action bar, sidebar, toolbar (completed 2026-04-01)
 - [x] **Phase 4: Export Engine** - Canvas API tree renderer, PNG/JPEG download, progress toast, split-button UI (completed 2026-04-01)
 - [ ] **Phase 5: Polish & UX** - Templates, gap/radius/bg controls, pan/zoom, cell-swap, dark theme, keyboard shortcuts
-- [ ] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers
-- [ ] **Phase 7: Effects & Advanced (v2+)** - Per-cell filters, text overlays, multi-slide, save/load JSON, aspect ratio presets
+- [x] **Phase 6: Video Support (v2)** - Video cells, playback timeline, ffmpeg.wasm MP4 export, COOP/COEP headers (completed 2026-04-05)
 
 ## Phase Details
 
@@ -116,6 +115,23 @@ Plans:
 - [x] 05-05-PLAN.md — Wire export call, visual verification checkpoint (all POLH requirements)
 **UI hint**: yes
 
+### Phase 05.1: Mobile-First UI (INSERTED)
+
+**Goal:** The StoryGrid editor is fully usable on mobile phones: responsive layout swap at 768px, bottom sheet replacing sidebar, minimal mobile toolbar, touch-adapted cell controls, expanded divider hit areas, pinch-to-zoom in pan mode, and mobile onboarding welcome card
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16, D-17, D-18
+**Depends on:** Phase 5
+**Success Criteria** (what must be TRUE):
+  1. At < 768px the desktop sidebar is hidden and a bottom sheet with drag-to-snap is visible
+  2. The mobile toolbar shows only "StoryGrid" wordmark + Export button; all other controls in the sheet
+  3. Tapping a cell on mobile selects it and the sheet shows Split H/V, Remove, Fit toggle, Clear buttons
+  4. Pinch-to-zoom works within a cell in pan mode on touch devices
+  5. First-time mobile users see a "Build your story." welcome card with "Got it" dismiss
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 05.1-01-PLAN.md — Foundation: useMediaQuery extraction, editorStore sheetSnapState, responsive layout (EditorShell/Toolbar/Sidebar/CanvasArea), MobileSheet component, divider hit area expansion
+- [ ] 05.1-02-PLAN.md — Mobile controls: ActionBar hidden on mobile, Split H/V in SelectedCellPanel, pinch-to-zoom, MobileWelcomeCard onboarding
+
 ### Phase 6: Video Support (v2)
 **Goal**: Users can add video files to cells, preview them playing in sync, and export the composition as an MP4 using ffmpeg.wasm -- with COOP/COEP headers correctly configured for SharedArrayBuffer
 **Depends on**: Phase 5
@@ -126,23 +142,19 @@ Plans:
   3. Clicking Export with video cells present triggers ffmpeg.wasm loading (not before); a progress bar reflects ffmpeg encoding progress
   4. The exported file is a valid MP4 at 1080x1920px that plays in Chrome and Firefox
   5. COOP/COEP headers are active in the deployed build and do not break image-only usage (no CORP errors for self-hosted assets)
-**Plans**: TBD
+**Plans**: 4 plans
+**UI hint**: yes
 
-### Phase 7: Effects & Advanced (v2+)
-**Goal**: Power users can apply per-cell CSS filters, add text overlays, work with multiple story slides, save/load projects as JSON, and switch between Instagram aspect ratio presets
-**Depends on**: Phase 6
-**Requirements**: EFCT-01, EFCT-02, EFCT-03, EFCT-04, EFCT-05
-**Success Criteria** (what must be TRUE):
-  1. Adjusting a cell's brightness or saturation slider updates the cell's appearance in real-time and is reflected in the exported image
-  2. Adding a text overlay to a cell renders the text at the specified position, font, and color -- and the text appears in the exported PNG/MP4
-  3. A project (tree + settings + media registry) can be exported as a `.storygrid.json` file and re-imported to restore the exact same canvas state
-  4. Switching to the 1:1 aspect ratio preset reflows the canvas to 1080x1080px; the grid tree and cell contents are preserved
-**Plans**: TBD
+Plans:
+- [x] 06-01-PLAN.md — Infrastructure: store updates (mediaTypeMap, playback state), videoRegistry, COOP/COEP headers, video upload flow (VIDE-01, VIDE-06)
+- [x] 06-02-PLAN.md — Video preview: LeafNode video element, canvas rAF loop, registry integration (VIDE-01, VIDE-02)
+- [x] 06-03-PLAN.md — Timeline bar: PlaybackTimeline component, play/pause/seek sync, CanvasArea wiring (VIDE-03)
+- [x] 06-04-PLAN.md — Video export: ffmpeg.wasm lazy load, frame sequence rendering, MP4 encoding, auto-detect export path (VIDE-04, VIDE-05, VIDE-07)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -152,5 +164,5 @@ Phases execute in numeric order: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Media Upload & Cell Controls | 3/3 | Complete   | 2026-04-01 |
 | 4. Export Engine | 2/2 | Complete   | 2026-04-01 |
 | 5. Polish & UX | 4/5 | In Progress|  |
-| 6. Video Support (v2) | 0/TBD | Not started | - |
-| 7. Effects & Advanced (v2+) | 0/TBD | Not started | - |
+| 5.1. Mobile-First UI | 0/2 | Not started | - |
+| 6. Video Support (v2) | 4/4 | Complete   | 2026-04-05 |

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -6,21 +6,6 @@ import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2 } from 'lucide-react';
-
-// ---------------------------------------------------------------------------
-// Responsive media query hook
-// ---------------------------------------------------------------------------
-
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
-}
 
 // ---------------------------------------------------------------------------
 // Cell dimension helper
@@ -68,10 +53,10 @@ function computeCellDimensions(root: GridNode, nodeId: string): { w: number; h: 
 }
 
 // ---------------------------------------------------------------------------
-// Canvas settings panel (Phase 5)
+// Canvas settings panel (Phase 5) — exported for MobileSheet
 // ---------------------------------------------------------------------------
 
-function CanvasSettingsPanel() {
+export function CanvasSettingsPanel() {
   const {
     gap, setGap,
     borderRadius, setBorderRadius,
@@ -205,14 +190,14 @@ function CanvasSettingsPanel() {
 }
 
 // ---------------------------------------------------------------------------
-// Selected cell panel (D-10)
+// Selected cell panel (D-10) — exported for MobileSheet
 // ---------------------------------------------------------------------------
 
 interface SelectedCellPanelProps {
   nodeId: string;
 }
 
-const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: SelectedCellPanelProps) {
+export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: SelectedCellPanelProps) {
   const node = useGridStore(s => findNode(s.root, nodeId) as LeafNode | null);
   const mediaUrl = useGridStore(s => {
     const n = findNode(s.root, nodeId) as LeafNode | null;
@@ -345,7 +330,25 @@ const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: Sele
         </div>
       )}
 
-      {/* 5. Actions row */}
+      {/* 5. Split actions */}
+      <div className="flex gap-2">
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded text-xs bg-[#2a2a2a] hover:bg-[#333333] text-neutral-300 transition-colors"
+          onClick={() => split(nodeId, 'horizontal')}
+          data-testid="split-horizontal"
+        >
+          Split Horizontal
+        </button>
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded text-xs bg-[#2a2a2a] hover:bg-[#333333] text-neutral-300 transition-colors"
+          onClick={() => split(nodeId, 'vertical')}
+          data-testid="split-vertical"
+        >
+          Split Vertical
+        </button>
+      </div>
+
+      {/* 6. Actions row */}
       <div className="space-y-2 pt-1">
         {/* Upload/Replace */}
         <button
@@ -397,28 +400,10 @@ const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: Sele
 
 export function Sidebar() {
   const selectedNodeId = useEditorStore(s => s.selectedNodeId);
-  const isNarrow = useMediaQuery('(max-width: 1199px)');
-  const isTooSmall = useMediaQuery('(max-width: 1023px)');
-
-  if (isTooSmall) {
-    return (
-      <aside
-        className="w-[200px] shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] flex items-center justify-center"
-        data-testid="sidebar"
-      >
-        <div
-          className="p-4 text-center text-sm text-neutral-400"
-          data-testid="desktop-notice"
-        >
-          StoryGrid works best on desktop (1024px+)
-        </div>
-      </aside>
-    );
-  }
 
   return (
     <aside
-      className={`${isNarrow ? 'w-[200px]' : 'w-[280px]'} shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] overflow-y-auto`}
+      className="hidden md:flex md:flex-col w-[280px] shrink-0 bg-[#1c1c1c] border-l border-[#2a2a2a] overflow-y-auto"
       data-testid="sidebar"
     >
       <CanvasSettingsPanel />

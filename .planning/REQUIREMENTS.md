@@ -83,10 +83,10 @@
 ### Video Support (Phase 6)
 
 - **VIDE-01**: Video files (video/*) accepted in media upload flow
-- **VIDE-02**: Video cells render `<video>` with autoplay/muted/loop and object-fit matching leaf.fit
+- **VIDE-02**: Video cells render via canvas rAF loop using a hidden video element (muted, playsInline, loop attributes) as drawImage source, respecting leaf.fit via the drawLeafToCanvas pipeline
 - **VIDE-03**: Timeline bar at bottom: master play/pause syncs all video cells; scrubbing seeks all simultaneously
 - **VIDE-04**: @ffmpeg/ffmpeg lazy-loaded only when video cells exist and user clicks Export
-- **VIDE-05**: Video export produces valid MP4 (H.264) at 1080×1920 using ffmpeg xstack filter
+- **VIDE-05**: Video export produces valid MP4 (H.264) at 1080×1920 via canvas frame-sequence rendering at 30fps encoded with libx264 CRF 23
 - **VIDE-06**: COOP/COEP headers configured in vercel.json / _headers for SharedArrayBuffer support
 - **VIDE-07**: Export progress shown via ffmpeg progress callback
 
@@ -173,13 +173,13 @@
 | POLH-10 | Phase 5 | Complete |
 | POLH-11 | Phase 5 | Complete |
 | POLH-12 | Phase 5 | Complete |
-| VIDE-01 | Phase 6 | Pending |
-| VIDE-02 | Phase 6 | Pending |
-| VIDE-03 | Phase 6 | Pending |
-| VIDE-04 | Phase 6 | Pending |
-| VIDE-05 | Phase 6 | Pending |
-| VIDE-06 | Phase 6 | Pending |
-| VIDE-07 | Phase 6 | Pending |
+| VIDE-01 | Phase 6 | Complete |
+| VIDE-02 | Phase 6 | Complete |
+| VIDE-03 | Phase 6 | Complete |
+| VIDE-04 | Phase 6 | Complete |
+| VIDE-05 | Phase 6 | Complete |
+| VIDE-06 | Phase 6 | Complete |
+| VIDE-07 | Phase 6 | Complete |
 | EFCT-01 | Phase 7 | Pending |
 | EFCT-02 | Phase 7 | Pending |
 | EFCT-03 | Phase 7 | Pending |

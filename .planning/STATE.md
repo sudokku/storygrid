@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05-polish-ux/05-05-PLAN.md
-last_updated: "2026-04-02T12:57:09.369Z"
-last_activity: 2026-04-02
+status: verifying
+stopped_at: "Completed quick-260405-uiy: fix video export loop flicker when short"
+last_updated: "2026-04-05T19:06:00Z"
+last_activity: "2026-04-06 - Replaced video export with MediaRecorder pipeline; marked 260402-sh8 and 260405-o0a as complete"
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
+  completed_phases: 8
+  total_plans: 23
+  completed_plans: 23
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 05 — polish-ux
+**Current focus:** Phase 06 — video-support-v2
 
 ## Current Position
 
-Phase: 6
+Phase: 7
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-02
+Status: Phase complete — ready for verification
+Last activity: 2026-04-05 - Completed quick task 260405-s9u: replaced ffmpeg.wasm with WebCodecs + Mediabunny
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -69,6 +69,13 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-polish-ux P04 | 8min | 2 tasks | 7 files |
 | Phase 05-polish-ux P03 | 8min | 2 tasks | 6 files |
 | Phase 05-polish-ux P05 | 942 | 2 tasks | 1 files |
+| Phase 05.1-mobile-first-ui P01 | 9 | 2 tasks | 11 files |
+| Phase 05.1-mobile-first-ui P02 | 8 | 2 tasks | 5 files |
+| Phase 05.1-mobile-first-ui P03 | 8 | 2 tasks | 7 files |
+| Phase 06-video-support-v2 P01 | 261 | 2 tasks | 10 files |
+| Phase 06-video-support-v2 P02 | 12 | 1 tasks | 1 files |
+| Phase 06-video-support-v2 P03 | 66 | 2 tasks | 2 files |
+| Phase 06-video-support-v2 P04 | 247 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -128,6 +135,27 @@ Recent decisions affecting current work:
 - [Phase quick]: Pan/zoom redraws bypass React via useGridStore.subscribe + useEditorStore.subscribe — 60fps without setState
 - [Phase 05-polish-ux]: ExportSplitButton reads canvas settings via useEditorStore.getState() at export call time — avoids stale closures in async handlers
 - [Phase 05-polish-ux]: data-testid='export-button' added to main export button to enable Ctrl+E keyboard shortcut querySelector lookup
+- [Phase 05.1-mobile-first-ui]: CSS-driven responsive breakpoint (hidden md:flex) used instead of JS conditional rendering — avoids FOUC and aligns with Tailwind conventions
+- [Phase 05.1-mobile-first-ui]: SNAP_TRANSLATE map contains inline translateY() strings — declarative snap state -> CSS transform lookup without branching logic
+- [Phase 05.1-mobile-first-ui]: CanvasSettingsPanel and SelectedCellPanel exported from Sidebar.tsx (not moved) — avoids import cycle, keeps panels co-located with sidebar
+- [Phase 05.1-mobile-first-ui]: Native touchstart/touchmove/touchend listeners used for pinch-to-zoom (passive:false required for preventDefault — React synthetic events cannot support this)
+- [Phase 05.1-mobile-first-ui]: Split buttons added to SelectedCellPanel (not mobile-only) — visible on desktop sidebar AND mobile sheet via MobileSheet import; pure enhancement
+- [Phase 05.1-mobile-first-ui]: MobileWelcomeCard uses shared handleDismiss from Onboarding — writes storygrid_onboarding_done key, satisfying D-17 shared key requirement
+- [Phase 05.1-mobile-first-ui]: React import added to all src/test/*.tsx files — fixes ReferenceError: React is not defined across Phase 05.1 tests
+- [Phase 05.1-mobile-first-ui]: D-16 (cell swap touch) formally deferred: native HTML5 drag events do not fire on iOS/Android; dnd-kit TouchSensor would require non-trivial refactor
+- [Phase 06-video-support-v2]: mediaTypeMap stored parallel to mediaRegistry in gridStore, not in undo history snapshots
+- [Phase 06-video-support-v2]: Videos use blob URLs (URL.createObjectURL), images keep base64 — blob URLs revoked on removeMedia/clearGrid/applyTemplate
+- [Phase 06-video-support-v2]: COOP/COEP headers configured in all three environments: vite dev server, vercel.json, public/_headers (Netlify)
+- [Phase 06-video-support-v2]: hasVideoCell signature changed to accept mediaTypeMap instead of mediaRegistry — no string prefix scan needed
+- [Phase 06-video-support-v2]: drawRef updated to prefer videoElRef over imgElRef for video cells — single draw path handles both media types
+- [Phase 06-video-support-v2]: rAF loop keyed on [isPlaying, isVideo] effect — clean start/stop semantics via effect return value
+- [Phase 06-video-support-v2]: max={totalDuration || 1} on scrubber prevents invalid range when totalDuration is 0 at mount
+- [Phase 06-video-support-v2]: useEditorStore.getState() used in PlaybackTimeline handlePlayPause to avoid stale closure on isPlaying
+- [Phase 06-video-support-v2]: ffmpeg loaded via dynamic import to keep it out of initial bundle
+- [Phase 06-video-support-v2]: video-blocked toast state removed; auto-detect export path replaces guard pattern
+- [Phase 06-video-support-v2]: buildVideoElementsByMediaId maps nodeId->mediaId for renderGridToCanvas video cell rendering
+- [Phase quick-260405-s9u]: VP9 forced on Firefox (H.264 DOMException bug Bugzilla #1918769); stable canvas pattern bridges CanvasSource with renderGridToCanvas; mediabunny replaces ffmpeg.wasm — no COOP/COEP or 25MB WASM download required
+- [Phase quick-260405-uiy]: computeLoopedTime (timeSeconds % duration) replicates video.loop=true during frame-by-frame export; extracted as pure helper for testability; edge case guard covers zero/NaN/Infinity duration
 
 ### Pending Todos
 
@@ -137,10 +165,21 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260402-sh8 | Fix TypeScript build errors blocking Vercel deployment | 2026-04-02 | 92dbd1e | [260402-sh8-fix-typescript-build-errors-blocking-ver](./quick/260402-sh8-fix-typescript-build-errors-blocking-ver/) |
 | 260401-oca | Replace the html-to-image export engine with a Canvas API implementation | 2026-04-01 | b801923 | [260401-oca-replace-the-html-to-image-export-engine-](./quick/260401-oca-replace-the-html-to-image-export-engine-/) |
 | 260402-63e | Fix pan/zoom in LeafNode so cover and contain modes pan through the full original image | 2026-04-02 | 8e9ea18 | [260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co](./quick/260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co/) |
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 | 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
+| 260403-rvh | Fix mobile UI regressions: MobileSheet full snap top gap, Geist font :root scoping, iOS momentum scroll, canvas touch isolation | 2026-04-03 | 80930dd | [260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha](./quick/260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha/) |
+| 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | research-only | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
+| 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
+| 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
+| 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
+| 260405-v3y | optimize WebCodecs and Mediabunny video export performance for 1080x1920px portrait videos | 2026-04-05 | 0388f4c | [260405-v3y-optimize-webcodecs-and-mediabunny-video-](./quick/260405-v3y-optimize-webcodecs-and-mediabunny-video-/) |
+
+### Roadmap Evolution
+
+- Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
 
 ### Blockers/Concerns
 
@@ -149,6 +188,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T12:48:52.363Z
-Stopped at: Completed 05-polish-ux/05-05-PLAN.md
+Last session: 2026-04-05T18:34:51.991Z
+Stopped at: Completed quick-260405-s9u: WebCodecs + Mediabunny video export
 Resume file: None

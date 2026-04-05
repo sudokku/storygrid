@@ -282,6 +282,7 @@ describe('ExportSplitButton', () => {
     useGridStore.setState({
       root: leafWithVideo,
       mediaRegistry: { vid1: 'data:video/mp4;base64,abc' },
+      mediaTypeMap: { vid1: 'video' },
       history: [{ root: leafWithVideo }],
       historyIndex: 0,
     });

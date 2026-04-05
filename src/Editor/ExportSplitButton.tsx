@@ -26,6 +26,7 @@ export function ExportSplitButton() {
 
   const root = useGridStore(s => s.root);
   const mediaRegistry = useGridStore(s => s.mediaRegistry);
+  const mediaTypeMap = useGridStore(s => s.mediaTypeMap);
 
   // Canvas settings for export
   const gap = useEditorStore(s => s.gap);
@@ -78,7 +79,7 @@ export function ExportSplitButton() {
     if (isExporting) return;
 
     // Video guard — per D-09
-    if (hasVideoCell(root, mediaRegistry)) {
+    if (hasVideoCell(root, mediaTypeMap)) {
       setToastState('video-blocked');
       return;
     }

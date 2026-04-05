@@ -42,9 +42,9 @@ export function Toolbar() {
 
   const handleExport = useCallback(async () => {
     if (isExporting) return;
-    const { root, mediaRegistry } = useGridStore.getState();
+    const { root, mediaTypeMap } = useGridStore.getState();
 
-    if (hasVideoCell(root, mediaRegistry)) return;
+    if (hasVideoCell(root, mediaTypeMap)) return;
 
     setIsExporting(true);
     try {

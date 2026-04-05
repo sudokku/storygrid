@@ -298,12 +298,18 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
       // Re-clamp panX/panY for the new scale to prevent cover constraint violation
       const img = imgElRef.current;
+      const vid = videoElRef.current;
       const { w: cw, h: ch } = cellSizeRef.current;
       let clampedPanX = n?.panX ?? 0;
       let clampedPanY = n?.panY ?? 0;
 
-      if (img && cw > 0 && ch > 0 && (n?.fit ?? 'cover') === 'cover') {
-        const imgAspect = img.naturalWidth / img.naturalHeight;
+      // Use video dimensions for video cells, image dimensions for image cells
+      const naturalW = img ? img.naturalWidth : (vid?.videoWidth ?? 0);
+      const naturalH = img ? img.naturalHeight : (vid?.videoHeight ?? 0);
+      const hasMediaDimensions = (img != null || vid != null) && naturalW > 0 && naturalH > 0;
+
+      if (hasMediaDimensions && cw > 0 && ch > 0 && (n?.fit ?? 'cover') === 'cover') {
+        const imgAspect = naturalW / naturalH;
         const cellAspect = cw / ch;
         let baseW: number, baseH: number;
         if (imgAspect > cellAspect) {
@@ -459,6 +465,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     const scale = n?.panScale ?? 1;
     const fit = n?.fit ?? 'cover';
     const img = imgElRef.current;
+    const vid = videoElRef.current;
 
     // Use cell dimensions if available; fall back to 1 so percentage conversion still works
     const effectiveCw = cw > 0 ? cw : 1;
@@ -469,8 +476,13 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     let newPanX = panStartRef.current.panX + dxPct;
     let newPanY = panStartRef.current.panY + dyPct;
 
-    if (fit === 'cover' && img && cw > 0 && ch > 0) {
-      const imgAspect = img.naturalWidth / img.naturalHeight;
+    // Use video dimensions for video cells, image dimensions for image cells
+    const naturalW = img ? img.naturalWidth : (vid?.videoWidth ?? 0);
+    const naturalH = img ? img.naturalHeight : (vid?.videoHeight ?? 0);
+    const hasMediaDimensions = (img != null || vid != null) && naturalW > 0 && naturalH > 0;
+
+    if (fit === 'cover' && hasMediaDimensions && cw > 0 && ch > 0) {
+      const imgAspect = naturalW / naturalH;
       const cellAspect = cw / ch;
       let baseW: number, baseH: number;
       if (imgAspect > cellAspect) {

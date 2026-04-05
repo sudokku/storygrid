@@ -4,7 +4,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 // Types
 // ---------------------------------------------------------------------------
 
-export type ToastState = 'preparing' | 'exporting' | 'error' | 'loading-ffmpeg' | 'encoding' | null;
+export type ToastState = 'preparing' | 'exporting' | 'error' | 'encoding' | null;
 
 interface ToastProps {
   state: ToastState;
@@ -37,15 +37,6 @@ export function Toast({ state, encodingPercent, onRetry, onDismiss }: ToastProps
       <div className={containerClass} role="status">
         <Loader2 size={14} className="animate-spin text-neutral-400" />
         <span>Exporting...</span>
-      </div>
-    );
-  }
-
-  if (state === 'loading-ffmpeg') {
-    return (
-      <div className={containerClass} role="status">
-        <Loader2 size={14} className="animate-spin text-neutral-400" />
-        <span>Loading ffmpeg...</span>
       </div>
     );
   }

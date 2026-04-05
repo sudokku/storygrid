@@ -5,7 +5,7 @@ milestone_name: milestone
 status: verifying
 stopped_at: "Completed quick-260405-uiy: fix video export loop flicker when short"
 last_updated: "2026-04-05T19:06:00Z"
-last_activity: "2026-04-05 - Completed quick task 260405-v3y: WebCodecs + Mediabunny export performance — hardware accel, canvas reuse, image cache, reduced seek timeout"
+last_activity: "2026-04-06 - Replaced video export with MediaRecorder pipeline; marked 260402-sh8 and 260405-o0a as complete"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -165,12 +165,13 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260402-sh8 | Fix TypeScript build errors blocking Vercel deployment | 2026-04-02 | 92dbd1e | [260402-sh8-fix-typescript-build-errors-blocking-ver](./quick/260402-sh8-fix-typescript-build-errors-blocking-ver/) |
 | 260401-oca | Replace the html-to-image export engine with a Canvas API implementation | 2026-04-01 | b801923 | [260401-oca-replace-the-html-to-image-export-engine-](./quick/260401-oca-replace-the-html-to-image-export-engine-/) |
 | 260402-63e | Fix pan/zoom in LeafNode so cover and contain modes pan through the full original image | 2026-04-02 | 8e9ea18 | [260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co](./quick/260402-63e-fix-pan-zoom-in-leafnode-so-cover-and-co/) |
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 | 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
 | 260403-rvh | Fix mobile UI regressions: MobileSheet full snap top gap, Geist font :root scoping, iOS momentum scroll, canvas touch isolation | 2026-04-03 | 80930dd | [260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha](./quick/260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha/) |
-| 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | — | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
+| 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | research-only | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
 | 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
 | 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |

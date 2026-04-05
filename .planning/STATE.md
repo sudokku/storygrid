@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 Phase: 06 (video-support-v2) — EXECUTING
 Plan: 4 of 4
 Status: Phase complete — ready for verification
-Last activity: 2026-04-05
+Last activity: 2026-04-05 - Completed quick task 260405-o0a: Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -168,6 +168,7 @@ None yet.
 | 260402-7j0 | Fix image rendering in LeafNode: add maxWidth none to override Tailwind Preflight, add select-none to prevent text selection | 2026-04-02 | 4b29170 | [260402-7j0-fix-image-rendering-in-leafnode-add-maxw](./quick/260402-7j0-fix-image-rendering-in-leafnode-add-maxw/) |
 | 260402-lae | Migrate LeafNode from HTML img to per-cell canvas for WYSIWYG export parity, 60fps pan/zoom via Zustand subscribe, and bug fixes | 2026-04-02 | 94e0458 | [260402-lae-migrate-leafnode-from-html-img-to-per-ce](./quick/260402-lae-migrate-leafnode-from-html-img-to-per-ce/) |
 | 260403-rvh | Fix mobile UI regressions: MobileSheet full snap top gap, Geist font :root scoping, iOS momentum scroll, canvas touch isolation | 2026-04-03 | 80930dd | [260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha](./quick/260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha/) |
+| 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | — | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
 
 ### Roadmap Evolution
 

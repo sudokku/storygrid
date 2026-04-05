@@ -5,7 +5,7 @@ milestone_name: milestone
 status: verifying
 stopped_at: "Completed quick-260405-s9u: WebCodecs + Mediabunny video export"
 last_updated: "2026-04-05T18:34:56.495Z"
-last_activity: "2026-04-05 - Completed quick task 260405-oqc: cleanupStaleBlobMedia wired on EditorShell mount"
+last_activity: "2026-04-05 - Completed quick task 260405-s9u: replaced ffmpeg.wasm with WebCodecs + Mediabunny"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 Phase: 7
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-04-05 - Completed quick task 260405-oqc: cleanupStaleBlobMedia wired on EditorShell mount
+Last activity: 2026-04-05 - Completed quick task 260405-s9u: replaced ffmpeg.wasm with WebCodecs + Mediabunny
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -171,6 +171,7 @@ None yet.
 | 260403-rvh | Fix mobile UI regressions: MobileSheet full snap top gap, Geist font :root scoping, iOS momentum scroll, canvas touch isolation | 2026-04-03 | 80930dd | [260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha](./quick/260403-rvh-fix-mobile-ui-issues-mobilesheet-drag-ha/) |
 | 260405-o0a | Research @ffmpeg/ffmpeg 0.12.x loading patterns for Vite + React | 2026-04-05 | — | [260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa](./quick/260405-o0a-research-ffmpeg-ffmpeg-0-12-x-loading-pa/) |
 | 260405-oqc | cleanupStaleBlobMedia is defined but never called from App.tsx on startup — stale blob entries persist in the store after reload | 2026-04-05 | f980b5d | [260405-oqc-cleanupstaleblobmedia-is-defined-but-nev](./quick/260405-oqc-cleanupstaleblobmedia-is-defined-but-nev/) |
+| 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
 
 ### Roadmap Evolution
 

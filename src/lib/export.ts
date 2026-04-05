@@ -399,6 +399,43 @@ async function renderNode(
 }
 
 // ---------------------------------------------------------------------------
+// renderGridIntoContext — render into an existing 2D context
+//
+// Accepts an optional pre-existing imageCache so video export can reuse the
+// same cache across all frames (images decoded once, not once per frame).
+// ---------------------------------------------------------------------------
+
+export async function renderGridIntoContext(
+  ctx: CanvasRenderingContext2D,
+  root: GridNode,
+  mediaRegistry: Record<string, string>,
+  width: number,
+  height: number,
+  settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
+  videoElements?: Map<string, HTMLVideoElement>,
+  imageCache?: Map<string, HTMLImageElement>,
+): Promise<void> {
+  if (settings.backgroundMode === 'gradient') {
+    const dirMap: Record<string, [number, number, number, number]> = {
+      'to-bottom': [0, 0, 0, height],
+      'to-right': [0, 0, width, 0],
+      'diagonal': [0, 0, width, height],
+    };
+    const [x0, y0, x1, y1] = dirMap[settings.backgroundGradientDir] ?? [0, 0, 0, height];
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0, settings.backgroundGradientFrom);
+    grad.addColorStop(1, settings.backgroundGradientTo);
+    ctx.fillStyle = grad as unknown as string;
+  } else {
+    ctx.fillStyle = settings.backgroundColor;
+  }
+  ctx.fillRect(0, 0, width, height);
+
+  const cache = imageCache ?? new Map<string, HTMLImageElement>();
+  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, cache, settings, videoElements);
+}
+
+// ---------------------------------------------------------------------------
 // renderGridToCanvas — main canvas renderer
 // ---------------------------------------------------------------------------
 
@@ -417,24 +454,7 @@ export async function renderGridToCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
-  if (settings.backgroundMode === 'gradient') {
-    const dirMap: Record<string, [number, number, number, number]> = {
-      'to-bottom': [0, 0, 0, height],
-      'to-right': [0, 0, width, 0],
-      'diagonal': [0, 0, width, height],
-    };
-    const [x0, y0, x1, y1] = dirMap[settings.backgroundGradientDir] ?? [0, 0, 0, height];
-    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
-    grad.addColorStop(0, settings.backgroundGradientFrom);
-    grad.addColorStop(1, settings.backgroundGradientTo);
-    ctx.fillStyle = grad as unknown as string;
-  } else {
-    ctx.fillStyle = settings.backgroundColor;
-  }
-  ctx.fillRect(0, 0, width, height);
-
-  const imageCache = new Map<string, HTMLImageElement>();
-  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache, settings, videoElements);
+  await renderGridIntoContext(ctx, root, mediaRegistry, width, height, settings, videoElements);
 
   return canvas;
 }

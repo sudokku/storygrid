@@ -105,16 +105,21 @@ function roundedRect(
 }
 
 // ---------------------------------------------------------------------------
-// getSourceDimensions — unified width/height for image and video elements
+// getSourceDimensions — unified width/height for image, video, and ImageBitmap
 // ---------------------------------------------------------------------------
 
 export function getSourceDimensions(
-  src: HTMLImageElement | HTMLVideoElement,
+  src: HTMLImageElement | HTMLVideoElement | ImageBitmap,
 ): { w: number; h: number } {
   if (src instanceof HTMLVideoElement) {
     return { w: src.videoWidth, h: src.videoHeight };
   }
-  return { w: src.naturalWidth, h: src.naturalHeight };
+  // ImageBitmap may not be defined in non-browser environments (e.g. Vitest/jsdom).
+  // Guard against ReferenceError before using instanceof.
+  if (typeof ImageBitmap !== 'undefined' && src instanceof ImageBitmap) {
+    return { w: src.width, h: src.height };
+  }
+  return { w: (src as HTMLImageElement).naturalWidth, h: (src as HTMLImageElement).naturalHeight };
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +128,7 @@ export function getSourceDimensions(
 
 export function drawCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
 ): void {
@@ -150,7 +155,7 @@ export function drawCoverImage(
 
 export function drawContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -190,7 +195,7 @@ export function drawContainImage(
 
 export function drawPannedCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   panX: number,
@@ -243,7 +248,7 @@ export function drawPannedCoverImage(
 
 export function drawPannedContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -298,7 +303,7 @@ export function drawPannedContainImage(
 
 export function drawLeafToCanvas(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor'>,
 ): void {
@@ -352,7 +357,7 @@ async function renderNode(
     }
 
     if (leaf.mediaId && videoElements?.has(leaf.mediaId)) {
-      // Video cell — use video element directly for frame-accurate rendering
+      // Video path: draw from live video element at its current playback position.
       const video = videoElements.get(leaf.mediaId)!;
       drawLeafToCanvas(ctx, video, rect, leaf);
     } else if (!dataUri) {
@@ -393,7 +398,10 @@ async function renderNode(
         offset += childH + settings.gap;
       }
 
-      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache, settings, videoElements);
+      await renderNode(
+        ctx, node.children[i], childRect, mediaRegistry, imageCache, settings,
+        videoElements,
+      );
     }
   }
 }
@@ -432,7 +440,10 @@ export async function renderGridIntoContext(
   ctx.fillRect(0, 0, width, height);
 
   const cache = imageCache ?? new Map<string, HTMLImageElement>();
-  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, cache, settings, videoElements);
+  await renderNode(
+    ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, cache, settings,
+    videoElements,
+  );
 }
 
 // ---------------------------------------------------------------------------

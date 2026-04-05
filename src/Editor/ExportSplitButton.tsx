@@ -103,18 +103,24 @@ export function ExportSplitButton() {
         const blob = await exportVideoGrid(
           root,
           mediaRegistry,
+          mediaTypeMap,
           canvasSettings,
           totalDuration,
-          (_stage, percent) => {
-            setToastState('encoding');
-            if (percent !== undefined) setEncodingPercent(percent);
+          (stage, percent) => {
+            if (stage === 'preparing') {
+              setToastState('preparing');
+            } else {
+              setToastState('encoding');
+              if (percent !== undefined) setEncodingPercent(percent);
+            }
           },
         );
         setToastState(null);
-        // Download blob as MP4
+        // Download blob — extension matches actual container (mp4 or webm).
+        const ext = blob.type.startsWith('video/mp4') ? 'mp4' : 'webm';
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `storygrid-${Date.now()}.mp4`;
+        link.download = `storygrid-${Date.now()}.${ext}`;
         link.href = url;
         document.body.appendChild(link);
         link.click();
@@ -163,7 +169,7 @@ export function ExportSplitButton() {
   // -------------------------------------------------------------------------
 
   const exportLabel = hasVideos
-    ? 'Export MP4'
+    ? 'Export Video'
     : `Export ${exportFormat === 'jpeg' ? 'JPEG' : 'PNG'}`;
 
   return (
@@ -209,7 +215,7 @@ export function ExportSplitButton() {
               <>
                 {/* Video mode — no format/quality controls */}
                 <div className="text-xs text-neutral-400 py-2">
-                  Exports as MP4 (H.264)
+                  Exports as MP4 (H.264) or WebM (VP9)
                 </div>
 
                 {/* Download button */}
@@ -218,7 +224,7 @@ export function ExportSplitButton() {
                   disabled={isExporting}
                   className="w-full h-8 mt-1 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Export MP4
+                  Export Video
                 </button>
               </>
             ) : (

@@ -266,22 +266,26 @@ describe('ExportSplitButton', () => {
 
     render(<ExportSplitButton />);
 
-    // When video cells are present, button should show "Export MP4"
-    expect(screen.getByRole('button', { name: /export mp4/i })).toBeInTheDocument();
+    // When video cells are present, button should show "Export Video"
+    expect(screen.getByRole('button', { name: /export video/i })).toBeInTheDocument();
   });
 });
 
 // ---------------------------------------------------------------------------
-// exportVideoGrid — VideoEncoder availability guard
+// exportVideoGrid — MediaRecorder availability guard
 // ---------------------------------------------------------------------------
 
 describe('exportVideoGrid', () => {
-  it('throws when VideoEncoder is not available', async () => {
+  it('throws when MediaRecorder does not support required mimeTypes', async () => {
     const { exportVideoGrid } = await import('../lib/videoExport');
 
-    // Temporarily remove VideoEncoder from the global scope
-    const original = (globalThis as Record<string, unknown>).VideoEncoder;
-    delete (globalThis as Record<string, unknown>).VideoEncoder;
+    // jsdom does not implement MediaRecorder.isTypeSupported — mock it to
+    // return false for all mimeTypes to simulate an unsupported browser.
+    const originalIsTypeSupported = (globalThis as Record<string, unknown>).MediaRecorder as
+      | { isTypeSupported?: (mt: string) => boolean }
+      | undefined;
+    const mockMediaRecorder = { isTypeSupported: () => false };
+    (globalThis as Record<string, unknown>).MediaRecorder = mockMediaRecorder;
 
     const leaf: LeafNode = {
       type: 'leaf',
@@ -296,6 +300,7 @@ describe('exportVideoGrid', () => {
       exportVideoGrid(
         leaf,
         {},
+        {},
         {
           gap: 0,
           borderRadius: 0,
@@ -308,9 +313,9 @@ describe('exportVideoGrid', () => {
         5,
         vi.fn(),
       ),
-    ).rejects.toThrow('Video export requires Chrome 94+ or Firefox 130+.');
+    ).rejects.toThrow('Video export requires a browser that supports MediaRecorder');
 
     // Restore
-    (globalThis as Record<string, unknown>).VideoEncoder = original;
+    (globalThis as Record<string, unknown>).MediaRecorder = originalIsTypeSupported;
   });
 });

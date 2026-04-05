@@ -1,21 +1,13 @@
 import { getAllLeaves } from './tree';
 import type { GridNode } from '../types';
 import { renderGridIntoContext, type CanvasSettings } from './export';
-import { videoElementRegistry } from './videoRegistry';
-import {
-  Output,
-  Mp4OutputFormat,
-  BufferTarget,
-  CanvasSource,
-} from 'mediabunny';
 
 // ---------------------------------------------------------------------------
 // computeLoopedTime — pure helper for modulo-based video looping
 //
-// The editor uses `video.loop = true` so the browser handles looping natively
-// during playback. The export pipeline manually seeks frame-by-frame via
-// `video.currentTime = X`, bypassing the browser's loop mechanism entirely.
-// This function replicates what `loop=true` would do during a manual seek.
+// During MediaRecorder export, videos play in real time from time 0. For cells
+// whose video is shorter than the total export duration, the render loop uses
+// this helper to compute the looped position (matching `loop=true` behavior).
 //
 // Edge cases:
 //   - duration === 0: metadata not loaded — fall back to 0
@@ -30,142 +22,373 @@ export function computeLoopedTime(timeSeconds: number, duration: number): number
 }
 
 // ---------------------------------------------------------------------------
-// buildVideoElementsByMediaId
+// buildExportVideoElements
 //
-// videoElementRegistry maps nodeId -> HTMLVideoElement.
-// renderGridToCanvas expects mediaId -> HTMLVideoElement.
-// We need to look up the mediaId for each nodeId via the gridStore snapshot.
-// Since videoExport runs outside React, read the store directly.
+// Creates DEDICATED HTMLVideoElement instances for export only.
+// These elements:
+//   - Are created fresh at export start, NOT connected to the DOM
+//   - Load from the same blob URLs already in mediaRegistry (still valid)
+//   - Are never exposed to the user or the preview UI
+//   - Are played and controlled exclusively by the export loop
+//   - Are destroyed via destroyExportVideoElements after export completes
+//
+// WHY NOT reuse videoElementRegistry (live UI elements):
+//   User actions (seek, pause, play) in the preview UI would interfere with
+//   the export playback, corrupting the exported video. Dedicated elements
+//   are completely isolated from the UI.
+//
+// Returns: Map<mediaId, HTMLVideoElement> — same shape expected by
+//          renderGridIntoContext's videoElements parameter.
 // ---------------------------------------------------------------------------
 
-function buildVideoElementsByMediaId(root: GridNode): Map<string, HTMLVideoElement> {
+async function buildExportVideoElements(
+  root: GridNode,
+  mediaRegistry: Record<string, string>,
+  mediaTypeMap: Record<string, 'image' | 'video'>,
+): Promise<Map<string, HTMLVideoElement>> {
   const result = new Map<string, HTMLVideoElement>();
   const leaves = getAllLeaves(root);
+
+  // Collect unique mediaIds that are videos.
+  const videoMediaIds = new Set<string>();
   for (const leaf of leaves) {
-    if (leaf.mediaId && videoElementRegistry.has(leaf.id)) {
-      result.set(leaf.mediaId, videoElementRegistry.get(leaf.id)!);
+    if (
+      leaf.mediaId &&
+      mediaTypeMap[leaf.mediaId] === 'video' &&
+      mediaRegistry[leaf.mediaId]
+    ) {
+      videoMediaIds.add(leaf.mediaId);
     }
   }
+
+  // Create a dedicated HTMLVideoElement for each unique video mediaId.
+  const loadPromises: Promise<void>[] = [];
+  for (const mediaId of videoMediaIds) {
+    const blobUrl = mediaRegistry[mediaId];
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = false; // Managed manually in export loop
+    video.crossOrigin = 'anonymous';
+    video.src = blobUrl;
+
+    result.set(mediaId, video);
+
+    // Wait until the video has at least one decodable frame ready (readyState >= 2,
+    // HAVE_CURRENT_DATA). This ensures the first drawImage call in the render loop
+    // paints real pixels, not a blank frame.
+    //
+    // 'canplay' fires at readyState >= 3 (HAVE_FUTURE_DATA) on most browsers,
+    // but 'loadeddata' fires at readyState >= 2 (HAVE_CURRENT_DATA) and is
+    // sufficient for a single drawImage. We listen for whichever arrives first.
+    loadPromises.push(
+      new Promise<void>((resolve) => {
+        if (video.readyState >= 2) {
+          // HAVE_CURRENT_DATA (or better) — first frame already available.
+          resolve();
+          return;
+        }
+        const done = () => resolve();
+        video.addEventListener('loadeddata', done, { once: true });
+        video.addEventListener('canplay', done, { once: true });
+        video.addEventListener('error', done, { once: true }); // Non-fatal
+      }),
+    );
+    // Trigger loading by calling load() — necessary when the element is not in
+    // the DOM (no auto-preload happens for detached elements in some browsers).
+    video.load();
+  }
+
+  await Promise.all(loadPromises);
   return result;
 }
 
 // ---------------------------------------------------------------------------
-// seekAllVideosTo — seek all registered video elements to the given time
+// destroyExportVideoElements
+//
+// Cleans up dedicated export video elements after export completes or fails.
+// Sets src='' to release the media resource. Does NOT revoke the blob URL —
+// the blob URL belongs to mediaRegistry and must remain valid for the editor.
 // ---------------------------------------------------------------------------
 
-async function seekAllVideosTo(timeSeconds: number): Promise<void> {
-  const promises: Promise<void>[] = [];
-  for (const video of videoElementRegistry.values()) {
-    promises.push(
-      new Promise<void>((resolve) => {
-        // Wrap the seek target so shorter videos loop seamlessly.
-        // The editor uses video.loop=true for playback, but the export pipeline
-        // manually seeks frame-by-frame, bypassing the browser's loop mechanism.
-        const effectiveTime = computeLoopedTime(timeSeconds, video.duration);
-
-        // Skip seek if already within half a frame of the target position.
-        // FRAME_DURATION_SEC * 0.5 (0.0167s at 30fps) is more useful than the
-        // previous hardcoded 0.01 — prevents unnecessary seeks on consecutive frames.
-        if (Math.abs(video.currentTime - effectiveTime) < FRAME_DURATION_SEC * 0.5) {
-          resolve();
-          return;
-        }
-        const onSeeked = () => {
-          video.removeEventListener('seeked', onSeeked);
-          resolve();
-        };
-        video.addEventListener('seeked', onSeeked);
-        // Safety timeout reduced from 500ms to 100ms.
-        // For local blob URL videos (already buffered), seeks complete in <50ms.
-        const timer = setTimeout(() => {
-          video.removeEventListener('seeked', onSeeked);
-          resolve();
-        }, 100);
-        video.addEventListener('seeked', () => clearTimeout(timer), { once: true });
-        video.currentTime = effectiveTime;
-      }),
-    );
+function destroyExportVideoElements(
+  exportVideoElements: Map<string, HTMLVideoElement>,
+): void {
+  for (const video of exportVideoElements.values()) {
+    video.pause();
+    video.src = '';
+    video.load(); // Resets the element and releases resources
   }
-  await Promise.all(promises);
+  exportVideoElements.clear();
 }
 
 // ---------------------------------------------------------------------------
-// Frame rate constants — used by both seekAllVideosTo and exportVideoGrid
+// Frame rate constants
 // ---------------------------------------------------------------------------
 
 const FPS = 30;
-const FRAME_DURATION_SEC = 1 / FPS;
+const FRAME_DURATION_MS = 1000 / FPS;
 
 // ---------------------------------------------------------------------------
-// exportVideoGrid — main entry point
+// exportVideoGrid — MediaRecorder-based video export
+//
+// ARCHITECTURE (MediaRecorder + captureStream):
+//
+//   1. Create dedicated export video elements (NOT the live UI elements).
+//   2. Create stable 1080×1920 canvas.
+//   3. `canvas.captureStream(FPS)` → live MediaStream.
+//   4. `new MediaRecorder(stream, { mimeType })` — tries MP4 (Chrome 130+)
+//      first, then VP9 WebM, then VP8 WebM.
+//   5. Rewind all export video elements to time 0, play all simultaneously.
+//   6. setInterval every FRAME_DURATION_MS: render current frame to canvas,
+//      report progress. For cells with shorter videos, computeLoopedTime maps
+//      elapsed time into the video's duration range.
+//   7. After totalDuration ms: stop interval, stop all videos, stop recorder.
+//   8. recorder ondataavailable → Blob → return to caller.
+//   9. Destroy dedicated export video elements.
+//
+// WHY THIS IS CORRECT:
+//   - Dedicated elements — completely isolated from the UI.
+//   - Videos play at 1× natural speed — zero seek cost.
+//   - Memory: O(1) — no frame accumulation, only current canvas pixels.
+//   - Total export time ≈ totalDuration (+ <1s muxing).
+//   - No WebCodecs backpressure — MediaRecorder handles encoding internally.
+//   - captureStream available: Chrome 51+, Firefox 43+.
+//
+// OUTPUT FORMAT (in preference order):
+//   1. video/mp4;codecs=avc1.42E01E  — Chrome 130+ supports H.264 MP4 directly
+//      via MediaRecorder. Most compatible format for mobile (including iOS).
+//   2. video/webm;codecs=vp9         — Chrome 51+, Firefox 43+ fallback.
+//   3. video/webm;codecs=vp8         — Older browser fallback.
+//   4. video/webm                    — Generic WebM fallback.
+//
+// LOOPING:
+//   - `computeLoopedTime(elapsedSeconds, video.duration)` handles shorter
+//     videos. The render loop does NOT use `video.currentTime` directly for
+//     loop calculation — it uses elapsed wall-clock time to derive the looped
+//     position, then seeks the video element only when a loop wraps around
+//     (detected by comparing looped position vs video.currentTime).
+//
 // ---------------------------------------------------------------------------
 
 export async function exportVideoGrid(
   root: GridNode,
   mediaRegistry: Record<string, string>,
+  mediaTypeMap: Record<string, 'image' | 'video'>,
   settings: CanvasSettings,
   totalDuration: number,
-  onProgress: (stage: 'encoding', percent?: number) => void,
+  onProgress: (stage: 'preparing' | 'encoding', percent?: number) => void,
 ): Promise<Blob> {
-  if (typeof VideoEncoder === 'undefined') {
-    throw new Error('Video export requires Chrome 94+ or Firefox 130+.');
+  // Detect supported mimeType — MP4 preferred for mobile (iOS) compatibility.
+  const mimeTypes = [
+    'video/mp4;codecs=avc1.42E01E', // H.264 MP4 — Chrome 130+
+    'video/mp4',                     // Generic MP4
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ];
+  let selectedMimeType = '';
+  for (const mt of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mt)) {
+      selectedMimeType = mt;
+      break;
+    }
+  }
+  if (!selectedMimeType) {
+    throw new Error(
+      'Video export requires a browser that supports MediaRecorder with WebM or MP4. ' +
+      'Use Chrome 51+ or Firefox 43+.',
+    );
   }
 
-  // Firefox H.264 VideoEncoder bug: isConfigSupported() returns true but encode()
-  // throws DOMException at runtime. Force VP9 on Firefox (Bugzilla #1918769).
-  const isFirefox = navigator.userAgent.includes('Firefox');
-  const codec = isFirefox ? 'vp9' : 'avc';
+  // Signal UI: export is starting.
+  onProgress('preparing');
 
-  const totalFrames = Math.max(1, Math.ceil(totalDuration * FPS));
+  // Create DEDICATED export video elements (isolated from UI).
+  const exportVideoElements = await buildExportVideoElements(root, mediaRegistry, mediaTypeMap);
+  const imageCache = new Map<string, HTMLImageElement>();
 
-  // CanvasSource requires a single stable canvas element across all add() calls.
-  // renderGridToCanvas creates a new canvas each time, so we render into a temp
-  // canvas and then drawImage onto the stable one that CanvasSource holds.
+  // Stable canvas for rendering — MediaRecorder captures from its stream.
   const stableCanvas = document.createElement('canvas');
   stableCanvas.width = 1080;
   stableCanvas.height = 1920;
   const stableCtx = stableCanvas.getContext('2d');
-  if (!stableCtx) throw new Error('Canvas 2D context not available');
-
-  const target = new BufferTarget();
-  const output = new Output({ format: new Mp4OutputFormat(), target });
-
-  const videoSource = new CanvasSource(stableCanvas, {
-    codec,
-    bitrate: 6_000_000,                    // 6 Mbps — sufficient for Instagram Story
-    hardwareAcceleration: 'prefer-hardware',
-    latencyMode: 'quality',
-    keyFrameInterval: 2,
-  });
-  output.addVideoTrack(videoSource);
-  await output.start();
-
-  const videoElementsByMediaId = buildVideoElementsByMediaId(root);
-
-  // Image cache persists across all frames — images decoded once, not per frame.
-  const imageCache = new Map<string, HTMLImageElement>();
-
-  for (let frame = 0; frame < totalFrames; frame++) {
-    const timeSeconds = frame * FRAME_DURATION_SEC;
-
-    // Seek all video elements to this frame's timestamp before rendering
-    if (videoElementRegistry.size > 0) {
-      await seekAllVideosTo(timeSeconds);
-    }
-
-    // Render directly into the stable canvas — no intermediate canvas allocation.
-    // CanvasSource reads stableCanvas pixel data after this call.
-    await renderGridIntoContext(stableCtx, root, mediaRegistry, 1080, 1920, settings, videoElementsByMediaId, imageCache);
-
-    // Timestamps and durations are in SECONDS (not microseconds).
-    await videoSource.add(timeSeconds, FRAME_DURATION_SEC);
-
-    onProgress('encoding', Math.round(((frame + 1) / totalFrames) * 100));
+  if (!stableCtx) {
+    destroyExportVideoElements(exportVideoElements);
+    throw new Error('Canvas 2D context not available');
   }
 
-  await output.finalize();
+  // Capture stream from canvas at target FPS.
+  const stream = (stableCanvas as unknown as { captureStream(fps: number): MediaStream }).captureStream(FPS);
 
-  // target.buffer is null until finalize() completes
-  const arrayBuffer = target.buffer as ArrayBuffer;
-  return new Blob([arrayBuffer], { type: 'video/mp4' });
+  // Rewind and prepare all dedicated export video elements.
+  if (exportVideoElements.size > 0) {
+    const rewindPromises: Promise<void>[] = [];
+    for (const video of exportVideoElements.values()) {
+      rewindPromises.push(
+        new Promise<void>(resolve => {
+          video.pause();
+          if (Math.abs(video.currentTime) < 0.01) {
+            resolve();
+            return;
+          }
+          video.addEventListener('seeked', () => resolve(), { once: true });
+          video.currentTime = 0;
+        }),
+      );
+    }
+    await Promise.all(rewindPromises);
+  }
+
+  // Track per-video last-known looped time to detect wrap-around.
+  const lastLoopedTime = new Map<string, number>();
+  for (const [mediaId] of exportVideoElements) {
+    lastLoopedTime.set(mediaId, 0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pre-flight: start video playback and render one frame BEFORE recording.
+  //
+  // WHY THE ORDER MATTERS:
+  //   1. Play all export video elements so they start advancing from time 0.
+  //   2. Pre-render one frame into the canvas — this gives the canvas real pixel
+  //      data (images + first video frame) before MediaRecorder begins capturing.
+  //   3. Only then call recorder.start() — the very first captured frame will
+  //      have correct content instead of a blank white canvas.
+  //
+  // This avoids the "blank first frame" bug where the canvas is empty at the
+  // moment MediaRecorder starts its stream capture.
+  // ---------------------------------------------------------------------------
+
+  // Start all dedicated export videos playing simultaneously.
+  for (const video of exportVideoElements.values()) {
+    video.loop = false; // Managed manually in export loop.
+  }
+  const preflightPlayPromises: Promise<void>[] = [];
+  for (const video of exportVideoElements.values()) {
+    preflightPlayPromises.push(video.play().catch(() => {
+      // Ignore autoplay policy errors — video may already be playing.
+    }));
+  }
+  await Promise.all(preflightPlayPromises);
+
+  // Pre-warm imageCache and render first frame to give the canvas valid content.
+  await renderGridIntoContext(
+    stableCtx, root, mediaRegistry, 1080, 1920, settings,
+    exportVideoElements, imageCache,
+  );
+
+  // The canvas now has a real first frame. Start recording from this point.
+  return new Promise<Blob>((resolve, reject) => {
+    const chunks: BlobPart[] = [];
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType: selectedMimeType,
+      videoBitsPerSecond: 6_000_000,
+    });
+
+    recorder.ondataavailable = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      destroyExportVideoElements(exportVideoElements);
+      const blob = new Blob(chunks, { type: selectedMimeType });
+      resolve(blob);
+    };
+
+    recorder.onerror = (e: Event) => {
+      destroyExportVideoElements(exportVideoElements);
+      reject(new Error(`MediaRecorder error: ${(e as ErrorEvent).message ?? 'unknown'}`));
+    };
+
+    // Start recording now — the canvas already has the first frame painted.
+    recorder.start();
+
+    // startTime is anchored to when recording actually begins. The pre-flight
+    // render above is not counted as elapsed export time.
+    const startTime = performance.now();
+    const totalDurationMs = totalDuration * 1000;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const renderFrame = async () => {
+      const elapsed = performance.now() - startTime;
+
+      // Check if export is complete.
+      if (elapsed >= totalDurationMs) {
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+
+        // Stop all dedicated export video elements.
+        for (const video of exportVideoElements.values()) {
+          video.pause();
+        }
+
+        // Render final frame before stopping.
+        await renderGridIntoContext(
+          stableCtx, root, mediaRegistry, 1080, 1920, settings,
+          exportVideoElements, imageCache,
+        );
+
+        recorder.stop();
+        onProgress('encoding', 100);
+        return;
+      }
+
+      const elapsedSeconds = elapsed / 1000;
+
+      // Handle video loop wrap-around: if a video has ended, seek it back.
+      // Also handle manual looping for videos shorter than totalDuration.
+      for (const [mediaId, video] of exportVideoElements) {
+        if (!video.duration || !isFinite(video.duration)) continue;
+
+        const loopedTime = computeLoopedTime(elapsedSeconds, video.duration);
+        const prev = lastLoopedTime.get(mediaId) ?? 0;
+
+        // Detect wrap: looped time went backwards significantly.
+        // Threshold: half a frame.
+        if (prev - loopedTime > video.duration * 0.5) {
+          // Wrapped around — seek back to the start of the loop.
+          video.currentTime = loopedTime;
+          // Re-play after seek.
+          video.play().catch(() => {});
+        } else if (video.ended || video.paused) {
+          // Video ended naturally or was paused — restart.
+          video.currentTime = loopedTime;
+          video.play().catch(() => {});
+        }
+
+        lastLoopedTime.set(mediaId, loopedTime);
+      }
+
+      // Render current frame into the stable canvas.
+      // Export video elements are at their natural playback position (or looped
+      // position if we re-seeked above). renderGridIntoContext draws from them.
+      await renderGridIntoContext(
+        stableCtx, root, mediaRegistry, 1080, 1920, settings,
+        exportVideoElements, imageCache,
+      );
+
+      const percent = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
+      onProgress('encoding', percent);
+    };
+
+    // Use setInterval for subsequent frames. Each tick renders one frame.
+    // setInterval is appropriate here: we don't need frame-perfect timing
+    // (MediaRecorder captures from the live stream at its own cadence).
+    intervalId = setInterval(() => {
+      renderFrame().catch(err => {
+        if (intervalId !== null) clearInterval(intervalId);
+        destroyExportVideoElements(exportVideoElements);
+        recorder.stop();
+        reject(err);
+      });
+    }, FRAME_DURATION_MS);
+  });
 }

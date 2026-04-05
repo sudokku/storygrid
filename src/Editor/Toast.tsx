@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type ToastState = 'preparing' | 'exporting' | 'error' | 'video-blocked' | null;
+export type ToastState = 'preparing' | 'exporting' | 'error' | 'loading-ffmpeg' | 'encoding' | null;
 
 interface ToastProps {
   state: ToastState;
+  encodingPercent?: number;
   onRetry: () => void;
   onDismiss: () => void;
 }
@@ -17,17 +17,7 @@ interface ToastProps {
 // Toast component
 // ---------------------------------------------------------------------------
 
-export function Toast({ state, onRetry, onDismiss }: ToastProps) {
-  // Auto-dismiss video-blocked toast after 4 seconds
-  useEffect(() => {
-    if (state === 'video-blocked') {
-      const timer = setTimeout(() => {
-        onDismiss();
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [state, onDismiss]);
-
+export function Toast({ state, encodingPercent, onRetry, onDismiss }: ToastProps) {
   if (state === null) return null;
 
   const containerClass =
@@ -51,6 +41,24 @@ export function Toast({ state, onRetry, onDismiss }: ToastProps) {
     );
   }
 
+  if (state === 'loading-ffmpeg') {
+    return (
+      <div className={containerClass} role="status">
+        <Loader2 size={14} className="animate-spin text-neutral-400" />
+        <span>Loading ffmpeg...</span>
+      </div>
+    );
+  }
+
+  if (state === 'encoding') {
+    return (
+      <div className={containerClass} role="status">
+        <Loader2 size={14} className="animate-spin text-neutral-400" />
+        <span>Encoding {encodingPercent ?? 0}%...</span>
+      </div>
+    );
+  }
+
   if (state === 'error') {
     return (
       <div className={containerClass} role="alert">
@@ -66,14 +74,8 @@ export function Toast({ state, onRetry, onDismiss }: ToastProps) {
     );
   }
 
-  if (state === 'video-blocked') {
-    return (
-      <div className={containerClass} role="alert">
-        <AlertCircle size={14} className="text-destructive" />
-        <span>Export not available: remove video cells first.</span>
-      </div>
-    );
-  }
+  // Dismiss button for manual dismissal of error toast
+  void onDismiss;
 
   return null;
 }

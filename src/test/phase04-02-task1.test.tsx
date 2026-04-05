@@ -104,35 +104,26 @@ describe('Toast', () => {
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it('renders with role="alert" when state is "video-blocked"', async () => {
+  it('renders with role="status" when state is "loading-ffmpeg"', async () => {
     const { Toast } = await import('../Editor/Toast');
-    render(<Toast state="video-blocked" onRetry={vi.fn()} onDismiss={vi.fn()} />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    render(<Toast state="loading-ffmpeg" onRetry={vi.fn()} onDismiss={vi.fn()} />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('displays "Export not available: remove video cells first." when state is video-blocked', async () => {
+  it('displays "Loading ffmpeg..." when state is loading-ffmpeg', async () => {
     const { Toast } = await import('../Editor/Toast');
     render(
-      <Toast state="video-blocked" onRetry={vi.fn()} onDismiss={vi.fn()} />,
+      <Toast state="loading-ffmpeg" onRetry={vi.fn()} onDismiss={vi.fn()} />,
     );
-    expect(
-      screen.getByText(/Export not available: remove video cells first\./),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Loading ffmpeg\.\.\./)).toBeInTheDocument();
   });
 
-  it('calls onDismiss after 4 seconds when state is video-blocked', async () => {
-    vi.useFakeTimers();
+  it('displays encoding percent when state is encoding', async () => {
     const { Toast } = await import('../Editor/Toast');
-    const onDismiss = vi.fn();
     render(
-      <Toast state="video-blocked" onRetry={vi.fn()} onDismiss={onDismiss} />,
+      <Toast state="encoding" encodingPercent={42} onRetry={vi.fn()} onDismiss={vi.fn()} />,
     );
-    expect(onDismiss).not.toHaveBeenCalled();
-    await act(async () => {
-      vi.advanceTimersByTime(4000);
-    });
-    expect(onDismiss).toHaveBeenCalledOnce();
-    vi.useRealTimers();
+    expect(screen.getByText(/Encoding 42%\.\.\./)).toBeInTheDocument();
   });
 });
 
@@ -269,7 +260,7 @@ describe('ExportSplitButton', () => {
     unmount();
   });
 
-  it('export is blocked with video-blocked toast when hasVideoCell returns true', async () => {
+  it('shows "Export MP4" button when video cells are present', async () => {
     const { ExportSplitButton } = await import('../Editor/ExportSplitButton');
     const leafWithVideo: LeafNode = {
       type: 'leaf',
@@ -288,11 +279,8 @@ describe('ExportSplitButton', () => {
     });
 
     render(<ExportSplitButton />);
-    const leftBtn = screen.getByRole('button', { name: /export png/i });
-    fireEvent.click(leftBtn);
 
-    expect(
-      await screen.findByText(/Export not available: remove video cells first\./),
-    ).toBeInTheDocument();
+    // When video cells are present, button should show "Export MP4"
+    expect(screen.getByRole('button', { name: /export mp4/i })).toBeInTheDocument();
   });
 });

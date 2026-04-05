@@ -338,6 +338,7 @@ async function renderNode(
   mediaRegistry: Record<string, string>,
   imageCache: Map<string, HTMLImageElement>,
   settings: CanvasSettings,
+  videoElements?: Map<string, HTMLVideoElement>,
 ): Promise<void> {
   if (node.type === 'leaf') {
     const leaf = node as LeafNode;
@@ -350,7 +351,11 @@ async function renderNode(
       ctx.clip();
     }
 
-    if (!dataUri) {
+    if (leaf.mediaId && videoElements?.has(leaf.mediaId)) {
+      // Video cell — use video element directly for frame-accurate rendering
+      const video = videoElements.get(leaf.mediaId)!;
+      drawLeafToCanvas(ctx, video, rect, leaf);
+    } else if (!dataUri) {
       ctx.fillStyle = leaf.backgroundColor ?? '#ffffff';
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     } else {
@@ -388,7 +393,7 @@ async function renderNode(
         offset += childH + settings.gap;
       }
 
-      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache, settings);
+      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache, settings, videoElements);
     }
   }
 }
@@ -403,6 +408,7 @@ export async function renderGridToCanvas(
   width = 1080,
   height = 1920,
   settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
+  videoElements?: Map<string, HTMLVideoElement>,
 ): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -428,7 +434,7 @@ export async function renderGridToCanvas(
   ctx.fillRect(0, 0, width, height);
 
   const imageCache = new Map<string, HTMLImageElement>();
-  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache, settings);
+  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache, settings, videoElements);
 
   return canvas;
 }

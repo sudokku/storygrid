@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-05T12:34:20.472Z"
-last_activity: 2026-04-03
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-04-05T13:14:17.136Z"
+last_activity: 2026-04-05
 progress:
   total_phases: 9
   completed_phases: 7
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 23
+  completed_plans: 20
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 05.1 — mobile-first-ui
+**Current focus:** Phase 06 — video-support-v2
 
 ## Current Position
 
-Phase: 05.1 (mobile-first-ui) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-04-03
+Phase: 06 (video-support-v2) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-04-05
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05.1-mobile-first-ui P01 | 9 | 2 tasks | 11 files |
 | Phase 05.1-mobile-first-ui P02 | 8 | 2 tasks | 5 files |
 | Phase 05.1-mobile-first-ui P03 | 8 | 2 tasks | 7 files |
+| Phase 06-video-support-v2 P01 | 261 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,10 @@ Recent decisions affecting current work:
 - [Phase 05.1-mobile-first-ui]: MobileWelcomeCard uses shared handleDismiss from Onboarding — writes storygrid_onboarding_done key, satisfying D-17 shared key requirement
 - [Phase 05.1-mobile-first-ui]: React import added to all src/test/*.tsx files — fixes ReferenceError: React is not defined across Phase 05.1 tests
 - [Phase 05.1-mobile-first-ui]: D-16 (cell swap touch) formally deferred: native HTML5 drag events do not fire on iOS/Android; dnd-kit TouchSensor would require non-trivial refactor
+- [Phase 06-video-support-v2]: mediaTypeMap stored parallel to mediaRegistry in gridStore, not in undo history snapshots
+- [Phase 06-video-support-v2]: Videos use blob URLs (URL.createObjectURL), images keep base64 — blob URLs revoked on removeMedia/clearGrid/applyTemplate
+- [Phase 06-video-support-v2]: COOP/COEP headers configured in all three environments: vite dev server, vercel.json, public/_headers (Netlify)
+- [Phase 06-video-support-v2]: hasVideoCell signature changed to accept mediaTypeMap instead of mediaRegistry — no string prefix scan needed
 
 ### Pending Todos
 
@@ -165,6 +170,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T12:34:20.468Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-video-support-v2/06-CONTEXT.md
+Last session: 2026-04-05T13:14:17.131Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

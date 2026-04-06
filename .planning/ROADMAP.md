@@ -3,6 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 0–6 + 5.1 INSERTED (shipped 2026-04-07) — see `.planning/milestones/v1.0-ROADMAP.md`
+- 🔄 **v1.1 UI Polish & Bug Fixes** — Phases 7–8 (in progress)
 
 ## Phases
 
@@ -20,6 +21,37 @@
 
 </details>
 
+### v1.1 UI Polish & Bug Fixes
+
+- [ ] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar
+- [ ] **Phase 8: Canvas & Workspace UX** — Replace safe zone with visual overlay, remove template confirmation, expand drop zone to full workspace
+
+## Phase Details
+
+### Phase 7: Cell Controls & Display Polish
+**Goal**: Cell controls are always accessible and correctly sized; empty cells scale naturally; video cells show a thumbnail in the sidebar
+**Depends on**: Phase 6 (v1.0 complete)
+**Requirements**: CELL-01, CELL-02, CELL-03, MEDIA-01
+**Success Criteria** (what must be TRUE):
+  1. Cell action bar controls remain fully visible and clickable regardless of how small a cell is resized
+  2. Action bar icons and buttons appear the same physical size across a small laptop screen and a large external monitor
+  3. Empty cells show a centered icon and label that scale proportionally as the viewport grows — no fixed-size relics on 4K displays
+  4. Video cells display a still thumbnail (first frame) in the sidebar panel, matching the behavior of image cells
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 8: Canvas & Workspace UX
+**Goal**: Safe zone is visually obvious, templates apply without friction, and file drops are accepted anywhere in the workspace
+**Depends on**: Phase 7
+**Requirements**: CANVAS-01, TPL-01, DROP-01, DROP-02
+**Success Criteria** (what must be TRUE):
+  1. When "Show Safe Zone" is toggled on, unsafe areas are covered by a visible striped or dimmed overlay with an icon — not a plain border outline
+  2. Clicking a preset template applies it immediately with no confirmation dialog or alert
+  3. User can drag a media file from the desktop and drop it anywhere in the workspace area (not only directly on the canvas element) and the file is accepted
+  4. While dragging a file over the workspace, the drop zone area shows a clear visual highlight or label indicating it will accept the file
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -32,3 +64,5 @@
 | 5. Polish & UX | v1.0 | 5/5 | Complete | 2026-04-02 |
 | 5.1. Mobile-First UI | v1.0 | 3/3 | Complete | 2026-04-04 |
 | 6. Video Support | v1.0 | 4/4 | Complete | 2026-04-05 |
+| 7. Cell Controls & Display Polish | v1.1 | 0/? | Not started | - |
+| 8. Canvas & Workspace UX | v1.1 | 0/? | Not started | - |

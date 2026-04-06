@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
-status: planning
-stopped_at: "v1.1 milestone started"
+status: ready
+stopped_at: "Roadmap created — Phase 7 ready to plan"
 last_updated: "2026-04-07T00:00:00Z"
-last_activity: "2026-04-07 - Milestone v1.1 started (UI Polish & Bug Fixes)"
+last_activity: "2026-04-07 - v1.1 roadmap created (2 phases, 8 requirements mapped)"
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Planning next milestone (v1.1 — Effects & Advanced)
+**Current focus:** v1.1 — UI Polish & Bug Fixes (Phase 7 next)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 7 — Cell Controls & Display Polish (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-07 — Milestone v1.1 started
+Status: Roadmap ready, awaiting phase planning
+Last activity: 2026-04-07 — v1.1 roadmap created
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (0/2 phases)
 
 ## Performance Metrics
 
@@ -180,14 +180,14 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
+- v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
 
 ### Blockers/Concerns
 
-- Phase 6 warrants /gsd:research-phase before planning — SharedArrayBuffer + COOP/COEP + ffmpeg xstack are complex integrations
-- Phase 7 save/load: validate Zustand v5 persist middleware behavior change (initial state no longer stored at creation) before building
+None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-05T18:34:51.991Z
-Stopped at: Completed quick-260405-s9u: WebCodecs + Mediabunny video export
+Last session: 2026-04-07T00:00:00Z
+Stopped at: v1.1 roadmap created — Phase 7 ready to plan
 Resume file: None

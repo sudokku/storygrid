@@ -59,11 +59,11 @@
 
 | REQ-ID | Phase | Notes |
 |--------|-------|-------|
-| CELL-01 | — | TBD by roadmapper |
-| CELL-02 | — | TBD by roadmapper |
-| MEDIA-01 | — | TBD by roadmapper |
-| CANVAS-01 | — | TBD by roadmapper |
-| TPL-01 | — | TBD by roadmapper |
-| DROP-01 | — | TBD by roadmapper |
-| DROP-02 | — | TBD by roadmapper |
-| CELL-03 | — | TBD by roadmapper |
+| CELL-01 | Phase 7 | Cell Controls & Display Polish |
+| CELL-02 | Phase 7 | Cell Controls & Display Polish |
+| CELL-03 | Phase 7 | Cell Controls & Display Polish |
+| MEDIA-01 | Phase 7 | Cell Controls & Display Polish |
+| CANVAS-01 | Phase 8 | Canvas & Workspace UX |
+| TPL-01 | Phase 8 | Canvas & Workspace UX |
+| DROP-01 | Phase 8 | Canvas & Workspace UX |
+| DROP-02 | Phase 8 | Canvas & Workspace UX |

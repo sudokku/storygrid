@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: Effects & Advanced
+milestone_name: UI Polish & Bug Fixes
 status: planning
-stopped_at: "v1.0 milestone archived"
+stopped_at: "v1.1 milestone started"
 last_updated: "2026-04-07T00:00:00Z"
-last_activity: "2026-04-07 - v1.0 milestone complete; 8 phases, 23 plans, 29 tasks shipped"
+last_activity: "2026-04-07 - Milestone v1.1 started (UI Polish & Bug Fixes)"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-06
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-07 — Milestone v1.1 started
 
 Progress: [░░░░░░░░░░] 0%
 

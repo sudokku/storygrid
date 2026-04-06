@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.0 shipped. The app is production-ready with image and video support, mobile-first UI, Canvas API export, and MediaRecorder video export.
+**Current State:** v1.1 in progress. v1.0 shipped with full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export. v1.1 focuses on visual bug fixes and UX polish.
 
 ## Core Value
 
@@ -79,7 +79,16 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 
 ### Active
 
-**Next Milestone (v1.1) — Effects & Advanced**
+**Current Milestone (v1.1) — UI Polish & Bug Fixes**
+- [ ] Cell top-bar overflow: fix clipping when cells are small; controls must always be accessible
+- [ ] Cell action bar sizing: stable vw/vh-based size regardless of screen dimensions
+- [ ] Sidebar video thumbnail: extract and display first frame as preview image
+- [ ] Safe zone overlay: replace toggle-only button with visible striped/dimmed unsafe-area indicator with icon
+- [ ] Template change: remove confirmation alert, apply template silently
+- [ ] Drop zone: expand to full workspace (excluding navbar/sidebar); clearer visual drop indication
+- [ ] Empty cell empty state: scale icon and text with vw/vh for large screens
+
+**Future Milestone (v1.2) — Effects & Advanced**
 - [ ] Per-cell CSS filters: brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity
 - [ ] Text overlays per cell: font family, size, color, alignment, position; rendered in export
 - [ ] Save/load projects: serialize tree + settings to JSON; import/export as `.storygrid.json`
@@ -148,5 +157,17 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
+## Current Milestone: v1.1 UI Polish & Bug Fixes
+
+**Goal:** Fix visual bugs and polish the editing experience — no new features.
+
+**Target issues:**
+- Cell top-bar overflow fix and stable vw/vh sizing for action controls
+- Sidebar video thumbnail (first-frame extraction)
+- Safe zone overlay visual indicator (striped/dimmed unsafe areas with icon)
+- Template change alert removal (silent apply)
+- Full-workspace drop zone with clear visual indication
+- Empty cell icon/text scaling via vw/vh for large screens
+
 ---
-*Last updated: 2026-04-07 after v1.0 milestone*
+*Last updated: 2026-04-07 — milestone v1.1 started*

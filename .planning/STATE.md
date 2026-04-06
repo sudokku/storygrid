@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: verifying
-stopped_at: "Completed quick-260405-uiy: fix video export loop flicker when short"
-last_updated: "2026-04-05T19:06:00Z"
-last_activity: "2026-04-06 - Replaced video export with MediaRecorder pipeline; marked 260402-sh8 and 260405-o0a as complete"
+milestone: v1.1
+milestone_name: Effects & Advanced
+status: planning
+stopped_at: "v1.0 milestone archived"
+last_updated: "2026-04-07T00:00:00Z"
+last_activity: "2026-04-07 - v1.0 milestone complete; 8 phases, 23 plans, 29 tasks shipped"
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 23
-  completed_plans: 23
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-31)
+See: .planning/PROJECT.md (updated 2026-04-07)
 
-**Core value:** A user can build a multi-cell photo collage from scratch, fill it with images, and download a pixel-perfect 1080×1920px PNG — entirely in the browser, no account or server required.
-**Current focus:** Phase 06 — video-support-v2
+**Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
+**Current focus:** Planning next milestone (v1.1 — Effects & Advanced)
 
 ## Current Position
 
 Phase: 7
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-04-05 - Completed quick task 260405-s9u: replaced ffmpeg.wasm with WebCodecs + Mediabunny
+Last activity: 2026-04-06
 
 Progress: [░░░░░░░░░░] 0%
 

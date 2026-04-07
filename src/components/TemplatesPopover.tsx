@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LayoutGrid } from 'lucide-react';
-import { buildTemplate, getAllLeaves } from '../lib/tree';
+import { buildTemplate } from '../lib/tree';
 import type { TemplateName } from '../lib/tree';
 import { useGridStore } from '../store/gridStore';
 
@@ -115,7 +115,6 @@ export function TemplatesPopover() {
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const root = useGridStore(s => s.root);
   const applyTemplate = useGridStore(s => s.applyTemplate);
 
   // Close on outside click
@@ -134,21 +133,9 @@ export function TemplatesPopover() {
   }, [open]);
 
   const handleApply = useCallback((entry: TemplateEntry) => {
-    // Check if grid is non-empty
-    const leaves = getAllLeaves(root);
-    const hasMedia = leaves.some(l => l.mediaId !== null);
-    const isNonEmpty = leaves.length > 1 || hasMedia;
-
-    if (isNonEmpty) {
-      const confirmed = window.confirm(
-        `Apply ${entry.label} template? This will clear all cells and images.`
-      );
-      if (!confirmed) return;
-    }
-
     applyTemplate(buildTemplate(entry.name));
     setOpen(false);
-  }, [root, applyTemplate]);
+  }, [applyTemplate]);
 
   return (
     <div className="relative">

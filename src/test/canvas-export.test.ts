@@ -278,20 +278,20 @@ describe('exportGrid', () => {
 });
 
 // ---------------------------------------------------------------------------
-// hasVideoCell (unchanged function — still passes)
+// hasVideoCell (updated to use mediaTypeMap)
 // ---------------------------------------------------------------------------
 
 describe('hasVideoCell', () => {
-  it('returns false when all media entries are image data URIs', async () => {
+  it('returns false when all media entries are image type', async () => {
     const { hasVideoCell } = await import('../lib/export');
     const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'img1', fit: 'cover', backgroundColor: null };
-    expect(hasVideoCell(leaf, { img1: 'data:image/png;base64,abc' })).toBe(false);
+    expect(hasVideoCell(leaf, { img1: 'image' })).toBe(false);
   });
 
-  it('returns true when any media entry starts with "data:video/"', async () => {
+  it('returns true when any media entry has type "video"', async () => {
     const { hasVideoCell } = await import('../lib/export');
     const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'vid1', fit: 'cover', backgroundColor: null };
-    expect(hasVideoCell(leaf, { vid1: 'data:video/mp4;base64,abc' })).toBe(true);
+    expect(hasVideoCell(leaf, { vid1: 'video' })).toBe(true);
   });
 
   it('returns false when tree has no media at all', async () => {

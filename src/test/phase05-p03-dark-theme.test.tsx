@@ -3,6 +3,7 @@
  * Tests for dark theme color classes on EditorShell and CanvasArea (POLH-08).
  * Coverage: D-17 (outer bg #0a0a0a), D-18 (canvas area bg #0f0f0f).
  */
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { EditorShell } from '../Editor/EditorShell';

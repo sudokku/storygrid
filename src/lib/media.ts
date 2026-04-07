@@ -19,7 +19,7 @@ export function fileToBase64(file: File): Promise<string> {
  * Actions subset required by autoFillCells. Accepts the gridStore actions.
  */
 export type FillActions = {
-  addMedia: (mediaId: string, dataUri: string) => void;
+  addMedia: (mediaId: string, dataUri: string, type?: 'image' | 'video') => void;
   setMedia: (nodeId: string, mediaId: string) => void;
   split: (nodeId: string, direction: 'horizontal' | 'vertical') => void;
   getRoot: () => GridNode;
@@ -37,13 +37,15 @@ export async function autoFillCells(
 ): Promise<void> {
   if (files.length === 0) return;
 
-  // Accept only image files (safety check)
-  const imageFiles = files.filter(f => f.type.startsWith('image/'));
-  if (imageFiles.length === 0) return;
+  // Accept image and video files; filter out anything else
+  const mediaFiles = files.filter(
+    f => f.type.startsWith('image/') || f.type.startsWith('video/'),
+  );
+  if (mediaFiles.length === 0) return;
 
   let lastFilledNodeId: string | null = null;
 
-  for (const file of imageFiles) {
+  for (const file of mediaFiles) {
     // Re-read root each iteration to get fresh tree after splits
     const currentRoot = actions.getRoot();
     const leaves = getAllLeaves(currentRoot);
@@ -75,8 +77,17 @@ export async function autoFillCells(
     }
 
     const mediaId = nanoid();
-    const dataUri = await fileToBase64(file);
-    actions.addMedia(mediaId, dataUri);
+
+    if (file.type.startsWith('video/')) {
+      // D-01: Use blob URL for video (NOT base64 — videos are too large for data URIs)
+      const blobUrl = URL.createObjectURL(file);
+      actions.addMedia(mediaId, blobUrl, 'video');
+    } else {
+      // Image: convert to base64 data URI (per MEDI-03)
+      const dataUri = await fileToBase64(file);
+      actions.addMedia(mediaId, dataUri, 'image');
+    }
+
     actions.setMedia(targetNodeId, mediaId);
     lastFilledNodeId = targetNodeId;
   }

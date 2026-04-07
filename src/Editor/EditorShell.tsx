@@ -3,6 +3,7 @@ import { Toolbar } from './Toolbar';
 import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';
 import { Onboarding } from './Onboarding';
+import { MobileSheet } from './MobileSheet';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -10,6 +11,13 @@ import { findNode } from '../lib/tree';
 export function EditorShell() {
   const undo = useGridStore(s => s.undo);
   const redo = useGridStore(s => s.redo);
+
+  // Cleanup stale blob media on mount — blob URLs don't survive page reloads.
+  // Persisted store may contain blob entries that are now dead; null them out.
+  useEffect(() => {
+    useGridStore.getState().cleanupStaleBlobMedia();
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only fire if not typing in an input/textarea
@@ -78,10 +86,11 @@ export function EditorShell() {
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0a0a0a]">
       <Toolbar />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pb-[60px] md:pb-0">
         <CanvasArea />
         <Sidebar />
       </div>
+      <MobileSheet />
       <Onboarding />
     </div>
   );

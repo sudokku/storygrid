@@ -105,26 +105,45 @@ function roundedRect(
 }
 
 // ---------------------------------------------------------------------------
+// getSourceDimensions — unified width/height for image, video, and ImageBitmap
+// ---------------------------------------------------------------------------
+
+export function getSourceDimensions(
+  src: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+): { w: number; h: number } {
+  if (src instanceof HTMLVideoElement) {
+    return { w: src.videoWidth, h: src.videoHeight };
+  }
+  // ImageBitmap may not be defined in non-browser environments (e.g. Vitest/jsdom).
+  // Guard against ReferenceError before using instanceof.
+  if (typeof ImageBitmap !== 'undefined' && src instanceof ImageBitmap) {
+    return { w: src.width, h: src.height };
+  }
+  return { w: (src as HTMLImageElement).naturalWidth, h: (src as HTMLImageElement).naturalHeight };
+}
+
+// ---------------------------------------------------------------------------
 // drawCoverImage — source crop for object-fit: cover
 // ---------------------------------------------------------------------------
 
 export function drawCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
 ): void {
-  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const { w: srcW, h: srcH } = getSourceDimensions(img);
+  const imgAspect = srcW / srcH;
   const cellAspect = rect.w / rect.h;
 
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+  let sx = 0, sy = 0, sw = srcW, sh = srcH;
 
   if (imgAspect > cellAspect) {
-    sw = Math.round(img.naturalHeight * cellAspect);
-    sx = Math.round((img.naturalWidth - sw) * objPos.x);
+    sw = Math.round(srcH * cellAspect);
+    sx = Math.round((srcW - sw) * objPos.x);
   } else if (imgAspect < cellAspect) {
-    sh = Math.round(img.naturalWidth / cellAspect);
-    sy = Math.round((img.naturalHeight - sh) * objPos.y);
+    sh = Math.round(srcW / cellAspect);
+    sy = Math.round((srcH - sh) * objPos.y);
   }
 
   ctx.drawImage(img, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
@@ -136,7 +155,7 @@ export function drawCoverImage(
 
 export function drawContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -144,7 +163,8 @@ export function drawContainImage(
   ctx.fillStyle = bgColor;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const { w: srcW, h: srcH } = getSourceDimensions(img);
+  const imgAspect = srcW / srcH;
   const cellAspect = rect.w / rect.h;
 
   let dw: number, dh: number;
@@ -160,7 +180,7 @@ export function drawContainImage(
   const dx = rect.x + Math.round((rect.w - dw) * objPos.x);
   const dy = rect.y + Math.round((rect.h - dh) * objPos.y);
 
-  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, dx, dy, dw, dh);
+  ctx.drawImage(img, 0, 0, srcW, srcH, dx, dy, dw, dh);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +195,7 @@ export function drawContainImage(
 
 export function drawPannedCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   panX: number,
@@ -196,7 +216,8 @@ export function drawPannedCoverImage(
   ctx.scale(panScale, panScale);
 
   // Draw cover image centered at the transformed origin
-  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const { w: srcW, h: srcH } = getSourceDimensions(img);
+  const imgAspect = srcW / srcH;
   const cellAspect = rect.w / rect.h;
 
   let drawW: number, drawH: number;
@@ -227,7 +248,7 @@ export function drawPannedCoverImage(
 
 export function drawPannedContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -253,7 +274,8 @@ export function drawPannedContainImage(
   ctx.scale(panScale, panScale);
 
   // Compute contain dimensions
-  const imgAspect = img.naturalWidth / img.naturalHeight;
+  const { w: srcW, h: srcH } = getSourceDimensions(img);
+  const imgAspect = srcW / srcH;
   const cellAspect = rect.w / rect.h;
 
   let drawW: number, drawH: number;
@@ -281,7 +303,7 @@ export function drawPannedContainImage(
 
 export function drawLeafToCanvas(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
   leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor'>,
 ): void {
@@ -321,6 +343,7 @@ async function renderNode(
   mediaRegistry: Record<string, string>,
   imageCache: Map<string, HTMLImageElement>,
   settings: CanvasSettings,
+  videoElements?: Map<string, HTMLVideoElement>,
 ): Promise<void> {
   if (node.type === 'leaf') {
     const leaf = node as LeafNode;
@@ -333,7 +356,11 @@ async function renderNode(
       ctx.clip();
     }
 
-    if (!dataUri) {
+    if (leaf.mediaId && videoElements?.has(leaf.mediaId)) {
+      // Video path: draw from live video element at its current playback position.
+      const video = videoElements.get(leaf.mediaId)!;
+      drawLeafToCanvas(ctx, video, rect, leaf);
+    } else if (!dataUri) {
       ctx.fillStyle = leaf.backgroundColor ?? '#ffffff';
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     } else {
@@ -371,29 +398,31 @@ async function renderNode(
         offset += childH + settings.gap;
       }
 
-      await renderNode(ctx, node.children[i], childRect, mediaRegistry, imageCache, settings);
+      await renderNode(
+        ctx, node.children[i], childRect, mediaRegistry, imageCache, settings,
+        videoElements,
+      );
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// renderGridToCanvas — main canvas renderer
+// renderGridIntoContext — render into an existing 2D context
+//
+// Accepts an optional pre-existing imageCache so video export can reuse the
+// same cache across all frames (images decoded once, not once per frame).
 // ---------------------------------------------------------------------------
 
-export async function renderGridToCanvas(
+export async function renderGridIntoContext(
+  ctx: CanvasRenderingContext2D,
   root: GridNode,
   mediaRegistry: Record<string, string>,
-  width = 1080,
-  height = 1920,
+  width: number,
+  height: number,
   settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
-): Promise<HTMLCanvasElement> {
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D context not available');
-
+  videoElements?: Map<string, HTMLVideoElement>,
+  imageCache?: Map<string, HTMLImageElement>,
+): Promise<void> {
   if (settings.backgroundMode === 'gradient') {
     const dirMap: Record<string, [number, number, number, number]> = {
       'to-bottom': [0, 0, 0, height],
@@ -410,8 +439,33 @@ export async function renderGridToCanvas(
   }
   ctx.fillRect(0, 0, width, height);
 
-  const imageCache = new Map<string, HTMLImageElement>();
-  await renderNode(ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, imageCache, settings);
+  const cache = imageCache ?? new Map<string, HTMLImageElement>();
+  await renderNode(
+    ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, cache, settings,
+    videoElements,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// renderGridToCanvas — main canvas renderer
+// ---------------------------------------------------------------------------
+
+export async function renderGridToCanvas(
+  root: GridNode,
+  mediaRegistry: Record<string, string>,
+  width = 1080,
+  height = 1920,
+  settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
+  videoElements?: Map<string, HTMLVideoElement>,
+): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context not available');
+
+  await renderGridIntoContext(ctx, root, mediaRegistry, width, height, settings, videoElements);
 
   return canvas;
 }
@@ -457,12 +511,10 @@ export function downloadDataUrl(dataUrl: string, filename: string): void {
 
 export function hasVideoCell(
   root: GridNode,
-  mediaRegistry: Record<string, string>,
+  mediaTypeMap: Record<string, 'image' | 'video'>,
 ): boolean {
   const leaves = getAllLeaves(root);
   return leaves.some(
-    leaf =>
-      leaf.mediaId != null &&
-      mediaRegistry[leaf.mediaId]?.startsWith('data:video/'),
+    leaf => leaf.mediaId != null && mediaTypeMap[leaf.mediaId] === 'video',
   );
 }

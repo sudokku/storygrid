@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MobileWelcomeCard } from './MobileWelcomeCard';
 
 const STORAGE_KEY = 'storygrid_onboarding_done';
 
@@ -27,6 +29,7 @@ const STEPS: Step[] = [
 ];
 
 export function Onboarding() {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [currentStep, setCurrentStep] = useState(0);
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -76,7 +79,13 @@ export function Onboarding() {
     }
   }, [currentStep, handleDismiss]);
 
-  if (dismissed || !spotlightRect) return null;
+  if (dismissed) return null;
+
+  if (isMobile) {
+    return <MobileWelcomeCard onDismiss={handleDismiss} />;
+  }
+
+  if (!spotlightRect) return null;
 
   const step = STEPS[currentStep];
   const padding = 8;

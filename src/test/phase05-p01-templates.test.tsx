@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   createLeaf,
   buildTemplate,
@@ -7,6 +7,11 @@ import {
 } from '../lib/tree';
 import type { ContainerNode, LeafNode, GridNode } from '../types';
 import { useGridStore } from '../store/gridStore';
+
+// jsdom compatibility: mock URL.revokeObjectURL (not provided by jsdom)
+if (!URL.revokeObjectURL) {
+  URL.revokeObjectURL = vi.fn();
+}
 
 beforeEach(() => {
   useGridStore.setState(useGridStore.getInitialState(), true);
@@ -181,15 +186,127 @@ describe('buildTemplate', () => {
 // ---------------------------------------------------------------------------
 
 describe('gridStore.applyTemplate', () => {
-  it('replaces root with template tree and clears mediaRegistry', () => {
-    // Set up media in registry
-    useGridStore.getState().addMedia('m1', 'data:...');
-    const template = buildTemplate('2x1');
+  it('A: empty grid -> empty template (no media, fresh leaves)', () => {
+    // Initial state: vertical container with 2 empty leaves, empty registry
+    const template = buildTemplate('2x2');
     useGridStore.getState().applyTemplate(template);
 
     const { root, mediaRegistry } = useGridStore.getState();
-    expect(root).toBe(template);
+    expect(root.id).toBe(template.id);
+    const leaves = getAllLeaves(root);
+    expect(leaves).toHaveLength(4);
+    leaves.forEach(l => expect(l.mediaId).toBeNull());
     expect(Object.keys(mediaRegistry)).toHaveLength(0);
+  });
+
+  it('B: grid with fewer media than template leaves — migrates in DFS order', () => {
+    const { root } = useGridStore.getState();
+    const container = root as ContainerNode;
+    const leafA = container.children[0] as LeafNode;
+    const leafB = container.children[1] as LeafNode;
+
+    useGridStore.getState().addMedia('m1', 'data:image/png;base64,aaa');
+    useGridStore.getState().addMedia('m2', 'data:image/png;base64,bbb');
+    useGridStore.getState().setMedia(leafA.id, 'm1');
+    useGridStore.getState().setMedia(leafB.id, 'm2');
+
+    useGridStore.getState().applyTemplate(buildTemplate('2x2'));
+
+    const { root: newRoot, mediaRegistry } = useGridStore.getState();
+    const newLeaves = getAllLeaves(newRoot);
+    expect(newLeaves).toHaveLength(4);
+    expect(newLeaves[0].mediaId).toBe('m1');
+    expect(newLeaves[1].mediaId).toBe('m2');
+    expect(newLeaves[2].mediaId).toBeNull();
+    expect(newLeaves[3].mediaId).toBeNull();
+    expect(mediaRegistry['m1']).toBe('data:image/png;base64,aaa');
+    expect(mediaRegistry['m2']).toBe('data:image/png;base64,bbb');
+  });
+
+  it('C: grid with more media than template leaves — surplus pruned and blobs revoked', () => {
+    // Start from 2x2 template applied as root
+    useGridStore.getState().applyTemplate(buildTemplate('2x2'));
+    const leaves4 = getAllLeaves(useGridStore.getState().root);
+    expect(leaves4).toHaveLength(4);
+
+    // Add 4 media — m3 and m4 are blob URLs to verify revocation
+    useGridStore.getState().addMedia('m1', 'data:image/png;base64,aaa');
+    useGridStore.getState().addMedia('m2', 'data:image/png;base64,bbb');
+    useGridStore.getState().addMedia('m3', 'blob:http://localhost/ccc');
+    useGridStore.getState().addMedia('m4', 'blob:http://localhost/ddd');
+    useGridStore.getState().setMedia(leaves4[0].id, 'm1');
+    useGridStore.getState().setMedia(leaves4[1].id, 'm2');
+    useGridStore.getState().setMedia(leaves4[2].id, 'm3');
+    useGridStore.getState().setMedia(leaves4[3].id, 'm4');
+
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    useGridStore.getState().applyTemplate(buildTemplate('1x2'));
+
+    const { root: newRoot, mediaRegistry, mediaTypeMap, thumbnailMap } = useGridStore.getState();
+    const newLeaves = getAllLeaves(newRoot);
+    expect(newLeaves).toHaveLength(2);
+    expect(newLeaves.map(l => l.mediaId)).toEqual(['m1', 'm2']);
+    expect(Object.keys(mediaRegistry).sort()).toEqual(['m1', 'm2']);
+    expect(Object.keys(mediaTypeMap).sort()).toEqual(['m1', 'm2']);
+    // thumbnailMap should not contain dropped ids
+    expect(thumbnailMap['m3']).toBeUndefined();
+    expect(thumbnailMap['m4']).toBeUndefined();
+
+    // Blob URLs for dropped ids should have been revoked
+    expect(revokeSpy).toHaveBeenCalledWith('blob:http://localhost/ccc');
+    expect(revokeSpy).toHaveBeenCalledWith('blob:http://localhost/ddd');
+    // Kept ids were data URIs — not revoked
+    expect(revokeSpy).not.toHaveBeenCalledWith('data:image/png;base64,aaa');
+    expect(revokeSpy).not.toHaveBeenCalledWith('data:image/png;base64,bbb');
+
+    revokeSpy.mockRestore();
+  });
+
+  it('D: only raw mediaId is migrated — no pan/zoom/fit/bg carries over', () => {
+    const { root } = useGridStore.getState();
+    const container = root as ContainerNode;
+    const leafA = container.children[0] as LeafNode;
+
+    useGridStore.getState().addMedia('m1', 'data:image/png;base64,aaa');
+    useGridStore.getState().setMedia(leafA.id, 'm1');
+    useGridStore.getState().updateCell(leafA.id, {
+      fit: 'contain',
+      backgroundColor: '#ff0000',
+      panX: 50,
+      panY: 25,
+      panScale: 2,
+    });
+
+    useGridStore.getState().applyTemplate(buildTemplate('2x1'));
+
+    const newLeaves = getAllLeaves(useGridStore.getState().root);
+    expect(newLeaves[0].mediaId).toBe('m1');
+    expect(newLeaves[0].fit).toBe('cover');
+    expect(newLeaves[0].objectPosition).toBe('center center');
+    expect(newLeaves[0].backgroundColor).toBeNull();
+    expect(newLeaves[0].panX).toBe(0);
+    expect(newLeaves[0].panY).toBe(0);
+    expect(newLeaves[0].panScale).toBe(1);
+  });
+
+  it('E: migrated blob mediaRegistry entries are NOT revoked', () => {
+    const { root } = useGridStore.getState();
+    const container = root as ContainerNode;
+    const leafA = container.children[0] as LeafNode;
+
+    useGridStore.getState().addMedia('m1', 'blob:http://localhost/abc');
+    useGridStore.getState().setMedia(leafA.id, 'm1');
+
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    useGridStore.getState().applyTemplate(buildTemplate('2x1'));
+
+    const { mediaRegistry } = useGridStore.getState();
+    expect(mediaRegistry['m1']).toBe('blob:http://localhost/abc');
+    expect(revokeSpy).not.toHaveBeenCalledWith('blob:http://localhost/abc');
+
+    revokeSpy.mockRestore();
   });
 
   it('pushes snapshot — undo restores previous tree', () => {

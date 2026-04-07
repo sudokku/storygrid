@@ -192,12 +192,12 @@ describe('LeafNode selection and action bar (REND-06)', () => {
 // ---------------------------------------------------------------------------
 
 describe('SafeZoneOverlay (REND-08)', () => {
-  it('renders dashed lines at safe zone positions', () => {
+  it('renders two dimmed striped regions at safe zone positions (Phase 08 CANVAS-01)', () => {
     render(<SafeZoneOverlay />);
-    const overlay = screen.getByTestId('safe-zone-overlay');
-    // Two dashed lines inside
-    const dashedLines = overlay.querySelectorAll('.border-dashed');
-    expect(dashedLines.length).toBeGreaterThanOrEqual(2);
+    // Phase 08 replaced the dashed-border treatment with dimmed + diagonal-striped regions
+    // keyed by data-testid — see src/test/phase08-p01-safe-zone.test.tsx for the full suite.
+    expect(screen.getByTestId('safe-zone-top')).toBeTruthy();
+    expect(screen.getByTestId('safe-zone-bottom')).toBeTruthy();
   });
 
   it('has pointer-events: none so clicks pass through', () => {

@@ -94,4 +94,37 @@ describe('CanvasArea workspace drop (Phase 8 / DROP-01, DROP-02)', () => {
     });
     expect(autoFillCells).not.toHaveBeenCalled();
   });
+
+  it("clears the pill and ring after a child stops drop propagation (cell-drop simulation)", () => {
+    render(<CanvasArea />);
+    const main = screen.getByTestId('workspace-main');
+
+    // Show the overlay first
+    fireEvent.dragEnter(main, {
+      dataTransfer: { types: ['Files'], files: [], dropEffect: 'copy' },
+    });
+    expect(screen.getByTestId('workspace-drop-pill')).toBeTruthy();
+    expect(main.className).toContain('ring-4');
+
+    // Insert a synthetic child that stops propagation on drop (mimics LeafNode.handleDrop)
+    const child = document.createElement('div');
+    main.appendChild(child);
+    child.addEventListener('drop', e => e.stopPropagation());
+
+    // Dispatch drop on the child — capture-phase onDropCapture on <main>
+    // must fire BEFORE the child's stopPropagation runs.
+    fireEvent.drop(child, {
+      dataTransfer: {
+        types: ['Files'],
+        files: [fakeFile('a.png', 'image/png')],
+        dropEffect: 'copy',
+      },
+    });
+
+    // Capture handler should have cleared visuals even though bubble was stopped
+    expect(screen.queryByTestId('workspace-drop-pill')).toBeNull();
+    expect(main.className).not.toContain('ring-4');
+    // And the bubble-phase handleDrop must NOT have routed files (LeafNode owns cell drops)
+    expect(autoFillCells).not.toHaveBeenCalled();
+  });
 });

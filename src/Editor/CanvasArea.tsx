@@ -45,6 +45,15 @@ export function CanvasArea() {
     }
   }, []);
 
+  // D-18: capture-phase reset — fires BEFORE LeafNode.handleDrop's stopPropagation,
+  // so the workspace drop overlay clears even when files are dropped into a cell.
+  // This is purely visual state cleanup; LeafNode still owns file consumption for cell drops.
+  const handleDropCapture = useCallback((e: React.DragEvent<HTMLElement>) => {
+    if (!isFileDrag(e)) return;
+    dragCounter.current = 0;
+    setIsFileDragOver(false);
+  }, []);
+
   const handleDrop = useCallback(
     async (e: React.DragEvent<HTMLElement>) => {
       if (!isFileDrag(e)) return;
@@ -78,6 +87,7 @@ export function CanvasArea() {
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onDropCapture={handleDropCapture}
       onDrop={handleDrop}
       data-testid="workspace-main"
     >

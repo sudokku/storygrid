@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
 status: verifying
-stopped_at: Completed 07-cell-controls-display-polish 07-02-PLAN.md
-last_updated: "2026-04-07T04:15:27.149Z"
+stopped_at: Phase 8 context gathered
+last_updated: "2026-04-07T20:53:46.983Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 2
@@ -182,6 +182,7 @@ None yet.
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
 | 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
 | 260405-v3y | optimize WebCodecs and Mediabunny video export performance for 1080x1920px portrait videos | 2026-04-05 | 0388f4c | [260405-v3y-optimize-webcodecs-and-mediabunny-video-](./quick/260405-v3y-optimize-webcodecs-and-mediabunny-video-/) |
+| 260405-ffx | ffmpeg.wasm video export performance research | 2026-04-05 | research-only | [260405-ffx-ffmpeg-wasm-video-export-performance-research](./quick/260405-ffx-ffmpeg-wasm-video-export-performance-research/) |
 | 260407-vth | Template picker silent apply with media migration (prune surplus, preserve kept) | 2026-04-07 | 41cc818 | [260407-vth-template-picker-silent-apply-with-media-](./quick/260407-vth-template-picker-silent-apply-with-media-/) |
 
 ### Roadmap Evolution
@@ -195,6 +196,6 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-07T03:01:18.352Z
-Stopped at: Completed 07-cell-controls-display-polish 07-02-PLAN.md
-Resume file: None
+Last session: 2026-04-07T20:53:46.973Z
+Stopped at: Phase 8 context gathered
+Resume file: .planning/phases/08-canvas-workspace-ux/08-CONTEXT.md

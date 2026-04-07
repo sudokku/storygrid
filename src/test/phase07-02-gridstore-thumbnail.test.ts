@@ -112,18 +112,47 @@ describe('Phase 07-02 gridStore thumbnailMap', () => {
     expect(thumbnailMap).toEqual({});
   });
 
-  it('Test 6: applyTemplate() resets thumbnailMap to {}', () => {
+  it('Test 6: applyTemplate() prunes thumbnailMap entries for dropped media (surplus)', async () => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
-    useGridStore.setState({
-      mediaRegistry: {},
-      thumbnailMap: { 'vid-1': 'data:image/jpeg;base64,/9j/MOCK' },
-    });
+    // Use the real applyTemplate semantics: apply a 2x2 template, fill all 4
+    // leaves with media (including a video that populates thumbnailMap), then
+    // apply a 1x2 template so leaves 3 and 4 are surplus and must be pruned.
+    const { buildTemplate, getAllLeaves } = await import('../lib/tree');
 
-    useGridStore.getState().applyTemplate(initialRoot);
+    useGridStore.getState().applyTemplate(buildTemplate('2x2'));
+    const leaves4 = getAllLeaves(useGridStore.getState().root);
+
+    // Seed mediaRegistry, mediaTypeMap, and thumbnailMap for 4 media ids.
+    useGridStore.setState({
+      mediaRegistry: {
+        'img-1': 'data:image/png;base64,a',
+        'img-2': 'data:image/png;base64,b',
+        'vid-1': 'blob:http://localhost/vid1',
+        'vid-2': 'blob:http://localhost/vid2',
+      },
+      mediaTypeMap: {
+        'img-1': 'image',
+        'img-2': 'image',
+        'vid-1': 'video',
+        'vid-2': 'video',
+      },
+      thumbnailMap: {
+        'vid-1': 'data:image/jpeg;base64,/9j/MOCK1',
+        'vid-2': 'data:image/jpeg;base64,/9j/MOCK2',
+      },
+    });
+    useGridStore.getState().setMedia(leaves4[0].id, 'img-1');
+    useGridStore.getState().setMedia(leaves4[1].id, 'img-2');
+    useGridStore.getState().setMedia(leaves4[2].id, 'vid-1');
+    useGridStore.getState().setMedia(leaves4[3].id, 'vid-2');
+
+    // Apply a 2-leaf template — vid-1 and vid-2 become surplus.
+    useGridStore.getState().applyTemplate(buildTemplate('1x2'));
 
     const { thumbnailMap } = useGridStore.getState();
-    expect(thumbnailMap).toEqual({});
+    expect(thumbnailMap['vid-1']).toBeUndefined();
+    expect(thumbnailMap['vid-2']).toBeUndefined();
   });
 
   it('Test 7: captureVideoThumbnail returns null (timeout) — thumbnailMap[id] stays undefined', async () => {

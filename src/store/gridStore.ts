@@ -265,13 +265,47 @@ export const useGridStore = create<GridStoreState>()(
 
     applyTemplate: (templateRoot: GridNode) =>
       set(state => {
-        // Revoke any existing blob URLs before clearing
-        revokeRegistryBlobUrls(current(state.mediaRegistry));
+        // Snapshot FIRST so undo restores the previous tree + media binding.
         pushSnapshot(state);
-        state.root = templateRoot;
-        state.mediaRegistry = {};
-        state.mediaTypeMap = {};
-        state.thumbnailMap = {};
+
+        // DFS walk of old leaves — collect mediaIds in visual order.
+        const oldLeaves = getAllLeaves(current(state.root));
+        const carriedMediaIds = oldLeaves
+          .map(l => l.mediaId)
+          .filter((id): id is string => id !== null);
+
+        // DFS walk of new template leaves.
+        const newLeaves = getAllLeaves(templateRoot);
+
+        // Migrate min(N, M) media references onto the new leaves via updateLeaf.
+        // Only the raw mediaId is copied — fit/objectPosition/backgroundColor/pan
+        // stay at the createLeaf() defaults.
+        let nextRoot: GridNode = templateRoot;
+        const migrateCount = Math.min(carriedMediaIds.length, newLeaves.length);
+        for (let i = 0; i < migrateCount; i++) {
+          nextRoot = updateLeaf(nextRoot, newLeaves[i].id, {
+            mediaId: carriedMediaIds[i],
+          });
+        }
+
+        // Determine surplus media to drop (slice — NOT set diff, to handle dups).
+        const keptIds = new Set(carriedMediaIds.slice(0, newLeaves.length));
+        const droppedIds = carriedMediaIds.filter(id => !keptIds.has(id));
+
+        // Prune dropped media from registry, typeMap, thumbnailMap.
+        // Per-id blob revocation — do NOT use revokeRegistryBlobUrls (that
+        // would revoke kept blobs too).
+        for (const id of droppedIds) {
+          const url = state.mediaRegistry[id];
+          if (typeof url === 'string' && url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+          }
+          delete state.mediaRegistry[id];
+          delete state.mediaTypeMap[id];
+          delete state.thumbnailMap[id];
+        }
+
+        state.root = nextRoot;
       }),
 
     swapCells: (idA: string, idB: string) =>

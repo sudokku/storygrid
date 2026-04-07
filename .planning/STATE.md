@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
-status: planning
-stopped_at: Phase 7 plans created and verified
-last_updated: "2026-04-07T00:00:00.000Z"
-last_activity: 2026-04-07 — Phase 7 plans created (2 plans, wave 1)
+status: executing
+stopped_at: Completed 07-cell-controls-display-polish 07-01-PLAN.md
+last_updated: "2026-04-07T03:00:18.926Z"
+last_activity: 2026-04-07
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** v1.1 — UI Polish & Bug Fixes (Phase 7 next)
+**Current focus:** Phase 07 — cell-controls-display-polish
 
 ## Current Position
 
-Phase: Phase 7 — Cell Controls & Display Polish (planned, ready to execute)
-Plan: 2 plans (07-01, 07-02) — Wave 1, fully parallel
-Status: Plans verified, ready for /gsd:execute-phase 07
-Last activity: 2026-04-07 — Phase 7 plans created and verified
+Phase: 07 (cell-controls-display-polish) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-07
 
 Progress: [░░░░░░░░░░] 0% (0/2 phases)
 
@@ -76,6 +76,7 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 06-video-support-v2 P02 | 12 | 1 tasks | 1 files |
 | Phase 06-video-support-v2 P03 | 66 | 2 tasks | 2 files |
 | Phase 06-video-support-v2 P04 | 247 | 2 tasks | 6 files |
+| Phase 07-cell-controls-display-polish P01 | 409 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,9 @@ Recent decisions affecting current work:
 - [Phase 06-video-support-v2]: buildVideoElementsByMediaId maps nodeId->mediaId for renderGridToCanvas video cell rendering
 - [Phase quick-260405-s9u]: VP9 forced on Firefox (H.264 DOMException bug Bugzilla #1918769); stable canvas pattern bridges CanvasSource with renderGridToCanvas; mediabunny replaces ffmpeg.wasm — no COOP/COEP or 25MB WASM download required
 - [Phase quick-260405-uiy]: computeLoopedTime (timeSeconds % duration) replicates video.loop=true during frame-by-frame export; extracted as pure helper for testability; edge case guard covers zero/NaN/Infinity duration
+- [Phase 07-cell-controls-display-polish]: ICON_SIZE kept at 16 in ActionBar — scale(1/canvasScale) transform handles physical stability; clamp() on button container is sufficient (D-05)
+- [Phase 07-cell-controls-display-polish]: ContainerNode child wrapper overflow-hidden removed — was re-clipping ActionBar; canvas clipping moved to inner div in LeafNode
+- [Phase 07-cell-controls-display-polish]: borderRadius moved from LeafNode root div to canvas wrapper div for correct rounded corner clipping
 
 ### Pending Todos
 
@@ -188,6 +192,6 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-07T00:00:00.000Z
-Stopped at: Phase 7 plans created and verified
-Resume file: .planning/phases/07-cell-controls-display-polish/07-01-PLAN.md
+Last session: 2026-04-07T03:00:18.922Z
+Stopped at: Completed 07-cell-controls-display-polish 07-01-PLAN.md
+Resume file: None

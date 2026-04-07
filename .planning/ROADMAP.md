@@ -37,8 +37,8 @@
   2. Action bar icons and buttons appear the same physical size across a small laptop screen and a large external monitor
   3. Empty cells show a centered icon and label that scale proportionally as the viewport grows — no fixed-size relics on 4K displays
   4. Video cells display a still thumbnail (first frame) in the sidebar panel, matching the behavior of image cells
-**Plans:** 2 plans
-  - [ ] 07-01-PLAN.md — Cell controls overflow + clamp-based sizing (CELL-01, CELL-02, CELL-03)
+**Plans:** 1/2 plans executed
+  - [x] 07-01-PLAN.md — Cell controls overflow + clamp-based sizing (CELL-01, CELL-02, CELL-03)
   - [ ] 07-02-PLAN.md — Video first-frame thumbnail in sidebar (MEDIA-01)
 **UI hint**: yes
 
@@ -66,5 +66,5 @@
 | 5. Polish & UX | v1.0 | 5/5 | Complete | 2026-04-02 |
 | 5.1. Mobile-First UI | v1.0 | 3/3 | Complete | 2026-04-04 |
 | 6. Video Support | v1.0 | 4/4 | Complete | 2026-04-05 |
-| 7. Cell Controls & Display Polish | v1.1 | 0/? | Not started | - |
+| 7. Cell Controls & Display Polish | v1.1 | 1/2 | In Progress|  |
 | 8. Canvas & Workspace UX | v1.1 | 0/? | Not started | - |

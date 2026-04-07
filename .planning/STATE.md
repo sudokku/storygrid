@@ -182,6 +182,7 @@ None yet.
 | 260405-s9u | Replace ffmpeg.wasm with WebCodecs + Mediabunny video export | 2026-04-05 | f2b4294 | [260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny](./quick/260405-s9u-replace-ffmpeg-with-webcodecs-mediabunny/) |
 | 260405-uiy | Fix video export loop flicker when shorter video reaches end of longer video duration | 2026-04-05 | 9410c62 | [260405-uiy-fix-video-export-loop-flicker-when-short](./quick/260405-uiy-fix-video-export-loop-flicker-when-short/) |
 | 260405-v3y | optimize WebCodecs and Mediabunny video export performance for 1080x1920px portrait videos | 2026-04-05 | 0388f4c | [260405-v3y-optimize-webcodecs-and-mediabunny-video-](./quick/260405-v3y-optimize-webcodecs-and-mediabunny-video-/) |
+| 260407-vth | Template picker silent apply with media migration (prune surplus, preserve kept) | 2026-04-07 | 41cc818 | [260407-vth-template-picker-silent-apply-with-media-](./quick/260407-vth-template-picker-silent-apply-with-media-/) |
 
 ### Roadmap Evolution
 

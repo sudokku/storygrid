@@ -203,6 +203,14 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
     const n = findNode(s.root, nodeId) as LeafNode | null;
     return n?.mediaId ? s.mediaRegistry[n.mediaId] ?? null : null;
   });
+  const mediaType = useGridStore(s => {
+    const n = findNode(s.root, nodeId) as LeafNode | null;
+    return n?.mediaId ? s.mediaTypeMap[n.mediaId] ?? null : null;
+  });
+  const thumbnailUrl = useGridStore(s => {
+    const n = findNode(s.root, nodeId) as LeafNode | null;
+    return n?.mediaId ? s.thumbnailMap[n.mediaId] ?? null : null;
+  });
   const root = useGridStore(s => s.root);
   const updateCell = useGridStore(s => s.updateCell);
   const remove = useGridStore(s => s.remove);
@@ -273,6 +281,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
 
   const dims = computeCellDimensions(root, nodeId);
 
+  // For video cells, prefer the first-frame thumbnail over the raw blob URL
+  // (which cannot render in an <img> tag). Falls back to ImageIcon if capture
+  // is still in progress or failed.
+  const displayUrl = mediaType === 'video' ? thumbnailUrl : mediaUrl;
+
   if (!node || node.type !== 'leaf') return null;
 
   return (
@@ -281,8 +294,8 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
 
       {/* 1. Thumbnail */}
       <div className="w-full aspect-video rounded overflow-hidden bg-[#111111] border border-[#2a2a2a] flex items-center justify-center">
-        {mediaUrl ? (
-          <img src={mediaUrl} className="w-full h-full object-contain" alt="Cell thumbnail" />
+        {displayUrl ? (
+          <img src={displayUrl} className="w-full h-full object-contain" alt="Cell thumbnail" />
         ) : (
           <ImageIcon size={24} className="text-neutral-600" />
         )}

@@ -7,7 +7,7 @@ import { loadImage, drawLeafToCanvas } from '../lib/export';
 import { videoElementRegistry, registerVideo, unregisterVideo } from '../lib/videoRegistry';
 import type { LeafNode } from '../types';
 import { ImageIcon } from 'lucide-react';
-import { ActionBar } from './ActionBar';
+import { registerCell, unregisterCell } from '../lib/cellRegistry';
 
 interface LeafNodeProps {
   id: string;
@@ -39,7 +39,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   });
   const isSelected = useEditorStore(s => s.selectedNodeId === id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
-  const canvasScale = useEditorStore(s => s.canvasScale);
   const borderRadius = useEditorStore(s => s.borderRadius);
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
@@ -65,6 +64,9 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const pinchStartScaleRef = useRef<number>(1);
   const cellSizeRef = useRef({ w: 0, h: 0 });
   const drawRef = useRef<() => void>(() => {});
+  // Quick 260407-q2s: debounce hover-leave so pointer can cross from cell into
+  // the portal ActionBar (which is not a DOM descendant) without flicker.
+  const hoverLeaveTimerRef = useRef<number | null>(null);
 
   // Derived: is this cell currently showing a video?
   const isVideo = mediaType === 'video';
@@ -74,6 +76,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   useLayoutEffect(() => {
     const el = divRef.current;
     if (!el) return;
+    registerCell(id, el);
     cellSizeRef.current = { w: el.clientWidth, h: el.clientHeight };
     const observer = new ResizeObserver((entries) => {
       const w = el.clientWidth;
@@ -92,7 +95,18 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       setIsTooSmall(observedH < 80);
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      unregisterCell(id);
+    };
+  }, [id]);
+
+  // Cleanup any pending hover-leave debounce timer on unmount
+  useEffect(() => () => {
+    if (hoverLeaveTimerRef.current != null) {
+      window.clearTimeout(hoverLeaveTimerRef.current);
+      hoverLeaveTimerRef.current = null;
+    }
   }, []);
 
   // Build stable redraw function — reads latest state directly from stores
@@ -394,10 +408,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
   }, [hasMedia, isPanMode, id, setPanModeNodeId]);
 
-  const handleUploadClick = useCallback(() => {
-    inputRef.current?.click();
-  }, []);
-
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
@@ -537,8 +547,26 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        if (hoverLeaveTimerRef.current != null) {
+          window.clearTimeout(hoverLeaveTimerRef.current);
+          hoverLeaveTimerRef.current = null;
+        }
+        setIsHovered(true);
+        useEditorStore.getState().setHoveredNode(id);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        // Debounce store clear so pointer can cross into the portal ActionBar without flicker.
+        if (hoverLeaveTimerRef.current != null) window.clearTimeout(hoverLeaveTimerRef.current);
+        hoverLeaveTimerRef.current = window.setTimeout(() => {
+          // Only clear if this cell is still the hovered one (user may have entered another cell already)
+          if (useEditorStore.getState().hoveredNodeId === id) {
+            useEditorStore.getState().setHoveredNode(null);
+          }
+          hoverLeaveTimerRef.current = null;
+        }, 80);
+      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -595,19 +623,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {isDragOver && (
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
       )}
-
-      {/* ActionBar: visible on hover, hidden in pan mode, hidden on mobile */}
-      <div
-        className={`
-          hidden md:block
-          absolute top-2 left-1/2 z-20
-          transition-opacity duration-150
-          ${isHovered && !isPanMode ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}
-        `}
-        style={{ transform: `translateX(-50%) scale(${1 / canvasScale})`, transformOrigin: 'top center' }}
-      >
-        <ActionBar nodeId={id} fit={node.fit} hasMedia={hasMedia} onUploadClick={handleUploadClick} />
-      </div>
     </div>
   );
 });

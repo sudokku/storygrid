@@ -4,6 +4,7 @@ import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';
 import { Onboarding } from './Onboarding';
 import { MobileSheet } from './MobileSheet';
+import { GlobalActionBar } from './GlobalActionBar';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -91,6 +92,7 @@ export function EditorShell() {
         <Sidebar />
       </div>
       <MobileSheet />
+      <GlobalActionBar />
       <Onboarding />
     </div>
   );

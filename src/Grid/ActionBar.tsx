@@ -78,21 +78,21 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
           <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>
             <Upload size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
+          <TooltipContent side="bottom">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleSplitH} aria-label="Split horizontal" />}>
             <SplitSquareHorizontal size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">Split horizontal</TooltipContent>
+          <TooltipContent side="bottom">Split horizontal</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleSplitV} aria-label="Split vertical" />}>
             <SplitSquareVertical size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">Split vertical</TooltipContent>
+          <TooltipContent side="bottom">Split vertical</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -102,7 +102,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
               : <Maximize2 size={ICON_SIZE} className="text-white" />
             }
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">
+          <TooltipContent side="bottom">
             {fit === 'cover' ? 'Switch to contain' : 'Switch to cover'}
           </TooltipContent>
         </Tooltip>
@@ -112,7 +112,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
             <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleClearMedia} aria-label="Clear media" />}>
               <ImageOff size={ICON_SIZE} className="text-white" />
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">Clear media</TooltipContent>
+            <TooltipContent side="bottom">Clear media</TooltipContent>
           </Tooltip>
         )}
 
@@ -120,7 +120,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
           <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
             <Trash2 size={ICON_SIZE} className="text-red-500" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-[clamp(20px,1.4vw,28px)]">Remove cell</TooltipContent>
+          <TooltipContent side="bottom">Remove cell</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

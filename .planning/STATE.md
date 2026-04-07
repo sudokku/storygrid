@@ -200,3 +200,4 @@ None active. Phase 7 ready to plan.
 Last session: 2026-04-08T00:00:00.000Z
 Stopped at: Completed quick-260408-258 (workspace drop overlay cell-drop fix)
 Resume file: .planning/phases/08-canvas-workspace-ux/08-CONTEXT.md
+| 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

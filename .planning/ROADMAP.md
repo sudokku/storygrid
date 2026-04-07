@@ -51,7 +51,10 @@
   2. Clicking a preset template applies it immediately with no confirmation dialog or alert
   3. User can drag a media file from the desktop and drop it anywhere in the workspace area (not only directly on the canvas element) and the file is accepted
   4. While dragging a file over the workspace, the drop zone area shows a clear visual highlight or label indicating it will accept the file
-**Plans**: TBD
+**Plans:** 3 plans
+  - [ ] 08-01-PLAN.md — Safe Zone visual overlay (CANVAS-01)
+  - [ ] 08-02-PLAN.md — Workspace drop zone + drag-over ring (DROP-01, DROP-02)
+  - [ ] 08-03-PLAN.md — Template apply regression test (TPL-01)
 **UI hint**: yes
 
 ## Progress
@@ -67,4 +70,4 @@
 | 5.1. Mobile-First UI | v1.0 | 3/3 | Complete | 2026-04-04 |
 | 6. Video Support | v1.0 | 4/4 | Complete | 2026-04-05 |
 | 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
-| 8. Canvas & Workspace UX | v1.1 | 0/? | Not started | - |
+| 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |

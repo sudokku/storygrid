@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 Phase: 08
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-04-07
+Last activity: 2026-04-08 - Completed quick task 260408-258: Hide workspace drop ring/pill when dropping into a cell
 
 Progress: [░░░░░░░░░░] 0% (0/2 phases)
 

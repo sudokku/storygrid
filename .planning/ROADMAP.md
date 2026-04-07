@@ -52,9 +52,9 @@
   3. User can drag a media file from the desktop and drop it anywhere in the workspace area (not only directly on the canvas element) and the file is accepted
   4. While dragging a file over the workspace, the drop zone area shows a clear visual highlight or label indicating it will accept the file
 **Plans:** 3 plans
-  - [ ] 08-01-PLAN.md — Safe Zone visual overlay (CANVAS-01)
-  - [ ] 08-02-PLAN.md — Workspace drop zone + drag-over ring (DROP-01, DROP-02)
-  - [ ] 08-03-PLAN.md — Template apply regression test (TPL-01)
+  - [x] 08-01-PLAN.md — Safe Zone visual overlay (CANVAS-01)
+  - [x] 08-02-PLAN.md — Workspace drop zone + drag-over ring (DROP-01, DROP-02)
+  - [x] 08-03-PLAN.md — Template apply regression test (TPL-01)
 **UI hint**: yes
 
 ## Progress

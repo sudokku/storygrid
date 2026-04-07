@@ -83,9 +83,9 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - [x] Cell top-bar overflow: fix clipping when cells are small; controls must always be accessible — Validated in Phase 07: cell-controls-display-polish
 - [x] Cell action bar sizing: stable vw/vh-based size regardless of screen dimensions — Validated in Phase 07: cell-controls-display-polish
 - [x] Sidebar video thumbnail: extract and display first frame as preview image — Validated in Phase 07: cell-controls-display-polish
-- [ ] Safe zone overlay: replace toggle-only button with visible striped/dimmed unsafe-area indicator with icon
-- [ ] Template change: remove confirmation alert, apply template silently
-- [ ] Drop zone: expand to full workspace (excluding navbar/sidebar); clearer visual drop indication
+- [x] Safe zone overlay: replace toggle-only button with visible striped/dimmed unsafe-area indicator with icon — Validated in Phase 08: canvas-workspace-ux
+- [x] Template change: remove confirmation alert, apply template silently — Validated in Phase 08: canvas-workspace-ux
+- [x] Drop zone: expand to full workspace (excluding navbar/sidebar); clearer visual drop indication — Validated in Phase 08: canvas-workspace-ux
 - [ ] Empty cell empty state: scale icon and text with vw/vh for large screens
 
 **Future Milestone (v1.2) — Effects & Advanced**
@@ -170,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Empty cell icon/text scaling via vw/vh for large screens
 
 ---
-*Last updated: 2026-04-07 — Phase 07 complete (cell controls polish + video thumbnail)*
+*Last updated: 2026-04-08 — Phase 08 complete (canvas workspace UX: safe zone visual, workspace file drop, template silent apply)*

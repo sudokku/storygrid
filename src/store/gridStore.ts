@@ -14,6 +14,69 @@ import {
 } from '../lib/tree';
 
 // ---------------------------------------------------------------------------
+// Video thumbnail capture helper (MEDIA-01 backend, D-09/D-10)
+// ---------------------------------------------------------------------------
+
+export async function captureVideoThumbnail(blobUrl: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const cleanup = () => {
+      video.removeEventListener('loadedmetadata', onMeta);
+      video.removeEventListener('seeked', onSeeked);
+      video.removeEventListener('error', onError);
+      video.src = '';
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+    const finish = (result: string | null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+    const onMeta = () => {
+      try {
+        video.currentTime = 0;
+      } catch {
+        finish(null);
+      }
+    };
+    const onSeeked = () => {
+      try {
+        const w = video.videoWidth || 320;
+        const h = video.videoHeight || 240;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return finish(null);
+        ctx.drawImage(video, 0, 0, w, h);
+        finish(canvas.toDataURL('image/jpeg', 0.8));
+      } catch {
+        finish(null);
+      }
+    };
+    const onError = () => finish(null);
+    timeoutId = setTimeout(() => finish(null), 2000);
+    video.addEventListener('loadedmetadata', onMeta);
+    video.addEventListener('seeked', onSeeked);
+    video.addEventListener('error', onError);
+    video.src = blobUrl;
+  });
+}
+
+// Indirection object so tests can override captureVideoThumbnail without
+// ES module namespace tricks. addMedia calls _capture.fn instead of the
+// function directly, allowing vi.fn() replacement in tests.
+export const _capture = {
+  fn: captureVideoThumbnail,
+};
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -21,6 +84,7 @@ type GridStoreState = {
   root: GridNode;
   mediaRegistry: Record<string, string>;
   mediaTypeMap: Record<string, 'image' | 'video'>;
+  thumbnailMap: Record<string, string>;
   history: Array<{ root: GridNode }>;
   historyIndex: number;
   // actions
@@ -90,10 +154,11 @@ function revokeRegistryBlobUrls(mediaRegistry: Record<string, string>): void {
 // ---------------------------------------------------------------------------
 
 export const useGridStore = create<GridStoreState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     root: initialTree,
     mediaRegistry: {},
     mediaTypeMap: {},
+    thumbnailMap: {},
     // Initial tree state stored as history[0] so undo can return to starting state
     history: [{ root: structuredClone(initialTree) }],
     historyIndex: 0,
@@ -134,7 +199,7 @@ export const useGridStore = create<GridStoreState>()(
         state.root = updateLeaf(current(state.root), nodeId, updates);
       }),
 
-    // clearGrid resets root, mediaRegistry, mediaTypeMap, and history to initial state
+    // clearGrid resets root, mediaRegistry, mediaTypeMap, thumbnailMap, and history to initial state
     clearGrid: () =>
       set(state => {
         // Revoke any existing blob URLs before clearing
@@ -143,16 +208,30 @@ export const useGridStore = create<GridStoreState>()(
         state.root = freshTree;
         state.mediaRegistry = {};
         state.mediaTypeMap = {};
+        state.thumbnailMap = {};
         state.history = [{ root: structuredClone(freshTree) }];
         state.historyIndex = 0;
       }),
 
     // addMedia and removeMedia do NOT push to history (mediaRegistry excluded from snapshots)
-    addMedia: (mediaId, dataUri, type = 'image') =>
+    addMedia: (mediaId, dataUri, type = 'image') => {
       set(state => {
         state.mediaRegistry[mediaId] = dataUri;
         state.mediaTypeMap[mediaId] = type;
-      }),
+      });
+      if (type === 'video') {
+        _capture.fn(dataUri).then((thumb) => {
+          if (!thumb) return;
+          // Verify mediaId still exists (not removed during capture)
+          const snapshot = get();
+          if (snapshot.mediaRegistry[mediaId]) {
+            set(state => {
+              state.thumbnailMap[mediaId] = thumb;
+            });
+          }
+        });
+      }
+    },
 
     removeMedia: (mediaId) =>
       set(state => {
@@ -163,6 +242,7 @@ export const useGridStore = create<GridStoreState>()(
         }
         delete state.mediaRegistry[mediaId];
         delete state.mediaTypeMap[mediaId];
+        delete state.thumbnailMap[mediaId];
       }),
 
     undo: () =>
@@ -191,6 +271,7 @@ export const useGridStore = create<GridStoreState>()(
         state.root = templateRoot;
         state.mediaRegistry = {};
         state.mediaTypeMap = {};
+        state.thumbnailMap = {};
       }),
 
     swapCells: (idA: string, idB: string) =>
@@ -212,10 +293,11 @@ export const useGridStore = create<GridStoreState>()(
         }
         if (staleIds.length === 0) return;
 
-        // Remove stale entries from registry and typeMap
+        // Remove stale entries from registry, typeMap, and thumbnailMap
         for (const mediaId of staleIds) {
           delete state.mediaRegistry[mediaId];
           delete state.mediaTypeMap[mediaId];
+          delete state.thumbnailMap[mediaId];
         }
 
         // Null out any leaf mediaIds that pointed to stale blob entries

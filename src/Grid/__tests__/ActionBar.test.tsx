@@ -54,18 +54,17 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     expect(bar.className).toContain('gap-1');
   });
 
-  it('Test 2: Buttons use clamp-based sizing — no fixed w-8 h-8 classes present', () => {
-    // jsdom strips clamp() from inline style, so we verify by absence of the old fixed classes.
-    // The clamp() value is applied via inline style (BTN_SIZE constant) — verified by acceptance
-    // criteria grep: grep -c "width: BTN_SIZE" src/Grid/ActionBar.tsx should return >= 6.
+  it('Test 2: Buttons use fixed w-8 h-8 sizing (reverted in quick-260407-q2s now that ActionBar lives in viewport-space portal)', () => {
+    // Portal-based GlobalActionBar lives in viewport pixels (not canvas-scaled),
+    // so the clamp() sizing from 07-01 is no longer needed — reverted to fixed
+    // 32px buttons per locked D-02 in quick-260407-q2s.
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
     const buttons = screen.getAllByRole('button');
     for (const btn of buttons) {
-      // None of the buttons should have the old fixed-size classes
-      expect(btn.className).not.toContain('w-8');
-      expect(btn.className).not.toContain('h-8');
+      expect(btn.className).toContain('w-8');
+      expect(btn.className).toContain('h-8');
     }
     // Also verify the bar itself still renders (structural integrity)
     expect(screen.getByTestId('action-bar-leaf-1')).toBeInTheDocument();

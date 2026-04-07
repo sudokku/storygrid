@@ -51,6 +51,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const swapCells = useGridStore(s => s.swapCells);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isTooSmall, setIsTooSmall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,11 +70,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const isVideo = mediaType === 'video';
 
   // Track cell container dimensions via ResizeObserver
+  // Also drives isTooSmall state for empty placeholder label hiding (D-08)
   useLayoutEffect(() => {
     const el = divRef.current;
     if (!el) return;
     cellSizeRef.current = { w: el.clientWidth, h: el.clientHeight };
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver((entries) => {
       const w = el.clientWidth;
       const h = el.clientHeight;
       cellSizeRef.current = { w, h };
@@ -85,6 +87,9 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         canvas.height = Math.round(h * dpr);
       }
       drawRef.current();
+      // Hide label when cell rendered height is below 80px (D-08)
+      const observedH = entries[0]?.contentRect.height ?? h;
+      setIsTooSmall(observedH < 80);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -523,12 +528,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     <div
       ref={divRef}
       className={`
-        relative w-full h-full isolate overflow-hidden select-none
+        relative w-full h-full isolate overflow-visible select-none
         ${ringClass}
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}
       style={{
-        borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined,
         backfaceVisibility: 'hidden',
       }}
       onClick={handleClick}
@@ -555,17 +559,27 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         aria-hidden="true"
       />
 
-      {/* Canvas for media rendering — always present when media is loaded */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        style={{ display: mediaUrl ? 'block' : 'none' }}
-      />
+      {/* Canvas clipping wrapper — overflow-hidden isolates media rendering from cell overflow (D-01, D-02, D-03) */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ borderRadius: borderRadius > 0 ? `${borderRadius}px` : undefined }}
+      >
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full"
+          style={{ display: mediaUrl ? 'block' : 'none' }}
+        />
+      </div>
 
       {!mediaUrl && (
         <div className="flex flex-col items-center justify-center w-full h-full gap-2">
-          <ImageIcon size={24} className="text-[#666666]" />
-          <span className="text-sm text-[#666666]">Drop image or use Upload button</span>
+          <ImageIcon
+            style={{ width: 'clamp(20px, 1.6vw, 32px)', height: 'clamp(20px, 1.6vw, 32px)' }}
+            className="text-[#666666]"
+          />
+          <span className={`text-[clamp(10px,0.7vw,14px)] text-[#666666] ${isTooSmall ? 'hidden' : ''}`}>
+            Drop image or use Upload button
+          </span>
         </div>
       )}
 

@@ -30,7 +30,7 @@ export const ContainerNodeComponent = React.memo(function ContainerNodeComponent
       {node.children.map((child, i) => (
         <React.Fragment key={child.id}>
           <div
-            className="min-h-0 min-w-0 overflow-hidden"
+            className="min-h-0 min-w-0"
             style={{ flex: activeSizes[i] }}
           >
             <GridNodeComponent id={child.id} />

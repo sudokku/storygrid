@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
-status: executing
-stopped_at: Completed 07-cell-controls-display-polish 07-01-PLAN.md
-last_updated: "2026-04-07T03:00:18.926Z"
+status: verifying
+stopped_at: Completed 07-cell-controls-display-polish 07-02-PLAN.md
+last_updated: "2026-04-07T03:01:18.356Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 Phase: 07 (cell-controls-display-polish) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-07
 
 Progress: [░░░░░░░░░░] 0% (0/2 phases)
@@ -77,6 +77,7 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 06-video-support-v2 P03 | 66 | 2 tasks | 2 files |
 | Phase 06-video-support-v2 P04 | 247 | 2 tasks | 6 files |
 | Phase 07-cell-controls-display-polish P01 | 409 | 2 tasks | 5 files |
+| Phase 07-cell-controls-display-polish P02 | 468 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,7 @@ Recent decisions affecting current work:
 - [Phase 07-cell-controls-display-polish]: ICON_SIZE kept at 16 in ActionBar — scale(1/canvasScale) transform handles physical stability; clamp() on button container is sufficient (D-05)
 - [Phase 07-cell-controls-display-polish]: ContainerNode child wrapper overflow-hidden removed — was re-clipping ActionBar; canvas clipping moved to inner div in LeafNode
 - [Phase 07-cell-controls-display-polish]: borderRadius moved from LeafNode root div to canvas wrapper div for correct rounded corner clipping
+- [Phase 07-cell-controls-display-polish]: captureVideoThumbnail uses loadedmetadata->seeked sequence with 2s timeout; _capture indirection allows test overrides; displayUrl computed from mediaType for clean video/image separation in Sidebar
 
 ### Pending Todos
 
@@ -192,6 +194,6 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-07T03:00:18.922Z
-Stopped at: Completed 07-cell-controls-display-polish 07-01-PLAN.md
+Last session: 2026-04-07T03:01:18.352Z
+Stopped at: Completed 07-cell-controls-display-polish 07-02-PLAN.md
 Resume file: None

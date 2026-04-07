@@ -23,7 +23,7 @@
 
 ### v1.1 UI Polish & Bug Fixes
 
-- [ ] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar
+- [x] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar (completed 2026-04-07)
 - [ ] **Phase 8: Canvas & Workspace UX** — Replace safe zone with visual overlay, remove template confirmation, expand drop zone to full workspace
 
 ## Phase Details
@@ -37,9 +37,9 @@
   2. Action bar icons and buttons appear the same physical size across a small laptop screen and a large external monitor
   3. Empty cells show a centered icon and label that scale proportionally as the viewport grows — no fixed-size relics on 4K displays
   4. Video cells display a still thumbnail (first frame) in the sidebar panel, matching the behavior of image cells
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
   - [x] 07-01-PLAN.md — Cell controls overflow + clamp-based sizing (CELL-01, CELL-02, CELL-03)
-  - [ ] 07-02-PLAN.md — Video first-frame thumbnail in sidebar (MEDIA-01)
+  - [x] 07-02-PLAN.md — Video first-frame thumbnail in sidebar (MEDIA-01)
 **UI hint**: yes
 
 ### Phase 8: Canvas & Workspace UX
@@ -66,5 +66,5 @@
 | 5. Polish & UX | v1.0 | 5/5 | Complete | 2026-04-02 |
 | 5.1. Mobile-First UI | v1.0 | 3/3 | Complete | 2026-04-04 |
 | 6. Video Support | v1.0 | 4/4 | Complete | 2026-04-05 |
-| 7. Cell Controls & Display Polish | v1.1 | 1/2 | In Progress|  |
+| 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
 | 8. Canvas & Workspace UX | v1.1 | 0/? | Not started | - |

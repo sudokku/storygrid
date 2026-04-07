@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
 status: verifying
 stopped_at: Phase 8 context gathered
-last_updated: "2026-04-07T22:23:58.573Z"
-last_activity: 2026-04-07
+last_updated: "2026-04-08T00:00:00.000Z"
+last_activity: 2026-04-08
 progress:
   total_phases: 2
   completed_phases: 2
@@ -184,6 +184,7 @@ None yet.
 | 260405-v3y | optimize WebCodecs and Mediabunny video export performance for 1080x1920px portrait videos | 2026-04-05 | 0388f4c | [260405-v3y-optimize-webcodecs-and-mediabunny-video-](./quick/260405-v3y-optimize-webcodecs-and-mediabunny-video-/) |
 | 260405-ffx | ffmpeg.wasm video export performance research | 2026-04-05 | research-only | [260405-ffx-ffmpeg-wasm-video-export-performance-research](./quick/260405-ffx-ffmpeg-wasm-video-export-performance-research/) |
 | 260407-vth | Template picker silent apply with media migration (prune surplus, preserve kept) | 2026-04-07 | 41cc818 | [260407-vth-template-picker-silent-apply-with-media-](./quick/260407-vth-template-picker-silent-apply-with-media-/) |
+| 260408-258 | Hide workspace drop ring/pill when dropping a file into a leaf cell | 2026-04-08 | ed15031 | [260408-258-hide-workspace-drop-ring-pill-when-dropp](./quick/260408-258-hide-workspace-drop-ring-pill-when-dropp/) |
 
 ### Roadmap Evolution
 
@@ -196,6 +197,6 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-07T20:53:46.973Z
-Stopped at: Phase 8 context gathered
+Last session: 2026-04-08T00:00:00.000Z
+Stopped at: Completed quick-260408-258 (workspace drop overlay cell-drop fix)
 Resume file: .planning/phases/08-canvas-workspace-ux/08-CONTEXT.md

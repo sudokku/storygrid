@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { LeafNodeComponent } from '../Grid/LeafNode';
-import { GlobalActionBar } from '../Editor/GlobalActionBar';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import type { LeafNode, GridNode } from '../types';
@@ -162,45 +161,36 @@ describe('Dim overlay on other cells (D-09)', () => {
 // ---------------------------------------------------------------------------
 
 describe('ActionBar hidden in pan mode (D-12)', () => {
-  it('GlobalActionBar does NOT render when the hovered cell is in pan mode', () => {
-    // Quick 260407-q2s: ActionBar is no longer inside LeafNode — it lives in a
-    // portal mounted at document.body, keyed by `hoveredNodeId` with
-    // `panModeNodeId === hoveredNodeId` suppression.
+  it('inline ActionBar wrapper is NOT rendered when the cell is in pan mode (even if hovered)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({
       selectedNodeId: 'leaf-1',
       panModeNodeId: 'leaf-1',
-      hoveredNodeId: 'leaf-1',
     });
 
-    render(
-      <>
-        <LeafNodeComponent id="leaf-1" />
-        <GlobalActionBar />
-      </>
-    );
+    render(<LeafNodeComponent id="leaf-1" />);
 
-    // ActionBar must not be rendered anywhere (not inside cell, not in portal).
+    // Trigger hover so we know ActionBar would otherwise show.
+    fireEvent.mouseEnter(screen.getByTestId('leaf-leaf-1'));
+
+    // ActionBar wrapper is conditional on `isHovered && !isPanMode`; pan mode wins.
+    expect(screen.queryByTestId('action-bar-wrapper-leaf-1')).toBeNull();
     expect(screen.queryByTestId('action-bar-leaf-1')).toBeNull();
   });
 
-  it('GlobalActionBar renders when a cell is hovered and NOT in pan mode', () => {
+  it('inline ActionBar renders when a cell is hovered and NOT in pan mode', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({
       selectedNodeId: null,
       panModeNodeId: null,
-      hoveredNodeId: 'leaf-1',
     });
 
-    render(
-      <>
-        <LeafNodeComponent id="leaf-1" />
-        <GlobalActionBar />
-      </>
-    );
+    render(<LeafNodeComponent id="leaf-1" />);
+    fireEvent.mouseEnter(screen.getByTestId('leaf-leaf-1'));
 
+    expect(screen.getByTestId('action-bar-wrapper-leaf-1')).toBeInTheDocument();
     expect(screen.getByTestId('action-bar-leaf-1')).toBeInTheDocument();
   });
 });

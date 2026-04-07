@@ -33,11 +33,8 @@ type EditorState = {
   isPlaying: boolean;
   playheadTime: number;
   totalDuration: number;
-  // Quick 260407-q2s: hovered cell for portal ActionBar (hover-only, no selection fallback)
-  hoveredNodeId: string | null;
   // Actions
   setSelectedNode: (id: string | null) => void;
-  setHoveredNode: (id: string | null) => void;
   setZoom: (z: number) => void;
   setCanvasScale: (s: number) => void;
   toggleSafeZone: () => void;
@@ -90,11 +87,8 @@ export const useEditorStore = create<EditorState>()(set => ({
   isPlaying: false,
   playheadTime: 0,
   totalDuration: 0,
-  // Quick 260407-q2s
-  hoveredNodeId: null,
   // Existing setters
   setSelectedNode: (id) => set({ selectedNodeId: id }),
-  setHoveredNode: (id) => set({ hoveredNodeId: id }),
   setZoom: (z) => set({ zoom: Math.min(1.5, Math.max(0.5, z)) }),
   setCanvasScale: (s) => set({ canvasScale: s }),
   toggleSafeZone: () => set((s) => ({ showSafeZone: !s.showSafeZone })),

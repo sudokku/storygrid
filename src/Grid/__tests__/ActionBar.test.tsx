@@ -54,17 +54,17 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     expect(bar.className).toContain('gap-1');
   });
 
-  it('Test 2: Buttons use fixed w-8 h-8 sizing (reverted in quick-260407-q2s now that ActionBar lives in viewport-space portal)', () => {
-    // Portal-based GlobalActionBar lives in viewport pixels (not canvas-scaled),
-    // so the clamp() sizing from 07-01 is no longer needed — reverted to fixed
-    // 32px buttons per locked D-02 in quick-260407-q2s.
+  it('Test 2: Buttons use fixed w-16 h-16 sizing', () => {
+    // ActionBar lives inside the cell as a sibling of the canvas-clip wrapper.
+    // Buttons use fixed 64px sizing (doubled from prior 32px per user request) —
+    // they scale visually with canvas zoom along with everything else on the canvas.
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
     const buttons = screen.getAllByRole('button');
     for (const btn of buttons) {
-      expect(btn.className).toContain('w-8');
-      expect(btn.className).toContain('h-8');
+      expect(btn.className).toContain('w-16');
+      expect(btn.className).toContain('h-16');
     }
     // Also verify the bar itself still renders (structural integrity)
     expect(screen.getByTestId('action-bar-leaf-1')).toBeInTheDocument();

@@ -47,8 +47,8 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
     }
   }, [removeMedia, updateCell, nodeId, mediaId]);
 
-  const ICON_SIZE = 16; // logical icon size (kept as number for lucide)
-  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors w-8 h-8';
+  const ICON_SIZE = 32; // logical icon size (kept as number for lucide)
+  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors w-16 h-16';
 
   return (
     <TooltipProvider delay={300}>
@@ -78,21 +78,21 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
           <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>
             <Upload size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
+          <TooltipContent side="bottom" className="text-2xl">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleSplitH} aria-label="Split horizontal" />}>
             <SplitSquareHorizontal size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Split horizontal</TooltipContent>
+          <TooltipContent side="bottom" className="text-2xl">Split horizontal</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={handleSplitV} aria-label="Split vertical" />}>
             <SplitSquareVertical size={ICON_SIZE} className="text-white" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Split vertical</TooltipContent>
+          <TooltipContent side="bottom" className="text-2xl">Split vertical</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -102,7 +102,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
               : <Maximize2 size={ICON_SIZE} className="text-white" />
             }
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
+          <TooltipContent side="bottom" className="text-2xl">
             {fit === 'cover' ? 'Switch to contain' : 'Switch to cover'}
           </TooltipContent>
         </Tooltip>
@@ -112,7 +112,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
             <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleClearMedia} aria-label="Clear media" />}>
               <ImageOff size={ICON_SIZE} className="text-white" />
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Clear media</TooltipContent>
+            <TooltipContent side="bottom" className="text-2xl">Clear media</TooltipContent>
           </Tooltip>
         )}
 
@@ -120,7 +120,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
           <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
             <Trash2 size={ICON_SIZE} className="text-red-500" />
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Remove cell</TooltipContent>
+          <TooltipContent side="bottom" className="text-2xl">Remove cell</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

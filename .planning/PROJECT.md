@@ -170,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Empty cell icon/text scaling via vw/vh for large screens
 
 ---
-*Last updated: 2026-04-08 — Phase 08 complete (canvas workspace UX: safe zone visual, workspace file drop, template silent apply)*
+*Last updated: 2026-04-08 — Phase 09 complete (cell movement and swapping: moveLeafToEdge primitive, atomic moveCell action, 5-zone LeafNode overlay, empty-cell drag handle)*

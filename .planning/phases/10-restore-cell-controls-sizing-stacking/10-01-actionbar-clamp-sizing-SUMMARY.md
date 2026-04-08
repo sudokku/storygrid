@@ -2,96 +2,73 @@
 phase: 10-restore-cell-controls-sizing-stacking
 plan: 01
 subsystem: grid/action-bar
-tags: [cell-controls, sizing, viewport-stable, clamp, regression-fix]
+tags: [cell-controls, sizing, portal-aware, course-correction]
 requirements_completed: [CELL-02]
 gap_closure: true
 dependency-graph:
   requires:
     - "src/Grid/ActionBar.tsx (existing component)"
-    - "lucide-react (style prop pass-through to svg)"
+    - "Portal architecture from quick-260407-q2s (1967219) — ActionBar renders via createPortal to document.body in viewport space"
   provides:
-    - "Viewport-stable 28–36px ActionBar buttons via clamp(28px, 2.2vw, 36px)"
-    - "Proportional icon sizing via clamp(16px, 1.4vw, 20px)"
+    - "Fixed 64px ActionBar buttons (w-16 h-16) with 32px lucide icons (ICON_SIZE=32) — usable target sizes"
+    - "Stable button sizing across viewport widths (no scale compensation needed in viewport-space portal)"
   affects:
-    - "src/Grid/__tests__/ActionBar.test.tsx (Test 2 updated)"
-tech-stack:
-  added: []
-  patterns:
-    - "Inline React.CSSProperties style with clamp() for viewport-responsive sizing"
-    - "lucide-react icons styled via `style` prop (not `size`) to support CSS functions"
+    - "src/Grid/ActionBar.tsx"
+    - "src/Grid/__tests__/ActionBar.test.tsx"
 key-files:
-  created: []
   modified:
-    - src/Grid/ActionBar.tsx
-    - src/Grid/__tests__/ActionBar.test.tsx
-decisions:
-  - "clamp() via inline style (not Tailwind arbitrary values) — lucide's size prop only accepts numbers, so inline style is the cleanest cross-browser path"
-  - "btnClass kept as a string without size classes — template-literal concatenations (e.g. `${btnClass} cursor-grab`) remain untouched"
-  - "ActionBar.test.tsx Test 2 rewritten: jsdom CSSOM strips clamp() expressions; test now asserts the absence of fixed w-16/h-16/w-8/h-8 classes and delegates clamp() verification to plan 10-01's grep acceptance criteria"
-metrics:
-  duration: 4min
-  tasks: 1
-  files: 2
-  completed: 2026-04-08
+    - "src/Grid/ActionBar.tsx"
+    - "src/Grid/__tests__/ActionBar.test.tsx"
+status: complete
 ---
 
-# Phase 10 Plan 01: ActionBar clamp() Sizing Summary
+# 10-01 — ActionBar Sizing (Course-Corrected)
 
-Re-lands the Phase 7 CELL-02 viewport-stable ActionBar button sizing (`clamp(28px, 2.2vw, 36px)`) that was reverted in commit 1476df2 during an abandoned portal experiment.
+## What Was Built
 
-## What Changed
+ActionBar buttons sized at fixed `w-16 h-16` (64px) with `ICON_SIZE=32` lucide icons, matching the deliberate user-chosen "doubled from 32px" sizing in place before phase 10 began.
 
-- **src/Grid/ActionBar.tsx**
-  - Removed `const ICON_SIZE = 32` and the `w-16 h-16` Tailwind size classes from `btnClass`
-  - Added `btnStyle: React.CSSProperties` with `width/height: 'clamp(28px, 2.2vw, 36px)'`
-  - Added `iconStyle: React.CSSProperties` with `width/height: 'clamp(16px, 1.4vw, 20px)'`
-  - Applied `style={btnStyle}` to all 7 button sites (drag handle, upload, split H, split V, toggle fit, clear media, remove cell)
-  - Replaced `size={ICON_SIZE}` with `style={iconStyle}` on all lucide icons (`GripVertical`, `Upload`, `SplitSquareHorizontal`, `SplitSquareVertical`, `Minimize2`, `Maximize2`, `ImageOff`, `Trash2` — 8 icon invocations since the fit-toggle ternary renders two distinct icon variants)
-  - No dependency, import, or handler changes
+## Course-Correction History
 
-- **src/Grid/__tests__/ActionBar.test.tsx**
-  - Test 2 rewritten to match the re-landed clamp() shape: asserts fixed `w-16`/`h-16`/`w-8`/`h-8` classes are absent (the stale test asserted their presence per the reverted behavior)
+This plan went through three states before landing:
 
-## Viewport Math
+1. **Initial execution (commit `d499339`):** Applied `clamp(28px, 2.2vw, 36px)` per PLAN.md, on the assumption that yesterday's gsd:quick revert (`1967219`) was a regression caused by the v1.1 audit. Tests updated to assert clamp() shape.
 
-- At 1024px viewport: 2.2vw = 22.5px → clamped up to 28px floor
-- At 3840px viewport: 2.2vw = 84.5px → clamped down to 36px ceiling
-- Icons track proportionally: 16px at 1024px, 20px at 3840px
+2. **User feedback during human-verification:** "The buttons in ActionBar are minuscule and unusable." Root cause: the v1.1 audit was wrong. Yesterday's gsd:quick (`1967219`) deliberately reverted clamp() because the new portal architecture (`createPortal` to `document.body`) renders the ActionBar in viewport space, outside the canvas transform — scale compensation is unnecessary, and clamp() at typical viewports produces unusably small buttons (2.2vw @ 1280px ≈ 28px floor).
 
-## Verification
+3. **Revert + restore (commits `b9796fb` → `9e952d8` → `9e70c48`):**
+   - `b9796fb` reverted `d499339` (clamp() → restored prior `w-16 h-16` / `ICON_SIZE=32`)
+   - `9e952d8` momentarily matched yesterday's `w-8 h-8` / `ICON_SIZE=16`
+   - `9e70c48` bumped to final `w-16 h-16` / `ICON_SIZE=32` per user request — buttons need to be large enough to be usable; portal means fixed sizing is the right architectural choice.
 
-- `grep -c "clamp(28px, 2.2vw, 36px)" src/Grid/ActionBar.tsx` → 2
-- `grep -c "clamp(16px, 1.4vw, 20px)" src/Grid/ActionBar.tsx` → 2
-- `grep "w-16 h-16" src/Grid/ActionBar.tsx` → no matches
-- `grep "ICON_SIZE" src/Grid/ActionBar.tsx` → no matches
-- `grep -c "style={btnStyle}" src/Grid/ActionBar.tsx` → 7 (exact per plan)
-- `grep -c "style={iconStyle}" src/Grid/ActionBar.tsx` → 8 (7 sites, +1 for the fit-toggle ternary rendering both Minimize2 and Maximize2)
-- `npx tsc --noEmit` → exit 0
-- `npm test -- --run` → 489 passed, 2 skipped (43 test files, all green)
+## Final State
 
-## Deviations from Plan
+- `src/Grid/ActionBar.tsx:50` — `const ICON_SIZE = 32`
+- `src/Grid/ActionBar.tsx:51` — `const btnClass = '... w-16 h-16'`
+- `src/Grid/__tests__/ActionBar.test.tsx` Test 2 asserts `w-16` / `h-16` with comment documenting the portal-aware rationale.
 
-### Auto-fixed Issues
+## Acceptance vs Plan
 
-**1. [Rule 1 - Bug] Updated ActionBar.test.tsx Test 2 to match re-landed behavior**
+The original plan's success criteria (clamp() values, viewport-extreme math) were based on the faulty audit premise and are **superseded**. The actual phase-level success criterion CELL-02 is now met by:
 
-- **Found during:** Task 1 verification (`npm test -- --run`)
-- **Issue:** `ActionBar.test.tsx` Test 2 (from plan 07-01) asserted `btn.className` contains `w-16` and `h-16`. That assertion was written for the reverted-state code (commit 1476df2); re-landing clamp() sizing legitimately removes those classes.
-- **Fix:** Rewrote Test 2 to assert the fixed size classes are absent. jsdom's CSSOM strips `clamp()` values during inline-style parsing, so a direct computed-style check is not possible in jsdom; clamp() presence is verified via the plan's source-level grep criteria instead (matching the pattern in `LeafNode.test.tsx` Test 3 which has the same jsdom limitation).
-- **Files modified:** `src/Grid/__tests__/ActionBar.test.tsx`
-- **Commit:** d499339
+- Fixed sizing in viewport-space portal → buttons are stable across viewport widths by construction (no calc, no clamp, no scale dependency)
+- 64px target size → comfortable click target on all supported viewports
+- Portal architecture → no per-cell stacking-context interference (also satisfies CELL-01)
 
-### Acceptance Criterion Note
+## Tests
 
-The plan specified `grep -c "style={iconStyle}" ... returns exactly 7`. The file contains **8** matches because the fit-toggle tooltip (site #5) renders either `<Minimize2 style={iconStyle} />` or `<Maximize2 style={iconStyle} />` via a ternary — two distinct icon JSX elements at a single site. The spirit of the criterion ("every lucide icon has iconStyle") is satisfied; this is an inherent property of the ternary pattern in the existing ActionBar.tsx, not a deviation from intent.
+- `src/Grid/__tests__/ActionBar.test.tsx` — 4 tests pass
+- Full vitest suite — 489 passed / 2 skipped / 0 failed across 43 files
+- `npx tsc --noEmit` — clean
 
-## Known Stubs
+## Commits
 
-None.
+- `d499339` feat(10-01): re-land CELL-02 clamp()-based ActionBar sizing *(reverted)*
+- `6f8db9d` docs(10-01): complete ActionBar clamp sizing plan *(superseded)*
+- `b9796fb` Revert "feat(10-01): re-land CELL-02 clamp()-based ActionBar sizing"
+- `9e952d8` fix(10-01): restore portal-aware w-8 h-8 ActionBar sizing
+- `9e70c48` fix(10-01): bump ActionBar to w-16 h-16 (64px) for usable button targets
 
-## Self-Check: PASSED
+## Lessons (for future audits)
 
-- `src/Grid/ActionBar.tsx` — modified, grep criteria satisfied
-- `src/Grid/__tests__/ActionBar.test.tsx` — modified
-- Commit `d499339` — found in `git log`
-- Full test suite: 489 passed / 2 skipped / 0 failed
+The v1.1 milestone audit flagged 1967219's clamp removal as "CELL-02 regression". It wasn't — it was an architectural improvement. **Audit gap-closure plans must verify the prior commit's commit message and rationale before assuming a "revert" was unintentional.** A diff-only audit cannot distinguish a regression from a deliberate architectural pivot.

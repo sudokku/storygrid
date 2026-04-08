@@ -270,6 +270,75 @@ export function swapLeafContent(root: GridNode, idA: string, idB: string): GridN
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 9: moveLeafToEdge — pure two-pass move primitive
+// ---------------------------------------------------------------------------
+
+export type MoveEdge = 'top' | 'bottom' | 'left' | 'right';
+
+/**
+ * Pure two-pass move of a leaf's content into a new 50/50 container at the
+ * target cell's edge.
+ *   Pass 1: wrap `toId` in a new container holding [newLeaf(sourceContent), toNode]
+ *           (or reversed per edge).
+ *   Pass 2: remove `fromId` — removeNode handles collapse-upward when the source
+ *           parent is left with a single child.
+ *
+ * No-ops (returns root reference unchanged) when:
+ *   - fromId === toId
+ *   - either id is not found in the tree
+ *   - either referenced node is not a leaf
+ *
+ * Per D-06, source leaf identity is discarded — the inserted leaf gets a fresh id.
+ * Per Pitfall 6 in 09-RESEARCH.md, objectPosition MUST be copied along with the
+ * other content fields.
+ */
+export function moveLeafToEdge(
+  root: GridNode,
+  fromId: string,
+  toId: string,
+  edge: MoveEdge,
+): GridNode {
+  if (fromId === toId) return root;
+
+  const sourceNode = findNode(root, fromId);
+  if (!sourceNode || sourceNode.type !== 'leaf') return root;
+  const targetNode = findNode(root, toId);
+  if (!targetNode || targetNode.type !== 'leaf') return root;
+
+  // Capture source content. Identity is discarded; content moves.
+  const sourceContent: Partial<LeafNode> = {
+    mediaId: sourceNode.mediaId,
+    fit: sourceNode.fit,
+    backgroundColor: sourceNode.backgroundColor,
+    panX: sourceNode.panX,
+    panY: sourceNode.panY,
+    panScale: sourceNode.panScale,
+    objectPosition: sourceNode.objectPosition,
+  };
+
+  const direction: SplitDirection =
+    edge === 'top' || edge === 'bottom' ? 'vertical' : 'horizontal';
+  const sourceFirst = edge === 'top' || edge === 'left';
+
+  // New leaf carrying source content (fresh nanoid id via createLeaf).
+  const newLeaf: LeafNode = { ...createLeaf(), ...sourceContent };
+
+  // Pass 1: replace toId with a new 50/50 container wrapping target + new leaf.
+  const pass1 = mapNode(root, toId, (targetLeaf): ContainerNode => ({
+    type: 'container',
+    id: nanoid(),
+    direction,
+    sizes: [1, 1],
+    children: sourceFirst ? [newLeaf, targetLeaf] : [targetLeaf, newLeaf],
+  }));
+
+  // Pass 2: remove the original source leaf. removeNode handles collapse-upward.
+  const pass2 = removeNode(pass1, fromId);
+
+  return pass2;
+}
+
 /**
  * Builds a preset template tree by name.
  */

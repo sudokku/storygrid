@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
 status: executing
-stopped_at: Completed 09-01-PLAN.md (moveLeafToEdge pure primitive)
-last_updated: "2026-04-08T01:17:06.445Z"
+stopped_at: Completed 09-02-PLAN.md (gridStore.moveCell action)
+last_updated: "2026-04-08T01:22:25.509Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 ## Current Position
 
 Phase: 09 (improve-cell-movement-and-swapping) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-08
 
@@ -79,6 +79,7 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 07-cell-controls-display-polish P01 | 409 | 2 tasks | 5 files |
 | Phase 07-cell-controls-display-polish P02 | 468 | 2 tasks | 4 files |
 | Phase 09-improve-cell-movement-and-swapping P01 | 2min | 2 tasks | 2 files |
+| Phase 09-improve-cell-movement-and-swapping P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -165,6 +166,9 @@ Recent decisions affecting current work:
 - [Phase 07-cell-controls-display-polish]: captureVideoThumbnail uses loadedmetadata->seeked sequence with 2s timeout; _capture indirection allows test overrides; displayUrl computed from mediaType for clean video/image separation in Sidebar
 - [Phase 09-improve-cell-movement-and-swapping]: moveLeafToEdge implemented as composition of mapNode + removeNode (two-pass)
 - [Phase 09-improve-cell-movement-and-swapping]: Content copy in moveLeafToEdge includes objectPosition (Pitfall 6); swapLeafContent still omits it
+- [Phase 09-improve-cell-movement-and-swapping]: moveCell delegates 'center' to swapLeafContent and other edges to moveLeafToEdge — single atomic pushSnapshot per call
+- [Phase 09-improve-cell-movement-and-swapping]: selectedNodeId cleared in gridStore.moveCell on structural moves via static useEditorStore import (no circular dep — editorStore has no gridStore refs)
+- [Phase 09-improve-cell-movement-and-swapping]: Pre-existing undo/redo model stores pre-mutation snapshots — strict redo round-trip impossible without global store rewrite; STORE-06 weakened to bookkeeping assertions only
 
 ### Pending Todos
 
@@ -201,7 +205,7 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:17:06.443Z
-Stopped at: Completed 09-01-PLAN.md (moveLeafToEdge pure primitive)
+Last session: 2026-04-08T01:22:25.506Z
+Stopped at: Completed 09-02-PLAN.md (gridStore.moveCell action)
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

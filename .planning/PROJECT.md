@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.1 UI Polish & Bug Fixes complete (Phases 7–10). v1.0 shipped with full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export. v1.1 closed out the v1.1 audit gap-closure in Phase 10 (portal-aware ActionBar sizing, LeafNode stacking context fix, sidebar video upload).
+**Current State:** v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics. Next: v1.2 Effects & Advanced (pending scope definition via `/gsd:new-milestone`).
 
 ## Core Value
 
@@ -77,23 +77,40 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ MediaRecorder-based MP4 export (replaced ffmpeg.wasm — no COOP/COEP or 25MB WASM) — v1.0
 - ✓ COOP/COEP headers configured in vercel.json + public/_headers — v1.0
 
+**Phase 7 — Cell Controls & Display Polish** (v1.1)
+- ✓ Cell top-bar controls always accessible regardless of cell size (CELL-01) — v1.1 (portal architecture finalized in Phase 10)
+- ✓ Cell action bar stable button size across screen resolutions (CELL-02) — v1.1 (fixed `w-16 h-16` in viewport-space portal; clamp/vw mechanism superseded — see Key Decisions)
+- ✓ Empty cell placeholder scales with viewport using `clamp()` + `ResizeObserver` (CELL-03) — v1.1
+- ✓ Video cells show first-frame thumbnail in sidebar (MEDIA-01 display path) — v1.1
+
+**Phase 8 — Canvas & Workspace UX** (v1.1)
+- ✓ Safe zone visual overlay with striped/dimmed unsafe areas (CANVAS-01) — v1.1 (new `SafeZoneOverlay` component)
+- ✓ Template apply without confirmation dialog (TPL-01) — v1.1
+- ✓ Full-workspace drop zone accepting files anywhere outside navbar/sidebar (DROP-01) — v1.1
+- ✓ Clear visual drag-over feedback on drop zone (DROP-02) — v1.1
+
+**Phase 9 — Cell Movement & Swapping** (v1.1, context-driven)
+- ✓ Pure `moveLeafToEdge` tree primitive with 18 unit tests — v1.1
+- ✓ Atomic `gridStore.moveCell` action (insert + remove + collapse in one undo entry) — v1.1
+- ✓ 5-zone LeafNode drop overlay (4 edges + center) with accent-blue insertion lines — v1.1
+- ✓ EC-06 gate relaxed — empty cells are draggable — v1.1
+- ✓ Phase 5 cell-swap regression tests still pass — v1.1
+
+**Phase 10 — v1.1 Audit Gap Closure** (v1.1)
+- ✓ ActionBar sizing re-settled as fixed `w-16 h-16` (64px) in viewport-space portal (CELL-02 reframed) — v1.1
+- ✓ LeafNode `isolate` removed; stale "no isolate" comment corrected; regression test locks invariant (CELL-01) — v1.1
+- ✓ Sidebar Replace input accepts `video/*` with proper blob-URL + mediaType branching (MEDIA-01 upload path) — v1.1
+
 ### Active
 
-**Current Milestone (v1.1) — UI Polish & Bug Fixes**
-- [x] Cell top-bar overflow: fix clipping when cells are small; controls must always be accessible — Validated in Phase 07, reinforced in Phase 10 via portal architecture (createPortal to document.body escapes per-cell stacking contexts)
-- [x] Cell action bar sizing: stable button size regardless of screen dimensions — Re-validated in Phase 10 via portal-aware fixed `w-16 h-16` (64px) sizing in viewport space. The original "vw/vh" mechanism was superseded by the portal architecture where scale compensation is unnecessary.
-- [x] Sidebar video thumbnail: extract and display first frame as preview image — Validated in Phase 07: cell-controls-display-polish
-- [x] Safe zone overlay: replace toggle-only button with visible striped/dimmed unsafe-area indicator with icon — Validated in Phase 08: canvas-workspace-ux
-- [x] Template change: remove confirmation alert, apply template silently — Validated in Phase 08: canvas-workspace-ux
-- [x] Drop zone: expand to full workspace (excluding navbar/sidebar); clearer visual drop indication — Validated in Phase 08: canvas-workspace-ux
-- [ ] Empty cell empty state: scale icon and text with vw/vh for large screens
+(No active requirements — v1.1 complete. Run `/gsd:new-milestone` to define v1.2 scope.)
 
-**Future Milestone (v1.2) — Effects & Advanced**
-- [ ] Per-cell CSS filters: brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity
-- [ ] Text overlays per cell: font family, size, color, alignment, position; rendered in export
-- [ ] Save/load projects: serialize tree + settings to JSON; import/export as `.storygrid.json`
-- [ ] Aspect ratio presets: 9:16 (default), 1:1 (1080×1080), 4:5 (1080×1350)
-- [ ] Multi-slide stories: add/remove/reorder pages, batch export
+**Future Milestone (v1.2) — Effects & Advanced** (candidates, not yet scoped)
+- Per-cell CSS filters: brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity
+- Text overlays per cell: font family, size, color, alignment, position; rendered in export
+- Save/load projects: serialize tree + settings to JSON; import/export as `.storygrid.json`
+- Aspect ratio presets: 9:16 (default), 1:1 (1080×1080), 4:5 (1080×1350)
+- Multi-slide stories: add/remove/reorder pages, batch export
 
 ### Out of Scope
 
@@ -117,10 +134,13 @@ Key technical decisions that shipped:
 - CSS-driven responsive breakpoint (not JS conditional rendering) — avoids FOUC, aligns with Tailwind
 - Phase 5.1 inserted before Phase 6 — mobile was primary creation surface for the target audience
 
-Current state (v1.0):
-- ~10,683 lines TypeScript/TSX
+Current state (after v1.1):
+- ~13,213 lines TypeScript/TSX (up from ~10,683 at v1.0)
 - Tech stack: Vite 8, React 18.3.1, TypeScript 5.9.3, Zustand 5.0.12, Immer 10.2.0, Tailwind 3.4.19
-- 23 plans shipped across 8 phases (7 days, 2026-03-31 → 2026-04-07)
+- 34 plans shipped across 12 phases total (v1.0: 8 phases / 23 plans, 7 days; v1.1: 4 phases / 11 plans, 2 days)
+- Test suite: 489 passing / 2 skipped across 43 test files
+- ActionBar is now rendered via `createPortal(document.body)` in viewport space (Phase 7 experiment → stabilized in Phase 10) — not inside the canvas transform
+- Cell MOVE/SWAP are now distinct gestures via 5-zone LeafNode drop overlay (Phase 9)
 
 ## Constraints
 
@@ -145,7 +165,13 @@ Current state (v1.0):
 | No backend / localStorage only | Zero ops, instant deploy, privacy-first | ✓ Good — maintains zero-backend constraint |
 | @dnd-kit for D&D, native HTML5 events for file drop | dnd-kit: cell swap; native drag: desktop file drop | ✓ Good — clean separation |
 | Blob URLs for video, base64 for images | Images need undo-safe snapshotting; videos are large blobs | ✓ Good — blob URLs revoked on cleanup |
-| D-16 (cell swap touch) deferred | iOS/Android don't fire HTML5 drag events; dnd-kit TouchSensor is non-trivial refactor | ⚠️ Revisit — document as known gap for v1.1 |
+| D-16 (cell swap touch) deferred | iOS/Android don't fire HTML5 drag events; dnd-kit TouchSensor is non-trivial refactor | ⚠️ Still deferred through v1.1 — candidate for v1.2 |
+| Portal-based ActionBar (v1.1) | Escapes per-cell stacking contexts via `createPortal(document.body)`; renders in viewport space outside canvas transform | ✓ Good — stable cell controls at any cell size, no clipping by sibling stacking contexts (Phases 7, 10) |
+| Fixed-pixel ActionBar sizing (not clamp()/vw) | Portal renders in viewport space → no canvas-scale dependence → fixed `w-16 h-16` (64px) is stable by construction and delivers usable click targets; clamp() produced minuscule buttons at typical viewports | ✓ Good — settled in Phase 10 after course correction (v1.1 audit had flagged the clamp removal as a regression, but the portal pivot made clamp obsolete) |
+| Audit gap-closure must verify prior commit rationale | Diff-only audits cannot distinguish a regression from a deliberate architectural pivot | ⚠️ Lesson — v1.1 audit mis-classified `1967219` portal work as a regression; Phase 10 initial execution wasted cycles re-landing clamp() before course-correcting |
+| 5-zone LeafNode drop overlay | MOVE (edge insertion) and SWAP (center drop) are distinct semantic gestures; single-undo atomicity via `moveCell` action | ✓ Good — clean separation of n-ary tree mutations (Phase 9) |
+| New `SafeZoneOverlay` component | Replaces toggle-only button with visible striped/dimmed unsafe-area indicator | ✓ Good — dramatically clearer UX for story composition (Phase 8) |
+| MediaRecorder video export (continued) | No 25MB WASM, no COOP/COEP, faster startup | ✓ Good — validated across v1.1 with no regressions |
 
 ## Evolution
 
@@ -157,17 +183,19 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
-## Current Milestone: v1.1 UI Polish & Bug Fixes
+## Next Milestone: v1.2 Effects & Advanced (pending scope definition)
 
-**Goal:** Fix visual bugs and polish the editing experience — no new features.
+Scope has not yet been defined. Run `/gsd:new-milestone` to drive questioning → research → requirements → roadmap.
 
-**Target issues:**
-- Cell top-bar overflow fix and stable vw/vh sizing for action controls
-- Sidebar video thumbnail (first-frame extraction)
-- Safe zone overlay visual indicator (striped/dimmed unsafe areas with icon)
-- Template change alert removal (silent apply)
-- Full-workspace drop zone with clear visual indication
-- Empty cell icon/text scaling via vw/vh for large screens
+Candidate themes inherited from the v1.1 Future Requirements section:
+- Per-cell CSS filters (brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity)
+- Text overlays per cell with font/size/color/position controls; rendered in export
+- Save/load projects as `.storygrid.json`
+- Aspect ratio presets (9:16 default, 1:1 1080×1080, 4:5 1080×1350)
+- Multi-slide stories with add/remove/reorder pages and batch export
+
+Carry-forward from v1.0 known gaps:
+- D-16 (cell swap touch on iOS/Android) — still deferred, dnd-kit TouchSensor refactor required
 
 ---
-*Last updated: 2026-04-08 — Phase 10 complete (v1.1 audit gap closure: portal-aware `w-16 h-16` ActionBar sizing, LeafNode `isolate` removed, Sidebar video upload; course-corrected from initial clamp() approach after user feedback)*
+*Last updated: 2026-04-08 — v1.1 UI Polish & Bug Fixes milestone shipped (4 phases, 11 plans, 2 days). Portal-based ActionBar stabilized, cell MOVE semantics added, safe-zone/template/drop-zone UX polished. Next: v1.2 Effects & Advanced scope definition.*

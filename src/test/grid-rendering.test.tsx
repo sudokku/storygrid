@@ -229,15 +229,23 @@ describe('Per-node memo and selectors (REND-09)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// REND-10: Safari isolation fix
+// CELL-01 (Phase 10, v1.1 audit): supersedes REND-10
+//
+// The prior REND-10 test asserted that LeafNode had Tailwind `isolate` on
+// the root to create a per-cell stacking context. The Phase 10 audit showed
+// this traps the z-50 ActionBar wrapper inside the cell and clips it at
+// sibling boundaries at small cell sizes. CELL-01 removes `isolate` so the
+// ActionBar can escape per-cell stacking. This test asserts the CELL-01
+// invariant: LeafNode root must NOT include `isolate`.
 // ---------------------------------------------------------------------------
 
-describe('Safari isolation fix (REND-10)', () => {
-  it('LeafNode wrapper has isolation: isolate (Tailwind isolate class)', () => {
+describe('ActionBar stacking context (CELL-01)', () => {
+  it('LeafNode root does NOT include Tailwind `isolate` class', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
     render(<LeafNodeComponent id="leaf-1" />);
     const leafEl = screen.getByTestId('leaf-leaf-1');
-    expect(leafEl.className).toContain('isolate');
+    // Match whole-word `isolate` only (avoid false positives from e.g. `isolated`)
+    expect(leafEl.className).not.toMatch(/\bisolate\b/);
   });
 });

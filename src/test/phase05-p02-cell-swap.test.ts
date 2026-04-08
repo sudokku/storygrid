@@ -6,7 +6,7 @@
  * - swapCells store action swaps media content between two leaves
  * - swapCells pushes to undo history (historyIndex increments)
  * - ActionBar renders GripVertical drag handle when hasMedia=true
- * - ActionBar does NOT render drag handle when hasMedia=false
+ * - ActionBar renders drag handle even when hasMedia=false (EC-06: gate relaxed in Phase 9)
  * - DndContext onDragEnd calls swapCells for different nodes
  * - DndContext onDragEnd does nothing when dropped on same cell
  */
@@ -164,7 +164,7 @@ describe('ActionBar drag handle (D-13, D-14)', () => {
     expect(screen.getByTestId('drag-handle-leaf-1')).toBeInTheDocument();
   });
 
-  it('does NOT render drag handle button when hasMedia=false', () => {
+  it('renders drag handle on empty cells (EC-06: gate relaxed in Phase 9)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: null });
     setGridState(leaf);
 
@@ -177,10 +177,12 @@ describe('ActionBar drag handle (D-13, D-14)', () => {
       })
     );
 
-    expect(screen.queryByTestId('drag-handle-leaf-1')).toBeNull();
+    expect(screen.queryByTestId('drag-handle-leaf-1')).not.toBeNull();
+    const handle = screen.getByTestId('drag-handle-leaf-1');
+    expect(handle).toHaveAttribute('draggable', 'true');
   });
 
-  it('drag handle button has aria-label "Drag to swap"', () => {
+  it('drag handle button has aria-label "Drag to move"', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,x' });
 
@@ -193,6 +195,6 @@ describe('ActionBar drag handle (D-13, D-14)', () => {
       })
     );
 
-    expect(screen.getByTestId('drag-handle-leaf-1')).toHaveAttribute('aria-label', 'Drag to swap');
+    expect(screen.getByTestId('drag-handle-leaf-1')).toHaveAttribute('aria-label', 'Drag to move');
   });
 });

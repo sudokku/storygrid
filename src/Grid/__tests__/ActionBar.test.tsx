@@ -88,7 +88,7 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Drag to swap' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drag to move' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Replace image' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Split horizontal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Split vertical' })).toBeInTheDocument();

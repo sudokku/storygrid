@@ -75,7 +75,7 @@
   - [x] 09-01-PLAN.md — Pure `moveLeafToEdge` tree primitive + 18 unit tests (Wave 1, independent)
   - [x] 09-02-PLAN.md — `gridStore.moveCell` atomic action + 9 store tests (Wave 2, depends on 09-01)
   - [ ] 09-03-PLAN.md — LeafNode 5-zone hit detection + insertion-line/swap overlay + moveCell dispatch (Wave 3, depends on 09-02)
-  - [ ] 09-04-PLAN.md — ActionBar gate relaxation (EC-06) + Phase 5 regression test update (Wave 3, parallel with 09-03)
+  - [x] 09-04-PLAN.md — ActionBar gate relaxation (EC-06) + Phase 5 regression test update (Wave 3, parallel with 09-03)
 **Branch discipline**: runs directly on `main` (D-09 — no worktree, no feature branch)
 **UI hint**: yes
 

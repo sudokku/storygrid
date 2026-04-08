@@ -559,7 +559,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     <div
       ref={divRef}
       className={`
-        relative w-full h-full isolate overflow-visible select-none
+        relative w-full h-full overflow-visible select-none
         ${isHovered && !isPanMode ? 'z-20' : ''}
         ${ringClass}
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
@@ -677,6 +677,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         is not subject to overflow:hidden. Cell root is overflow-visible and has
         no `isolate`, so z-50 escapes per-cell stacking and paints above any
         neighbouring sibling cell the bar overflows into.
+
+        CELL-01 (Phase 10, v1.1 audit): do NOT re-introduce `isolate` on the root
+        div. `isolate` creates a per-cell stacking context that traps the z-50
+        ActionBar wrapper inside the cell and clips it at sibling boundaries at
+        small cell sizes. The audit flagged this as a real-browser regression
+        risk even though jsdom could not detect it.
       */}
       {isHovered && !isPanMode && (
         <div

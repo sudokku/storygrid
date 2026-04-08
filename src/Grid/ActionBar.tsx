@@ -47,8 +47,18 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
     }
   }, [removeMedia, updateCell, nodeId, mediaId]);
 
-  const ICON_SIZE = 32; // logical icon size (kept as number for lucide)
-  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors w-16 h-16';
+  // CELL-02: viewport-stable sizing via clamp() — re-landed after 1476df2 revert.
+  // Buttons scale linearly with viewport width between a 28px floor (small laptop)
+  // and a 36px ceiling (4K display). Icons scale proportionally.
+  const btnStyle: React.CSSProperties = {
+    width: 'clamp(28px, 2.2vw, 36px)',
+    height: 'clamp(28px, 2.2vw, 36px)',
+  };
+  const iconStyle: React.CSSProperties = {
+    width: 'clamp(16px, 1.4vw, 20px)',
+    height: 'clamp(16px, 1.4vw, 20px)',
+  };
+  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors';
 
   return (
     <TooltipProvider delay={300}>
@@ -64,40 +74,41 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
             e.dataTransfer.setData('text/cell-id', nodeId);
             e.dataTransfer.effectAllowed = 'move';
           }}
+          style={btnStyle}
           className={`${btnClass} cursor-grab active:cursor-grabbing`}
           aria-label="Drag to move"
           title="Drag to move"
           data-testid={`drag-handle-${nodeId}`}
         >
-          <GripVertical size={ICON_SIZE} className="text-white" />
+          <GripVertical style={iconStyle} className="text-white" />
         </button>
 
         <Tooltip>
-          <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>
-            <Upload size={ICON_SIZE} className="text-white" />
+          <TooltipTrigger render={<button style={btnStyle} className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>
+            <Upload style={iconStyle} className="text-white" />
           </TooltipTrigger>
           <TooltipContent side="bottom">{hasMedia ? 'Replace image' : 'Upload image'}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={<button className={btnClass} onClick={handleSplitH} aria-label="Split horizontal" />}>
-            <SplitSquareHorizontal size={ICON_SIZE} className="text-white" />
+          <TooltipTrigger render={<button style={btnStyle} className={btnClass} onClick={handleSplitH} aria-label="Split horizontal" />}>
+            <SplitSquareHorizontal style={iconStyle} className="text-white" />
           </TooltipTrigger>
           <TooltipContent side="bottom">Split horizontal</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={<button className={btnClass} onClick={handleSplitV} aria-label="Split vertical" />}>
-            <SplitSquareVertical size={ICON_SIZE} className="text-white" />
+          <TooltipTrigger render={<button style={btnStyle} className={btnClass} onClick={handleSplitV} aria-label="Split vertical" />}>
+            <SplitSquareVertical style={iconStyle} className="text-white" />
           </TooltipTrigger>
           <TooltipContent side="bottom">Split vertical</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={<button className={btnClass} onClick={handleToggleFit} aria-label={fit === 'cover' ? 'Switch to contain' : 'Switch to cover'} />}>
+          <TooltipTrigger render={<button style={btnStyle} className={btnClass} onClick={handleToggleFit} aria-label={fit === 'cover' ? 'Switch to contain' : 'Switch to cover'} />}>
             {fit === 'cover'
-              ? <Minimize2 size={ICON_SIZE} className="text-white" />
-              : <Maximize2 size={ICON_SIZE} className="text-white" />
+              ? <Minimize2 style={iconStyle} className="text-white" />
+              : <Maximize2 style={iconStyle} className="text-white" />
             }
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -107,16 +118,16 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
 
         {hasMedia && (
           <Tooltip>
-            <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleClearMedia} aria-label="Clear media" />}>
-              <ImageOff size={ICON_SIZE} className="text-white" />
+            <TooltipTrigger render={<button style={btnStyle} className={`${btnClass} hover:bg-red-500/20`} onClick={handleClearMedia} aria-label="Clear media" />}>
+              <ImageOff style={iconStyle} className="text-white" />
             </TooltipTrigger>
             <TooltipContent side="bottom">Clear media</TooltipContent>
           </Tooltip>
         )}
 
         <Tooltip>
-          <TooltipTrigger render={<button className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
-            <Trash2 size={ICON_SIZE} className="text-red-500" />
+          <TooltipTrigger render={<button style={btnStyle} className={`${btnClass} hover:bg-red-500/20`} onClick={handleRemove} aria-label="Remove cell" />}>
+            <Trash2 style={iconStyle} className="text-red-500" />
           </TooltipTrigger>
           <TooltipContent side="bottom">Remove cell</TooltipContent>
         </Tooltip>

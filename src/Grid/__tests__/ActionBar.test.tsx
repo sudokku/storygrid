@@ -54,17 +54,23 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     expect(bar.className).toContain('gap-1');
   });
 
-  it('Test 2: Buttons use fixed w-16 h-16 sizing', () => {
-    // ActionBar lives inside the cell as a sibling of the canvas-clip wrapper.
-    // Buttons use fixed 64px sizing (doubled from prior 32px per user request) —
-    // they scale visually with canvas zoom along with everything else on the canvas.
+  it('Test 2: Buttons use viewport-stable clamp() sizing (CELL-02 re-landed post-1476df2)', () => {
+    // Phase 10 re-lands Phase 7 CELL-02: buttons are sized via clamp(28px, 2.2vw, 36px)
+    // through inline style (not Tailwind size classes). This keeps action buttons
+    // within a 28–36px range from a small laptop (1024px) to a 4K display (3840px).
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
     const buttons = screen.getAllByRole('button');
     for (const btn of buttons) {
-      expect(btn.className).toContain('w-16');
-      expect(btn.className).toContain('h-16');
+      // No fixed Tailwind size classes — sizing is moved to inline clamp() style.
+      // jsdom's CSSOM drops unparseable clamp() values entirely, so we verify
+      // the Tailwind fixed sizes are gone and rely on the source-level grep
+      // acceptance criteria (plan 10-01) to verify the clamp() expressions.
+      expect(btn.className).not.toContain('w-16');
+      expect(btn.className).not.toContain('h-16');
+      expect(btn.className).not.toContain('w-8');
+      expect(btn.className).not.toContain('h-8');
     }
     // Also verify the bar itself still renders (structural integrity)
     expect(screen.getByTestId('action-bar-leaf-1')).toBeInTheDocument();

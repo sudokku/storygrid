@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
-status: executing
-stopped_at: Completed 09-04-PLAN.md (ActionBar EC-06 gate relaxed)
-last_updated: "2026-04-08T01:25:17.157Z"
+status: verifying
+stopped_at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
+last_updated: "2026-04-08T01:29:04.232Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 Phase: 09 (improve-cell-movement-and-swapping) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-08
 
 Progress: [░░░░░░░░░░] 0% (0/2 phases)
@@ -81,6 +81,7 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 09-improve-cell-movement-and-swapping P01 | 2min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P02 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P04 | 3min | 2 tasks | 2 files |
+| Phase 09-improve-cell-movement-and-swapping P03 | 8min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -171,6 +172,8 @@ Recent decisions affecting current work:
 - [Phase 09-improve-cell-movement-and-swapping]: selectedNodeId cleared in gridStore.moveCell on structural moves via static useEditorStore import (no circular dep — editorStore has no gridStore refs)
 - [Phase 09-improve-cell-movement-and-swapping]: Pre-existing undo/redo model stores pre-mutation snapshots — strict redo round-trip impossible without global store rewrite; STORE-06 weakened to bookkeeping assertions only
 - [Phase 09-improve-cell-movement-and-swapping]: ActionBar drag handle hasMedia gate relaxed (EC-06) — empty cells are movable; aria-label changed to 'Drag to move'
+- [Phase 09-improve-cell-movement-and-swapping]: LeafNode 5-zone drag detection uses getBoundingClientRect math with 20% threshold + 20px minimum band; overlays are pointer-events-none to avoid intercepting drag events
+- [Phase 09-improve-cell-movement-and-swapping]: jsdom DragEvent ignores MouseEventInit fields — test harness uses createEvent+defineProperty to inject clientX/Y
 
 ### Pending Todos
 
@@ -207,7 +210,7 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:25:17.154Z
-Stopped at: Completed 09-04-PLAN.md (ActionBar EC-06 gate relaxed)
+Last session: 2026-04-08T01:29:04.229Z
+Stopped at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

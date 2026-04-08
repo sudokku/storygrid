@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.1 in progress. v1.0 shipped with full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export. v1.1 focuses on visual bug fixes and UX polish.
+**Current State:** v1.1 UI Polish & Bug Fixes complete (Phases 7–10). v1.0 shipped with full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export. v1.1 closed out the v1.1 audit gap-closure in Phase 10 (portal-aware ActionBar sizing, LeafNode stacking context fix, sidebar video upload).
 
 ## Core Value
 
@@ -80,8 +80,8 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 ### Active
 
 **Current Milestone (v1.1) — UI Polish & Bug Fixes**
-- [x] Cell top-bar overflow: fix clipping when cells are small; controls must always be accessible — Validated in Phase 07: cell-controls-display-polish
-- [x] Cell action bar sizing: stable vw/vh-based size regardless of screen dimensions — Validated in Phase 07: cell-controls-display-polish
+- [x] Cell top-bar overflow: fix clipping when cells are small; controls must always be accessible — Validated in Phase 07, reinforced in Phase 10 via portal architecture (createPortal to document.body escapes per-cell stacking contexts)
+- [x] Cell action bar sizing: stable button size regardless of screen dimensions — Re-validated in Phase 10 via portal-aware fixed `w-16 h-16` (64px) sizing in viewport space. The original "vw/vh" mechanism was superseded by the portal architecture where scale compensation is unnecessary.
 - [x] Sidebar video thumbnail: extract and display first frame as preview image — Validated in Phase 07: cell-controls-display-polish
 - [x] Safe zone overlay: replace toggle-only button with visible striped/dimmed unsafe-area indicator with icon — Validated in Phase 08: canvas-workspace-ux
 - [x] Template change: remove confirmation alert, apply template silently — Validated in Phase 08: canvas-workspace-ux
@@ -170,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Empty cell icon/text scaling via vw/vh for large screens
 
 ---
-*Last updated: 2026-04-08 — Phase 09 complete (cell movement and swapping: moveLeafToEdge primitive, atomic moveCell action, 5-zone LeafNode overlay, empty-cell drag handle)*
+*Last updated: 2026-04-08 — Phase 10 complete (v1.1 audit gap closure: portal-aware `w-16 h-16` ActionBar sizing, LeafNode `isolate` removed, Sidebar video upload; course-corrected from initial clamp() approach after user feedback)*

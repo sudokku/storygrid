@@ -2,8 +2,8 @@
 phase: 10-restore-cell-controls-sizing-stacking
 verified: 2026-04-08T17:08:00Z
 revised: 2026-04-08T17:08:00Z
-status: human_needed
-score: 6/6 success criteria reframed and verified in code; 1 real-browser check (CELL-01 stacking) pending
+status: passed
+score: 6/6 — all success criteria verified (5 automated + 1 user-confirmed in-browser)
 human_verification:
   - test: "Flow F: split a cell down to ~80px tall, hover the small cell in Chrome/Firefox/Safari 15+"
     expected: "ActionBar paints above sibling cells without being clipped at the cell boundary (portal escapes per-cell stacking contexts)"

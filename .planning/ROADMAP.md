@@ -113,4 +113,4 @@
 | 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
 | 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |
 | 9. Improve cell movement and swapping | v1.1 | 0/4 | Planned | - |
-| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete   | 2026-04-08 |
+| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete    | 2026-04-08 |

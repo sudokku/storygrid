@@ -231,14 +231,26 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
       if (files.length === 0) return;
 
       if (files.length === 1 && node?.mediaId) {
-        // Single file when cell already has media: replace only this cell
+        // Single file when cell already has media: replace only this cell.
+        // Supports both image (base64 per MEDI-03) and video (blob URL) —
+        // mirrors autoFillCells branching so the sidebar Replace button
+        // matches ActionBar / drag-drop behavior (MEDIA-01, Phase 10 audit).
+        const file = files[0];
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          return;
+        }
         const mediaId = node.mediaId;
-        const { fileToBase64 } = await import('../lib/media');
-        const dataUri = await fileToBase64(files[0]);
         removeMedia(mediaId);
         const { nanoid } = await import('nanoid');
         const newId = nanoid();
-        addMedia(newId, dataUri);
+        if (file.type.startsWith('video/')) {
+          const blobUrl = URL.createObjectURL(file);
+          addMedia(newId, blobUrl, 'video');
+        } else {
+          const { fileToBase64 } = await import('../lib/media');
+          const dataUri = await fileToBase64(file);
+          addMedia(newId, dataUri, 'image');
+        }
         setMedia(nodeId, newId);
       } else {
         // Multi-file or empty cell: use autoFillCells
@@ -397,7 +409,7 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         className="hidden"
         onChange={handleFileChange}

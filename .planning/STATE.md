@@ -190,6 +190,7 @@ None yet.
 
 - Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
 - v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
+- Phase 9 added: Improve cell movement and swapping (2026-04-08)
 
 ### Blockers/Concerns
 

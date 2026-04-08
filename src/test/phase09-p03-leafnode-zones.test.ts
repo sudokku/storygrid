@@ -18,7 +18,7 @@
  *   swap-overlay-{id}
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, createEvent, cleanup } from '@testing-library/react';
 import React from 'react';
 import { LeafNodeComponent } from '../Grid/LeafNode';
 import { useGridStore } from '../store/gridStore';
@@ -98,20 +98,44 @@ function renderTargetLeaf() {
   return render(React.createElement(LeafNodeComponent, { id: LEAF_ID }));
 }
 
+/**
+ * jsdom's DragEvent does not honor MouseEventInit fields (clientX/Y end up as 0).
+ * Workaround: build the event normally, then defineProperty the coordinates before
+ * dispatching. DataTransfer is also patched directly because jsdom lacks DataTransfer.
+ */
+function fireDragEventWithCoords(
+  kind: 'dragOver' | 'drop',
+  el: Element,
+  clientX: number,
+  clientY: number,
+  dt: ReturnType<typeof makeDataTransfer>,
+) {
+  const event = createEvent[kind](el, { dataTransfer: dt as unknown as DataTransfer });
+  Object.defineProperty(event, 'clientX', { value: clientX });
+  Object.defineProperty(event, 'clientY', { value: clientY });
+  // createEvent already sets dataTransfer; ensure it is our mock (not wrapped into jsdom's).
+  Object.defineProperty(event, 'dataTransfer', { value: dt });
+  fireEvent(el, event);
+}
+
 function fireCellDragOver(el: Element, clientX: number, clientY: number) {
-  fireEvent.dragOver(el, {
+  fireDragEventWithCoords(
+    'dragOver',
+    el,
     clientX,
     clientY,
-    dataTransfer: makeDataTransfer(['text/cell-id'], { 'text/cell-id': SOURCE_ID }),
-  });
+    makeDataTransfer(['text/cell-id'], { 'text/cell-id': SOURCE_ID }),
+  );
 }
 
 function fireCellDrop(el: Element, clientX: number, clientY: number, fromId = SOURCE_ID) {
-  fireEvent.drop(el, {
+  fireDragEventWithCoords(
+    'drop',
+    el,
     clientX,
     clientY,
-    dataTransfer: makeDataTransfer(['text/cell-id'], { 'text/cell-id': fromId }),
-  });
+    makeDataTransfer(['text/cell-id'], { 'text/cell-id': fromId }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -234,11 +258,7 @@ describe('LeafNode file drop coexistence (EC-12)', () => {
     renderTargetLeaf();
     const leafEl = screen.getByTestId(`leaf-${LEAF_ID}`);
 
-    fireEvent.dragOver(leafEl, {
-      clientX: 200,
-      clientY: 10,
-      dataTransfer: makeDataTransfer(['Files']),
-    });
+    fireDragEventWithCoords('dragOver', leafEl, 200, 10, makeDataTransfer(['Files']));
 
     // None of the 5-zone overlays should appear.
     expect(screen.queryByTestId(`edge-line-top-${LEAF_ID}`)).toBeNull();

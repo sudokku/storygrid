@@ -6,7 +6,7 @@ import { autoFillCells } from '../lib/media';
 import { loadImage, drawLeafToCanvas } from '../lib/export';
 import { videoElementRegistry, registerVideo, unregisterVideo } from '../lib/videoRegistry';
 import type { LeafNode } from '../types';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, ArrowLeftRight } from 'lucide-react';
 import { ActionBar } from './ActionBar';
 
 interface LeafNodeProps {
@@ -43,13 +43,16 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
   const isPlaying = useEditorStore(s => s.isPlaying);
+  const canvasScale = useEditorStore(s => s.canvasScale);
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
   const updateCell = useGridStore(s => s.updateCell);
-  const swapCells = useGridStore(s => s.swapCells);
+  const moveCell = useGridStore(s => s.moveCell);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  type ActiveZone = 'top' | 'bottom' | 'left' | 'right' | 'center' | null;
+  const [activeZone, setActiveZone] = useState<ActiveZone>(null);
   const [isTooSmall, setIsTooSmall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
@@ -415,27 +418,54 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     e.preventDefault();
     const isCellDrag = Array.from(e.dataTransfer.types).includes('text/cell-id');
     e.dataTransfer.dropEffect = isCellDrag ? 'move' : 'copy';
-    setIsDragOver(true);
+
+    if (isCellDrag) {
+      // Phase 9 D-01: 5-zone hit detection during cell-to-cell drag.
+      const rect = divRef.current?.getBoundingClientRect();
+      if (rect) {
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+        // 20% of short dimension, minimum 20px physical band so small cells stay usable.
+        const threshold = Math.max(20, Math.min(w, h) * 0.2);
+        let zone: ActiveZone;
+        if (y < threshold) zone = 'top';
+        else if (y > h - threshold) zone = 'bottom';
+        else if (x < threshold) zone = 'left';
+        else if (x > w - threshold) zone = 'right';
+        else zone = 'center';
+        setActiveZone(zone);
+      }
+      // Do NOT set isDragOver for cell drags — that is the file-drop indicator.
+    } else {
+      // File drag — preserve existing behavior.
+      setIsDragOver(true);
+    }
   }, []);
 
   const handleDragLeave = useCallback(() => {
     setIsDragOver(false);
+    setActiveZone(null);
   }, []);
 
   const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    const zoneAtDrop = activeZone;
+    setActiveZone(null);
 
     // D-16 (MVP scope): Cell swap uses native HTML5 drag events (dataTransfer text/cell-id).
     // Native HTML5 drag events do not fire on iOS/Android touch — cell swap is desktop-only.
-    // To support touch, a DndContext with useSensor(TouchSensor) would need to wrap the grid
-    // and the drag-handle approach would need to switch from native ondragstart to useDraggable.
-    // Deferred to post-MVP. See .planning/decisions/adr-cell-swap-touch.md
-    // Cell swap comes first — drag handle sets text/cell-id
+    // See .planning/decisions/adr-cell-swap-touch.md
+    //
+    // Phase 9 D-04: Drop routing goes through moveCell (not swapCells directly). The
+    // 'center' edge delegates to swap semantics inside the store; other edges perform a
+    // structural move via moveLeafToEdge.
     const fromId = e.dataTransfer.getData('text/cell-id');
     if (fromId && fromId !== id) {
-      swapCells(fromId, id);
+      moveCell(fromId, id, zoneAtDrop ?? 'center');
       return;
     }
 
@@ -449,7 +479,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         getRoot: () => useGridStore.getState().root,
       });
     }
-  }, [id, swapCells, addMedia, setMedia, split]);
+  }, [id, activeZone, moveCell, addMedia, setMedia, split]);
 
   // Fix: setPointerCapture on the wrapper div, not e.target
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -593,9 +623,53 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {isPanModeOtherCell && (
         <div className="absolute inset-0 bg-black/65 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
       )}
-      {/* Drop target highlight (cell swap or file drag) */}
+      {/* Drop target highlight (file drag only — cell drags use the 5-zone overlays below) */}
       {isDragOver && (
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
+      )}
+
+      {/*
+        Phase 9 D-02: 5-zone drop overlays during cell-to-cell drag.
+        - Edge zones render a thick accent-blue insertion line (scale-stable via 1/canvasScale).
+        - Center zone renders a dimmed swap overlay with an icon.
+        - pointer-events-none prevents overlays from stealing dragover/drop events (Pitfall 4).
+      */}
+      {activeZone === 'top' && (
+        <div
+          data-testid={`edge-line-top-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, left: 0, right: 0, height: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'bottom' && (
+        <div
+          data-testid={`edge-line-bottom-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ bottom: 0, left: 0, right: 0, height: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'left' && (
+        <div
+          data-testid={`edge-line-left-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, bottom: 0, left: 0, width: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'right' && (
+        <div
+          data-testid={`edge-line-right-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, bottom: 0, right: 0, width: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'center' && (
+        <div
+          data-testid={`swap-overlay-${id}`}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+        >
+          <ArrowLeftRight size={32 / canvasScale} className="text-white" />
+        </div>
       )}
 
       {/*

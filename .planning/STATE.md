@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
-status: verifying
-stopped_at: Phase 8 context gathered
-last_updated: "2026-04-08T00:00:00.000Z"
+status: executing
+stopped_at: Completed 09-01-PLAN.md (moveLeafToEdge pure primitive)
+last_updated: "2026-04-08T01:17:06.445Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 9
+  completed_plans: 6
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Phase 07 — cell-controls-display-polish
+**Current focus:** Phase 09 — improve-cell-movement-and-swapping
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-08 - Completed quick task 260408-258: Hide workspace drop ring/pill when dropping into a cell
+Phase: 09 (improve-cell-movement-and-swapping) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-04-08
 
 Progress: [░░░░░░░░░░] 0% (0/2 phases)
 
@@ -78,6 +78,7 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 06-video-support-v2 P04 | 247 | 2 tasks | 6 files |
 | Phase 07-cell-controls-display-polish P01 | 409 | 2 tasks | 5 files |
 | Phase 07-cell-controls-display-polish P02 | 468 | 2 tasks | 4 files |
+| Phase 09-improve-cell-movement-and-swapping P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,8 @@ Recent decisions affecting current work:
 - [Phase 07-cell-controls-display-polish]: ContainerNode child wrapper overflow-hidden removed — was re-clipping ActionBar; canvas clipping moved to inner div in LeafNode
 - [Phase 07-cell-controls-display-polish]: borderRadius moved from LeafNode root div to canvas wrapper div for correct rounded corner clipping
 - [Phase 07-cell-controls-display-polish]: captureVideoThumbnail uses loadedmetadata->seeked sequence with 2s timeout; _capture indirection allows test overrides; displayUrl computed from mediaType for clean video/image separation in Sidebar
+- [Phase 09-improve-cell-movement-and-swapping]: moveLeafToEdge implemented as composition of mapNode + removeNode (two-pass)
+- [Phase 09-improve-cell-movement-and-swapping]: Content copy in moveLeafToEdge includes objectPosition (Pitfall 6); swapLeafContent still omits it
 
 ### Pending Todos
 
@@ -198,7 +201,7 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-08T00:00:00.000Z
-Stopped at: Completed quick-260408-258 (workspace drop overlay cell-drop fix)
-Resume file: .planning/phases/08-canvas-workspace-ux/08-CONTEXT.md
+Last session: 2026-04-08T01:17:06.443Z
+Stopped at: Completed 09-01-PLAN.md (moveLeafToEdge pure primitive)
+Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

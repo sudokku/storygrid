@@ -47,8 +47,8 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
     }
   }, [removeMedia, updateCell, nodeId, mediaId]);
 
-  const ICON_SIZE = 32; // logical icon size (kept as number for lucide)
-  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors w-16 h-16';
+  const ICON_SIZE = 16; // logical icon size (kept as number for lucide)
+  const btnClass = 'flex items-center justify-center rounded hover:bg-white/10 transition-colors w-8 h-8';
 
   return (
     <TooltipProvider delay={300}>

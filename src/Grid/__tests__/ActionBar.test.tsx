@@ -54,17 +54,19 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     expect(bar.className).toContain('gap-1');
   });
 
-  it('Test 2: Buttons use fixed w-16 h-16 sizing', () => {
-    // ActionBar lives inside the cell as a sibling of the canvas-clip wrapper.
-    // Buttons use fixed 64px sizing (doubled from prior 32px per user request) —
-    // they scale visually with canvas zoom along with everything else on the canvas.
+  it('Test 2: Buttons use fixed w-8 h-8 sizing (portal-aware, viewport-space)', () => {
+    // ActionBar renders via createPortal to document.body in viewport space (per quick-260407-q2s).
+    // It does not get scaled by the canvas transform, so it uses fixed 32px button sizing
+    // with 16px lucide icons. Yesterday's portal architecture means clamp/scale compensation
+    // is unnecessary — re-introducing it (Phase 10-01) made buttons unusably small at typical
+    // viewports and was reverted.
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
     const buttons = screen.getAllByRole('button');
     for (const btn of buttons) {
-      expect(btn.className).toContain('w-16');
-      expect(btn.className).toContain('h-16');
+      expect(btn.className).toContain('w-8');
+      expect(btn.className).toContain('h-8');
     }
     // Also verify the bar itself still renders (structural integrity)
     expect(screen.getByTestId('action-bar-leaf-1')).toBeInTheDocument();

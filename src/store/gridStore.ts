@@ -11,7 +11,10 @@ import {
   buildInitialTree,
   getAllLeaves,
   swapLeafContent,
+  moveLeafToEdge,
+  findNode,
 } from '../lib/tree';
+import { useEditorStore } from './editorStore';
 
 // ---------------------------------------------------------------------------
 // Video thumbnail capture helper (MEDIA-01 backend, D-09/D-10)
@@ -101,6 +104,11 @@ type GridStoreState = {
   redo: () => void;
   applyTemplate: (templateRoot: GridNode) => void;
   swapCells: (idA: string, idB: string) => void;
+  moveCell: (
+    fromId: string,
+    toId: string,
+    edge: 'center' | 'top' | 'bottom' | 'left' | 'right',
+  ) => void;
   cleanupStaleBlobMedia: () => void;
 };
 
@@ -312,6 +320,33 @@ export const useGridStore = create<GridStoreState>()(
       set(state => {
         pushSnapshot(state);
         state.root = swapLeafContent(current(state.root), idA, idB);
+      }),
+
+    // Phase 9 D-04/D-05: atomic move of a leaf to a target cell's edge.
+    // edge === 'center' delegates to swapLeafContent (existing swap semantics).
+    // Other edges trigger a structural move via moveLeafToEdge (Plan 01 primitive).
+    // Single pushSnapshot per successful call = one undo entry.
+    moveCell: (fromId, toId, edge) =>
+      set(state => {
+        // No-op guards (D-04 / EC-05). These do NOT push a snapshot.
+        if (fromId === toId) return;
+        const src = findNode(current(state.root), fromId);
+        if (!src || src.type !== 'leaf') return;
+        const tgt = findNode(current(state.root), toId);
+        if (!tgt || tgt.type !== 'leaf') return;
+
+        pushSnapshot(state);
+        if (edge === 'center') {
+          // D-04: center delegates to existing swap semantics.
+          state.root = swapLeafContent(current(state.root), fromId, toId);
+        } else {
+          // D-04/D-05: edge triggers structural move via pure tree primitive.
+          state.root = moveLeafToEdge(current(state.root), fromId, toId, edge);
+          // D-06/EC-18: the source leaf's id is discarded; any selection
+          // pointing at fromId is now stale. Clear it so UI doesn't reference
+          // a non-existent node.
+          useEditorStore.getState().setSelectedNode(null);
+        }
       }),
 
     // D-03: Cleanup stale blob media on app startup. Call from EditorShell on mount.

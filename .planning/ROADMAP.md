@@ -94,6 +94,9 @@
   6. Phase 7 regression tests still pass; new real-browser check (or equivalent) confirms ActionBar visibility at small cell + sibling boundaries
 **Branch discipline**: runs directly on `main` (no worktree, no feature branch)
 **UI hint**: yes
+**Plans:** 2 plans
+  - [ ] 10-01-actionbar-clamp-sizing-PLAN.md — Re-land clamp(28px, 2.2vw, 36px) ActionBar sizing (CELL-02)
+  - [ ] 10-02-leafnode-stacking-sidebar-video-PLAN.md — Remove LeafNode `isolate`, fix stale comment, extend Sidebar accept to video/* (CELL-01, MEDIA-01)
 
 ## Progress
 
@@ -110,4 +113,4 @@
 | 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
 | 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |
 | 9. Improve cell movement and swapping | v1.1 | 0/4 | Planned | - |
-| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 0/0 | Planned | - |
+| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 0/2 | Planned | - |

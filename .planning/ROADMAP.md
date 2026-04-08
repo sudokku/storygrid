@@ -26,7 +26,7 @@
 - [x] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar (completed 2026-04-07)
 - [ ] **Phase 8: Canvas & Workspace UX** — Replace safe zone with visual overlay, remove template confirmation, expand drop zone to full workspace
 - [x] **Phase 9: Improve cell movement and swapping** — Add 5-zone drag (edges + center) so users can MOVE a cell into a new tree position, not just swap content (completed 2026-04-08)
-- [ ] **Phase 10: Restore Cell Controls Sizing & Stacking Fix** — Re-land reverted CELL-02 clamp() sizing, resolve CELL-01 `isolate` stacking-context risk, and unblock sidebar video uploads (gap closure from v1.1 audit)
+- [x] **Phase 10: Restore Cell Controls Sizing & Stacking Fix** — Re-land reverted CELL-02 clamp() sizing, resolve CELL-01 `isolate` stacking-context risk, and unblock sidebar video uploads (gap closure from v1.1 audit) (completed 2026-04-08)
 
 ## Phase Details
 
@@ -94,9 +94,9 @@
   6. Phase 7 regression tests still pass; new real-browser check (or equivalent) confirms ActionBar visibility at small cell + sibling boundaries
 **Branch discipline**: runs directly on `main` (no worktree, no feature branch)
 **UI hint**: yes
-**Plans:** 2 plans
-  - [ ] 10-01-actionbar-clamp-sizing-PLAN.md — Re-land clamp(28px, 2.2vw, 36px) ActionBar sizing (CELL-02)
-  - [ ] 10-02-leafnode-stacking-sidebar-video-PLAN.md — Remove LeafNode `isolate`, fix stale comment, extend Sidebar accept to video/* (CELL-01, MEDIA-01)
+**Plans:** 2/2 plans complete
+  - [x] 10-01-actionbar-clamp-sizing-PLAN.md — Re-land clamp(28px, 2.2vw, 36px) ActionBar sizing (CELL-02)
+  - [x] 10-02-leafnode-stacking-sidebar-video-PLAN.md — Remove LeafNode `isolate`, fix stale comment, extend Sidebar accept to video/* (CELL-01, MEDIA-01)
 
 ## Progress
 
@@ -113,4 +113,4 @@
 | 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
 | 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |
 | 9. Improve cell movement and swapping | v1.1 | 0/4 | Planned | - |
-| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 0/2 | Planned | - |
+| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete   | 2026-04-08 |

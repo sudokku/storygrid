@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Polish & Bug Fixes
 status: verifying
-stopped_at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
-last_updated: "2026-04-08T01:34:36.176Z"
+stopped_at: Completed 10-01-PLAN.md (ActionBar clamp sizing re-landed)
+last_updated: "2026-04-08T13:49:30.940Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Phase 09 — improve-cell-movement-and-swapping
+**Current focus:** Phase 10 — restore-cell-controls-sizing-stacking
 
 ## Current Position
 
-Phase: 09
-Plan: Not started
+Phase: 10 (restore-cell-controls-sizing-stacking) — EXECUTING
+Plan: 2 of 2
 Status: Phase complete — ready for verification
 Last activity: 2026-04-08
 
@@ -82,6 +82,8 @@ Progress: [░░░░░░░░░░] 0% (0/2 phases)
 | Phase 09-improve-cell-movement-and-swapping P02 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P04 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P03 | 8min | 2 tasks | 2 files |
+| Phase 10-restore-cell-controls-sizing-stacking P02 | 4min | 3 tasks | 3 files |
+| Phase 10-restore-cell-controls-sizing-stacking P01 | 4min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -174,6 +176,9 @@ Recent decisions affecting current work:
 - [Phase 09-improve-cell-movement-and-swapping]: ActionBar drag handle hasMedia gate relaxed (EC-06) — empty cells are movable; aria-label changed to 'Drag to move'
 - [Phase 09-improve-cell-movement-and-swapping]: LeafNode 5-zone drag detection uses getBoundingClientRect math with 20% threshold + 20px minimum band; overlays are pointer-events-none to avoid intercepting drag events
 - [Phase 09-improve-cell-movement-and-swapping]: jsdom DragEvent ignores MouseEventInit fields — test harness uses createEvent+defineProperty to inject clientX/Y
+- [Phase 10-restore-cell-controls-sizing-stacking]: CELL-01 invariant codified: LeafNode root must NOT include Tailwind isolate; REND-10 test rewritten to assert the opposite
+- [Phase 10-restore-cell-controls-sizing-stacking]: Sidebar single-file-replace path now branches on file.type mirroring autoFillCells (video -> blob URL + mediaType=video, image -> base64 + mediaType=image)
+- [Phase 10-restore-cell-controls-sizing-stacking]: CELL-02 re-land uses inline clamp() CSS via React.CSSProperties; lucide icons switched from size prop to style prop since size only accepts numbers
 
 ### Pending Todos
 
@@ -210,7 +215,7 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:29:04.229Z
-Stopped at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
+Last session: 2026-04-08T13:49:30.935Z
+Stopped at: Completed 10-01-PLAN.md (ActionBar clamp sizing re-landed)
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

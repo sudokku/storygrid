@@ -59,10 +59,10 @@
 
 | REQ-ID | Phase | Notes |
 |--------|-------|-------|
-| CELL-01 | Phase 7 | Cell Controls & Display Polish |
-| CELL-02 | Phase 7 | Cell Controls & Display Polish |
+| CELL-01 | Phase 10 | Reassigned from Phase 7 — `isolate` stacking-context risk (v1.1 audit gap) |
+| CELL-02 | Phase 10 | Reassigned from Phase 7 — clamp() sizing reverted in 1476df2 (v1.1 audit gap) |
 | CELL-03 | Phase 7 | Cell Controls & Display Polish |
-| MEDIA-01 | Phase 7 | Cell Controls & Display Polish |
+| MEDIA-01 | Phase 7 / Phase 10 | Display path satisfied in Phase 7; sidebar upload-input gap closed in Phase 10 |
 | CANVAS-01 | Phase 8 | Canvas & Workspace UX |
 | TPL-01 | Phase 8 | Canvas & Workspace UX |
 | DROP-01 | Phase 8 | Canvas & Workspace UX |

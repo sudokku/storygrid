@@ -57,7 +57,7 @@
 
 ### Per-Cell Audio Toggle (video export)
 
-- [ ] **AUD-01**: Each video cell has an audio-enabled boolean field on its leaf node, defaulting to `true` for newly added videos
+- [x] **AUD-01**: Each video cell has an audio-enabled boolean field on its leaf node, defaulting to `true` for newly added videos
 - [ ] **AUD-02**: Each video cell shows a speaker icon (unmuted/muted) in the portal ActionBar; the icon is visible only for cells with `mediaType === 'video'`
 - [ ] **AUD-03**: Clicking the speaker icon toggles the cell's audio-enabled state and updates the icon to reflect the new state
 - [ ] **AUD-04**: The sidebar video cell panel also exposes the audio toggle (parity with ActionBar)
@@ -65,7 +65,7 @@
 - [ ] **AUD-06**: If zero cells have audio enabled, the exported MP4 contains no audio track (not a silent track)
 - [ ] **AUD-07**: Audio in the exported MP4 is clipped to the total video export duration
 - [ ] **AUD-08**: Audio toggle state is persisted in saved projects and `.storygrid` files
-- [ ] **AUD-09**: Audio export is Chrome/Firefox only — matches the existing video export browser support boundary (Safari excluded)
+- [x] **AUD-09**: Audio export is Chrome/Firefox only — matches the existing video export browser support boundary (Safari excluded)
 
 ## Future Requirements (deferred)
 
@@ -135,7 +135,7 @@ Which phases cover which requirements.
 | EFF-08 | Phase 11 | Pending |
 | EFF-09 | Phase 11 | Pending |
 | EFF-10 | Phase 11 | Pending |
-| AUD-01 | Phase 12 | Pending |
+| AUD-01 | Phase 12 | Complete |
 | AUD-02 | Phase 12 | Pending |
 | AUD-03 | Phase 12 | Pending |
 | AUD-04 | Phase 12 | Pending |
@@ -143,7 +143,7 @@ Which phases cover which requirements.
 | AUD-06 | Phase 12 | Pending |
 | AUD-07 | Phase 12 | Pending |
 | AUD-08 | Phase 12 | Pending |
-| AUD-09 | Phase 12 | Pending |
+| AUD-09 | Phase 12 | Complete |
 | OVL-01 | Phase 13 | Pending |
 | OVL-02 | Phase 13 | Pending |
 | OVL-03 | Phase 13 | Pending |

@@ -187,6 +187,30 @@ export function buildAudioGraph(
 }
 
 // ---------------------------------------------------------------------------
+// hasAudioEnabledVideoLeaf (Phase 12 — AUD-06 skip-path decision helper)
+//
+// Returns true iff at least one leaf has audioEnabled=true AND its mediaId
+// resolves to a 'video' entry in mediaTypeMap. Used by exportVideoGrid to
+// decide whether to construct an AudioContext / audio graph at all.
+// Keeping this as a single exported helper gives us a unit-testable decision
+// point without having to drive the entire MediaRecorder export in jsdom.
+// ---------------------------------------------------------------------------
+
+export function hasAudioEnabledVideoLeaf(
+  leaves: LeafNode[],
+  mediaTypeMap: Record<string, 'image' | 'video'>,
+): boolean {
+  for (const leaf of leaves) {
+    if (leaf.type !== 'leaf') continue;
+    if (!leaf.audioEnabled) continue;
+    if (!leaf.mediaId) continue;
+    if (mediaTypeMap[leaf.mediaId] !== 'video') continue;
+    return true;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Frame rate constants
 // ---------------------------------------------------------------------------
 
@@ -285,6 +309,55 @@ export async function exportVideoGrid(
   // Capture stream from canvas at target FPS.
   const stream = (stableCanvas as unknown as { captureStream(fps: number): MediaStream }).captureStream(FPS);
 
+  // -------------------------------------------------------------------------
+  // Phase 12: Web Audio graph for per-cell audio (AUD-05, AUD-06)
+  //
+  // Only construct an AudioContext when at least one video leaf is
+  // audio-enabled. If construction OR graph wiring throws, log and fall
+  // back to a canvas-only stream (no audio) — export must not fail on audio.
+  // -------------------------------------------------------------------------
+  let audioCtx: AudioContext | null = null;
+  let combinedStream: MediaStream = stream;
+
+  const allLeaves = getAllLeaves(root);
+  if (hasAudioEnabledVideoLeaf(allLeaves, mediaTypeMap)) {
+    try {
+      audioCtx = new AudioContext();
+      // Chrome suspended-state workaround (RESEARCH §Pitfall 3).
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      const audioDestination = buildAudioGraph(
+        audioCtx,
+        exportVideoElements,
+        allLeaves,
+        mediaTypeMap,
+      );
+      if (audioDestination) {
+        const audioTrack = audioDestination.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          combinedStream = new MediaStream([
+            ...stream.getVideoTracks(),
+            audioTrack,
+          ]);
+        }
+      }
+    } catch (err) {
+      // D-20: log and fall back to no-audio export. Do NOT fail the export.
+      console.error(
+        '[Phase12 audioGraph] Failed to build audio graph; exporting without audio:',
+        err,
+      );
+      try {
+        audioCtx?.close();
+      } catch {
+        /* noop */
+      }
+      audioCtx = null;
+      combinedStream = stream;
+    }
+  }
+
   // Rewind and prepare all dedicated export video elements.
   if (exportVideoElements.size > 0) {
     const rewindPromises: Promise<void>[] = [];
@@ -346,7 +419,7 @@ export async function exportVideoGrid(
   return new Promise<Blob>((resolve, reject) => {
     const chunks: BlobPart[] = [];
 
-    const recorder = new MediaRecorder(stream, {
+    const recorder = new MediaRecorder(combinedStream, {
       mimeType: selectedMimeType,
       videoBitsPerSecond: 6_000_000,
     });
@@ -359,12 +432,14 @@ export async function exportVideoGrid(
 
     recorder.onstop = () => {
       destroyExportVideoElements(exportVideoElements);
+      try { audioCtx?.close(); } catch { /* noop */ } // D-19: close in success path
       const blob = new Blob(chunks, { type: selectedMimeType });
       resolve(blob);
     };
 
     recorder.onerror = (e: Event) => {
       destroyExportVideoElements(exportVideoElements);
+      try { audioCtx?.close(); } catch { /* noop */ } // D-19: close in error path
       reject(new Error(`MediaRecorder error: ${(e as ErrorEvent).message ?? 'unknown'}`));
     };
 
@@ -449,6 +524,7 @@ export async function exportVideoGrid(
       renderFrame().catch(err => {
         if (intervalId !== null) clearInterval(intervalId);
         destroyExportVideoElements(exportVideoElements);
+        try { audioCtx?.close(); } catch { /* noop */ } // D-19: close on render error
         recorder.stop();
         reject(err);
       });

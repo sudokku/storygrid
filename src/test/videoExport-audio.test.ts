@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildAudioGraph, buildExportVideoElements } from '@/lib/videoExport';
+import {
+  buildAudioGraph,
+  buildExportVideoElements,
+  hasAudioEnabledVideoLeaf,
+} from '@/lib/videoExport';
 import type { GridNode, LeafNode } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -312,6 +316,46 @@ describe('buildExportVideoElements — conditional muted', () => {
     const videoEl = result.get('shared');
     expect(videoEl).toBeDefined();
     expect(videoEl!.muted).toBe(false);
+  });
+
+  it('hasAudioEnabledVideoLeaf returns true for mixed tree with one enabled video', () => {
+    const leaves: LeafNode[] = [
+      makeLeaf({ mediaId: 'img', audioEnabled: true }),
+      makeLeaf({ mediaId: 'v1', audioEnabled: true }),
+    ];
+    const mediaTypeMap: Record<string, 'image' | 'video'> = {
+      img: 'image',
+      v1: 'video',
+    };
+    expect(hasAudioEnabledVideoLeaf(leaves, mediaTypeMap)).toBe(true);
+  });
+
+  it('hasAudioEnabledVideoLeaf returns false for tree of only images', () => {
+    const leaves: LeafNode[] = [
+      makeLeaf({ mediaId: 'img1', audioEnabled: true }),
+      makeLeaf({ mediaId: 'img2', audioEnabled: true }),
+    ];
+    const mediaTypeMap: Record<string, 'image' | 'video'> = {
+      img1: 'image',
+      img2: 'image',
+    };
+    expect(hasAudioEnabledVideoLeaf(leaves, mediaTypeMap)).toBe(false);
+  });
+
+  it('hasAudioEnabledVideoLeaf returns false when all video leaves are muted', () => {
+    const leaves: LeafNode[] = [
+      makeLeaf({ mediaId: 'v1', audioEnabled: false }),
+      makeLeaf({ mediaId: 'v2', audioEnabled: false }),
+    ];
+    const mediaTypeMap: Record<string, 'image' | 'video'> = {
+      v1: 'video',
+      v2: 'video',
+    };
+    expect(hasAudioEnabledVideoLeaf(leaves, mediaTypeMap)).toBe(false);
+  });
+
+  it('hasAudioEnabledVideoLeaf returns false for empty leaves array', () => {
+    expect(hasAudioEnabledVideoLeaf([], {})).toBe(false);
   });
 
   it('image mediaIds do not appear in exportVideoElements map', async () => {

@@ -29,6 +29,11 @@ describe('createLeaf', () => {
     const b = createLeaf();
     expect(a.id).not.toBe(b.id);
   });
+
+  it('initializes audioEnabled to true', () => {
+    const leaf = createLeaf();
+    expect(leaf.audioEnabled).toBe(true);
+  });
 });
 
 describe('splitNode', () => {

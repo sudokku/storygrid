@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGridStore } from './gridStore';
-import { findNode } from '../lib/tree';
+import { findNode, createLeaf } from '../lib/tree';
 import type { ContainerNode, LeafNode } from '../types';
 
 function getInitialState() {
@@ -218,5 +218,48 @@ describe('effects actions', () => {
       useGridStore.getState().resetCell(id);
       expect(useGridStore.getState().history.length).toBe(historyBefore + 1);
     });
+  });
+});
+
+describe('toggleAudioEnabled', () => {
+  it('defaults audioEnabled to true for new leaves', () => {
+    const leaf = createLeaf();
+    expect(leaf.audioEnabled).toBe(true);
+  });
+
+  it('flips audioEnabled from true to false', () => {
+    const id = firstLeafId();
+    expect(getLeaf(id).audioEnabled).toBe(true);
+    useGridStore.getState().toggleAudioEnabled(id);
+    expect(getLeaf(id).audioEnabled).toBe(false);
+  });
+
+  it('flips audioEnabled back to true on second call', () => {
+    const id = firstLeafId();
+    useGridStore.getState().toggleAudioEnabled(id);
+    useGridStore.getState().toggleAudioEnabled(id);
+    expect(getLeaf(id).audioEnabled).toBe(true);
+  });
+
+  it('pushes exactly one history snapshot per toggle', () => {
+    const id = firstLeafId();
+    const historyBefore = useGridStore.getState().history.length;
+    useGridStore.getState().toggleAudioEnabled(id);
+    expect(useGridStore.getState().history.length).toBe(historyBefore + 1);
+  });
+
+  it('is a no-op for non-existent nodeId', () => {
+    const historyBefore = useGridStore.getState().history.length;
+    expect(() => useGridStore.getState().toggleAudioEnabled('does-not-exist')).not.toThrow();
+    expect(useGridStore.getState().history.length).toBe(historyBefore);
+  });
+
+  it('undo restores previous audioEnabled value', () => {
+    const id = firstLeafId();
+    expect(getLeaf(id).audioEnabled).toBe(true);
+    useGridStore.getState().toggleAudioEnabled(id);
+    expect(getLeaf(id).audioEnabled).toBe(false);
+    useGridStore.getState().undo();
+    expect(getLeaf(id).audioEnabled).toBe(true);
   });
 });

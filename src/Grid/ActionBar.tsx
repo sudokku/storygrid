@@ -17,6 +17,8 @@ import {
   Upload,
   ImageOff,
   GripVertical,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 interface ActionBarProps {
@@ -32,6 +34,16 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
   const updateCell = useGridStore(s => s.updateCell);
   const removeMedia = useGridStore(s => s.removeMedia);
   const mediaId = useGridStore(s => (findNode(s.root, nodeId) as LeafNode | null)?.mediaId ?? null);
+  const mediaType = useGridStore(s => {
+    const leaf = findNode(s.root, nodeId) as LeafNode | null;
+    if (!leaf || leaf.type !== 'leaf' || !leaf.mediaId) return null;
+    return s.mediaTypeMap[leaf.mediaId] ?? null;
+  });
+  const audioEnabled = useGridStore(s => {
+    const leaf = findNode(s.root, nodeId) as LeafNode | null;
+    return leaf && leaf.type === 'leaf' ? leaf.audioEnabled : true;
+  });
+  const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
 
   const handleSplitH = useCallback(() => split(nodeId, 'horizontal'), [split, nodeId]);
   const handleSplitV = useCallback(() => split(nodeId, 'vertical'), [split, nodeId]);
@@ -104,6 +116,32 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
             {fit === 'cover' ? 'Switch to contain' : 'Switch to cover'}
           </TooltipContent>
         </Tooltip>
+
+        {mediaType === 'video' && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  data-testid="audio-button"
+                  className={`${btnClass} ${!audioEnabled ? 'hover:bg-red-500/20' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleAudioEnabled(nodeId);
+                  }}
+                  aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+                />
+              }
+            >
+              {audioEnabled
+                ? <Volume2 size={ICON_SIZE} className="text-white" />
+                : <VolumeX size={ICON_SIZE} className="text-red-500" />
+              }
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         {hasMedia && (
           <Tooltip>

@@ -1,6 +1,8 @@
 import { getAllLeaves } from './tree';
 import { DEFAULT_EFFECTS, effectsToFilterString } from './effects';
 import type { GridNode, LeafNode } from '../types';
+import { drawOverlaysToCanvas } from './overlayExport';
+import { useOverlayStore } from '../store/overlayStore';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -494,6 +496,11 @@ export async function renderGridToCanvas(
   if (!ctx) throw new Error('Canvas 2D context not available');
 
   await renderGridIntoContext(ctx, root, mediaRegistry, width, height, settings, videoElements);
+
+  // D-22: draw overlay pass AFTER all cells are rendered (OVL-16)
+  const { overlays, stickerRegistry } = useOverlayStore.getState();
+  const overlayImageCache = new Map<string, HTMLImageElement>();
+  await drawOverlaysToCanvas(ctx, overlays, stickerRegistry, overlayImageCache);
 
   return canvas;
 }

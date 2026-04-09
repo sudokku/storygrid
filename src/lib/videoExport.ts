@@ -1,6 +1,8 @@
 import { getAllLeaves } from './tree';
 import type { GridNode, LeafNode } from '../types';
 import { renderGridIntoContext, type CanvasSettings } from './export';
+import { drawOverlaysToCanvas } from './overlayExport';
+import { useOverlayStore } from '../store/overlayStore';
 
 // ---------------------------------------------------------------------------
 // computeLoopedTime — pure helper for modulo-based video looping
@@ -409,11 +411,19 @@ export async function exportVideoGrid(
   }
   await Promise.all(preflightPlayPromises);
 
+  // D-23: overlay positions/styles are static over the video duration — read once outside the loop.
+  // D-24: read directly from overlayStore.getState() — no prop threading.
+  const overlayState = useOverlayStore.getState();
+  // T-13-07: overlayImageCache scoped to this export run; prevents per-frame sticker reloads.
+  const overlayImageCache = new Map<string, HTMLImageElement>();
+
   // Pre-warm imageCache and render first frame to give the canvas valid content.
   await renderGridIntoContext(
     stableCtx, root, mediaRegistry, 1080, 1920, settings,
     exportVideoElements, imageCache,
   );
+  // Draw overlays on pre-flight frame (D-22: overlay pass after all cells)
+  await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
 
   // The canvas now has a real first frame. Start recording from this point.
   return new Promise<Blob>((resolve, reject) => {
@@ -473,6 +483,8 @@ export async function exportVideoGrid(
           stableCtx, root, mediaRegistry, 1080, 1920, settings,
           exportVideoElements, imageCache,
         );
+        // D-22: overlay pass after cell draw on final frame
+        await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
 
         recorder.stop();
         onProgress('encoding', 100);
@@ -512,6 +524,8 @@ export async function exportVideoGrid(
         stableCtx, root, mediaRegistry, 1080, 1920, settings,
         exportVideoElements, imageCache,
       );
+      // D-22/D-23: overlay pass after cell draw on every frame
+      await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
 
       const percent = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
       onProgress('encoding', percent);

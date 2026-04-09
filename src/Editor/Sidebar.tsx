@@ -7,6 +7,7 @@ import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { EffectsPanel } from './EffectsPanel';
+import { OverlayPanel } from './OverlayPanel';
 
 // ---------------------------------------------------------------------------
 // Cell dimension helper
@@ -464,6 +465,7 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
 
 export function Sidebar() {
   const selectedNodeId = useEditorStore(s => s.selectedNodeId);
+  const selectedOverlayId = useEditorStore(s => s.selectedOverlayId);
 
   return (
     <aside
@@ -471,9 +473,11 @@ export function Sidebar() {
       data-testid="sidebar"
     >
       <CanvasSettingsPanel />
-      {selectedNodeId && (
+      {selectedOverlayId !== null ? (
+        <OverlayPanel />
+      ) : selectedNodeId ? (
         <SelectedCellPanel nodeId={selectedNodeId} key={selectedNodeId} />
-      )}
+      ) : null}
     </aside>
   );
 }

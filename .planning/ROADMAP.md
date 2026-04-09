@@ -3,8 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 0–6 + 5.1 INSERTED (shipped 2026-04-07) — see `.planning/milestones/v1.0-ROADMAP.md`
-- ✅ **v1.1 UI Polish & Bug Fixes** — Phases 7–10 (shipped 2026-04-08) — see `.planning/milestones/v1.1-ROADMAP.md`
-- 🚧 **v1.2 Effects, Overlays & Persistence** — Phases 11–14 (in progress, started 2026-04-09)
+- 🔄 **v1.1 UI Polish & Bug Fixes** — Phases 7–8 (in progress)
 
 ## Phases
 
@@ -22,121 +21,63 @@
 
 </details>
 
-<details>
-<summary>✅ v1.1 UI Polish & Bug Fixes (Phases 7–10) — SHIPPED 2026-04-08</summary>
+### v1.1 UI Polish & Bug Fixes
 
-- [x] Phase 7: Cell Controls & Display Polish (2/2 plans) — completed 2026-04-07
-- [x] Phase 8: Canvas & Workspace UX (3/3 plans) — completed 2026-04-07
-- [x] Phase 9: Improve cell movement and swapping (4/4 plans) — completed 2026-04-08
-- [x] Phase 10: Restore Cell Controls Sizing & Stacking Fix (2/2 plans, gap closure) — completed 2026-04-08
-
-</details>
-
-### 🚧 v1.2 Effects, Overlays & Persistence (Phases 11–14)
-
-- [x] **Phase 11: Effects & Filters** — Per-cell visual effects (presets + sliders) in preview and export (completed 2026-04-09)
-- [x] **Phase 12: Per-Cell Audio Toggle** — Audio on/off per video cell, mixed into MP4 export (completed 2026-04-09)
-- [ ] **Phase 13: Text & Sticker Overlay Layer** — Free-position text, emoji, and image sticker overlays
-- [ ] **Phase 14: Project Persistence** — Auto-save, named projects, and `.storygrid` file export/import
+- [x] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar (completed 2026-04-07)
+- [ ] **Phase 8: Canvas & Workspace UX** — Replace safe zone with visual overlay, remove template confirmation, expand drop zone to full workspace
+- [ ] **Phase 9: Improve cell movement and swapping** — Add 5-zone drag (edges + center) so users can MOVE a cell into a new tree position, not just swap content
 
 ## Phase Details
 
-### Phase 11: Effects & Filters
-**Goal**: Users can apply named filter presets and manual adjustment sliders to individual cells, with changes visible identically in the live preview, PNG export, and MP4 export.
-**Depends on**: Phase 10 (v1.1 complete)
-**Requirements**: EFF-01, EFF-02, EFF-03, EFF-04, EFF-05, EFF-06, EFF-07, EFF-08, EFF-09, EFF-10
+### Phase 7: Cell Controls & Display Polish
+**Goal**: Cell controls are always accessible and correctly sized; empty cells scale naturally; video cells show a thumbnail in the sidebar
+**Depends on**: Phase 6 (v1.0 complete)
+**Requirements**: CELL-01, CELL-02, CELL-03, MEDIA-01
 **Success Criteria** (what must be TRUE):
-  1. User can tap a preset (e.g., B&W, Vivid) in the sidebar and see the cell change color treatment immediately in the editor preview.
-  2. User can drag a brightness, contrast, saturation, or blur slider and see the cell update in real-time; releasing the slider commits one undo entry.
-  3. User can click "Reset" and the cell returns to its original unfiltered appearance.
-  4. Applying a preset then moving a slider fine-tunes within the preset (preset values load into sliders).
-  5. Exporting a PNG or MP4 with effects applied produces output that visually matches the in-editor preview.
-**Plans**: 3 plans
-Plans:
-- [x] 11-01-PLAN.md — Foundation: effects module, LeafNode type, createLeaf, store actions
-- [x] 11-02-PLAN.md — Render hook: drawLeafToCanvas ctx.filter + blur overdraw + LeafNode subscriber
-- [x] 11-03-PLAN.md — Sidebar UI: EffectsPanel with presets, sliders, reset buttons
+  1. Cell action bar controls remain fully visible and clickable regardless of how small a cell is resized
+  2. Action bar icons and buttons appear the same physical size across a small laptop screen and a large external monitor
+  3. Empty cells show a centered icon and label that scale proportionally as the viewport grows — no fixed-size relics on 4K displays
+  4. Video cells display a still thumbnail (first frame) in the sidebar panel, matching the behavior of image cells
+**Plans:** 2/2 plans complete
+  - [x] 07-01-PLAN.md — Cell controls overflow + clamp-based sizing (CELL-01, CELL-02, CELL-03)
+  - [x] 07-02-PLAN.md — Video first-frame thumbnail in sidebar (MEDIA-01)
 **UI hint**: yes
 
-**Plan-phase research flag:** Before writing filter implementation tasks, run a Safari 15 `ctx.filter` smoke test to determine whether `context-filter-polyfill` is needed or whether effects should degrade gracefully on Safari without the polyfill.
-
-**Key pitfalls:**
-- `ctx.filter` is silently ignored in Safari 15–17; must decide upfront: polyfill or graceful degradation — cannot retrofit.
-- Blur filter bleeds at cell edges when combined with clip paths; draw source image `blurRadius * 2` pixels beyond the cell rect so the clip has real pixels to trim.
-- CSS `filter:` on the `<canvas>` DOM element breaks WYSIWYG: preview looks correct but export is unfiltered. Apply ALL effects inside `drawLeafToCanvas()` via `ctx.filter` only.
-
----
-
-### Phase 12: Per-Cell Audio Toggle
-**Goal**: Users can mark individual video cells as audio-on or audio-muted; exported MP4s mix audio only from enabled cells using a Web Audio API graph alongside the existing MediaRecorder pipeline.
-**Depends on**: Phase 11
-**Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-08, AUD-09
+### Phase 8: Canvas & Workspace UX
+**Goal**: Safe zone is visually obvious, templates apply without friction, and file drops are accepted anywhere in the workspace
+**Depends on**: Phase 7
+**Requirements**: CANVAS-01, TPL-01, DROP-01, DROP-02
 **Success Criteria** (what must be TRUE):
-  1. Every video cell shows a speaker icon in the ActionBar; clicking it toggles muted/unmuted and the icon updates.
-  2. The sidebar cell panel reflects the same audio toggle state as the ActionBar.
-  3. Exporting an MP4 with one cell muted produces audio from only the enabled cells.
-  4. Exporting an MP4 with all cells muted produces a file with no audio track.
-  5. Audio toggle state survives undo/redo.
-**Plans**: 3 plans
-Plans:
-- [x] 12-01-PLAN.md — Data model, toggleAudioEnabled store action, and test fixture migration (AUD-01, AUD-08, AUD-09)
-- [x] 12-02-PLAN.md — UI: ActionBar speaker icon + Sidebar Playback subsection (AUD-02, AUD-03, AUD-04)
-- [x] 12-03-PLAN.md — Export pipeline Web Audio graph + AudioContext lifecycle (AUD-05, AUD-06, AUD-07)
-
-**Key pitfalls:**
-- This is a pipeline rewrite, not a flag: `video.muted = true` on export video elements blocks `createMediaElementAudioSourceNode()`; must set `muted = false` on audio-enabled cells before wiring the Web Audio graph (the Export button click satisfies the user-gesture requirement for AudioContext).
-- `createMediaElementAudioSourceNode()` "steals" audio output from the video element; connect to both `audioCtx.destination` (for future preview) and the `MediaStreamDestinationNode` (for export capture).
-- If zero cells have audio enabled, skip building the Web Audio graph entirely and pass only the canvas stream to MediaRecorder (no silent audio track).
-
----
-
-### Phase 13: Text & Sticker Overlay Layer
-**Goal**: Users can place, resize, rotate, and delete free-position text, emoji, and image sticker overlays on the canvas; overlays appear identically in the live preview, PNG export, and MP4 video export.
-**Depends on**: Phase 12
-**Requirements**: OVL-01, OVL-02, OVL-03, OVL-04, OVL-05, OVL-06, OVL-07, OVL-08, OVL-09, OVL-10, OVL-11, OVL-12, OVL-13, OVL-14, OVL-15, OVL-16, OVL-17
-**Success Criteria** (what must be TRUE):
-  1. User can add a text overlay, type content, change font/size/color/weight/alignment, drag it anywhere on the canvas, and see it rendered correctly in both editor and PNG export.
-  2. User can open the emoji picker, select an emoji, and drag the resulting sticker to any position.
-  3. User can upload a PNG or SVG file as an image sticker; the sticker is draggable, resizable via corner handle, and rotatable via top handle.
-  4. User can reorder overlays front-to-back via Bring Forward / Send Backward; the visual stacking in preview matches the exported order.
-  5. Clicking a cell clears overlay selection; clicking an overlay clears cell selection (mutual exclusion is enforced).
-**Plans**: 5 plans
-Plans:
-- [x] 13-01-PLAN.md — Foundation: Overlay types, overlayStore + stickerRegistry, editorStore.selectedOverlayId, gridStore history integration, Wave 0 test stubs
-- [ ] 13-02-PLAN.md — OverlayLayer DOM mount + OverlayHandles (drag/resize/rotate) + Delete key + Google Fonts preload + dep install
-- [ ] 13-03-PLAN.md — drawOverlaysToCanvas helper + PNG/MP4 export integration with document.fonts.ready
-- [ ] 13-04-PLAN.md — Toolbar Add button + AddOverlayMenu + lazy EmojiPickerPopover + StickerUpload with DOMPurify SVG sanitization
-- [ ] 13-05-PLAN.md — OverlayPanel sidebar (text controls + z-order + delete) + InlineTextEditor double-click edit
+  1. When "Show Safe Zone" is toggled on, unsafe areas are covered by a visible striped or dimmed overlay with an icon — not a plain border outline
+  2. Clicking a preset template applies it immediately with no confirmation dialog or alert
+  3. User can drag a media file from the desktop and drop it anywhere in the workspace area (not only directly on the canvas element) and the file is accepted
+  4. While dragging a file over the workspace, the drop zone area shows a clear visual highlight or label indicating it will accept the file
+**Plans:** 3 plans
+  - [x] 08-01-PLAN.md — Safe Zone visual overlay (CANVAS-01)
+  - [x] 08-02-PLAN.md — Workspace drop zone + drag-over ring (DROP-01, DROP-02)
+  - [x] 08-03-PLAN.md — Template apply regression test (TPL-01)
 **UI hint**: yes
 
-**Key pitfalls:**
-- Overlay coordinates must be stored in canvas pixel space (0–1080 x 0–1920), not viewport pixels. The `canvas-surface` CSS transform scales all children automatically; storing viewport-space coordinates would require re-projection on every resize.
-- Sticker base64 must go into a `stickerRegistry` (mirroring `mediaRegistry`) with only an ID reference in the overlay node; inlining base64 into the overlay store causes history snapshot bloat (50 entries × sticker size).
-- User-uploaded SVG content must be sanitized with DOMPurify before storing or rendering to prevent XSS; the `Image()` → blob URL path is safe for rendering but sanitization must happen at upload time.
-
----
-
-### Phase 14: Project Persistence
-**Goal**: Users never lose work across page reloads; they can save named projects, manage a project list, and export/import `.storygrid` JSON files to share or back up projects.
-**Depends on**: Phase 13 (overlay store must exist before serialization format is locked)
-**Requirements**: PERS-01, PERS-02, PERS-03, PERS-04, PERS-05, PERS-06, PERS-07, PERS-08, PERS-09, PERS-10, PERS-11, PERS-12
+### Phase 9: Improve cell movement and swapping
+**Goal**: Users can MOVE a cell into any of 4 edge positions (split-insert + remove + collapse-upward) in addition to the existing center-drop swap — single atomic undo, full tree-layer correctness for n-ary trees, EC-06 empty-cell moves supported
+**Depends on**: Phase 8
+**Requirements**: none explicit — context-driven phase (D-01..D-09 in 09-CONTEXT.md)
 **Success Criteria** (what must be TRUE):
-  1. Reloading the page restores the exact project state (grid, media, effects, overlays, audio flags) that was visible before the reload.
-  2. User can save the project with a name, see it in the My Projects panel, rename it, load it, and delete it.
-  3. User can export a `.storygrid` file, open it in a fresh browser session by importing it, and see the project fully restored (images present; video cells show a re-upload placeholder).
-  4. When localStorage is full or Safari private browsing blocks writes, a toast message appears and no data is silently lost.
-  5. Each project in the My Projects panel shows a thumbnail preview generated at save time.
-**Plans**: TBD
+  1. Dragging a cell by its ActionBar handle and hovering over another cell reveals 5 drop zones: 4 thin edge bands (top/bottom/left/right) and a large center
+  2. Hovering an edge shows a thick accent-blue (#3b82f6) insertion line ~4px along that edge; hovering center shows a dimmed swap-icon overlay; only one highlight at a time
+  3. Dropping on an edge splits the target into a new 50/50 container with the dragged cell's content at the requested side; the source leaf is removed; if the source parent is left with 1 child it collapses upward
+  4. Dropping on the center preserves existing swap behavior unchanged
+  5. A single Ctrl+Z atomically reverses an entire move (insert + remove + collapse)
+  6. Empty cells are draggable (EC-06 gate relaxed)
+  7. File drops onto cells still work unchanged (Phase 8 D-15 coexistence)
+  8. Phase 5 cell-swap regression tests still pass
+**Plans:** 4 plans
+  - [x] 09-01-PLAN.md — Pure `moveLeafToEdge` tree primitive + 18 unit tests (Wave 1, independent)
+  - [x] 09-02-PLAN.md — `gridStore.moveCell` atomic action + 9 store tests (Wave 2, depends on 09-01)
+  - [x] 09-03-PLAN.md — LeafNode 5-zone hit detection + insertion-line/swap overlay + moveCell dispatch (Wave 3, depends on 09-02)
+  - [x] 09-04-PLAN.md — ActionBar gate relaxation (EC-06) + Phase 5 regression test update (Wave 3, parallel with 09-03)
+**Branch discipline**: runs directly on `main` (D-09 — no worktree, no feature branch)
 **UI hint**: yes
-
-**Plan-phase research flag:** At plan-phase time, measure the serialized state size of a representative project (5–6 images, effects, overlays) to decide whether localStorage alone is sufficient or whether `idb-keyval` (IndexedDB) is required as the primary storage backend. Research recommends idb-keyval for projects with base64 images; validate with an actual size check before writing persistence implementation tasks.
-
-**Key pitfalls:**
-- `QuotaExceededError` from localStorage must be caught explicitly; the write call will throw synchronously, and the default behavior is a silent crash that leaves the user with no feedback.
-- Safari private browsing mode throws a `SecurityError` on any `localStorage.setItem()` call; must wrap all persistence writes in try/catch and surface a toast.
-- Video blob URLs must be stripped before serialization (they expire on tab close); export `.storygrid` files must omit video blob entries and load video cells in a "re-upload required" state.
-
----
 
 ## Progress
 
@@ -150,11 +91,6 @@ Plans:
 | 5. Polish & UX | v1.0 | 5/5 | Complete | 2026-04-02 |
 | 5.1. Mobile-First UI | v1.0 | 3/3 | Complete | 2026-04-04 |
 | 6. Video Support | v1.0 | 4/4 | Complete | 2026-04-05 |
-| 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete | 2026-04-07 |
-| 8. Canvas & Workspace UX | v1.1 | 3/3 | Complete | 2026-04-07 |
-| 9. Improve cell movement and swapping | v1.1 | 4/4 | Complete | 2026-04-08 |
-| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete | 2026-04-08 |
-| 11. Effects & Filters | v1.2 | 3/3 | Complete    | 2026-04-09 |
-| 12. Per-Cell Audio Toggle | v1.2 | 3/3 | Complete    | 2026-04-09 |
-| 13. Text & Sticker Overlay Layer | v1.2 | 1/5 | In Progress|  |
-| 14. Project Persistence | v1.2 | 0/? | Not started | - |
+| 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
+| 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |
+| 9. Improve cell movement and swapping | v1.1 | 0/4 | Planned | - |

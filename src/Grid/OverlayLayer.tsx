@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOverlayStore } from '../store/overlayStore';
 import { useEditorStore } from '../store/editorStore';
 import { OverlayHandles } from '../Editor/OverlayHandles';
-import type { Overlay } from '../types';
+import { InlineTextEditor } from '../Editor/InlineTextEditor';
+import type { Overlay, TextOverlay } from '../types';
 
 export function OverlayLayer() {
   const overlays = useOverlayStore(state => state.overlays);
@@ -12,6 +13,12 @@ export function OverlayLayer() {
   const setSelectedOverlayId = useEditorStore(state => state.setSelectedOverlayId);
   const canvasScale = useEditorStore(state => state.canvasScale);
   const updateOverlay = useOverlayStore(state => state.updateOverlay);
+  const [editingOverlayId, setEditingOverlayId] = useState<string | null>(null);
+
+  // Exit edit mode when the selected overlay changes (e.g. user clicks another overlay)
+  useEffect(() => {
+    setEditingOverlayId(null);
+  }, [selectedOverlayId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,21 +68,39 @@ export function OverlayLayer() {
               setSelectedOverlayId(overlay.id);
               e.stopPropagation();
             }}
+            onDoubleClick={() => {
+              if (overlay.type === 'text') {
+                setEditingOverlayId(overlay.id);
+              }
+            }}
           >
             {overlay.type === 'text' && (
-              <div
-                style={{
-                  fontFamily: overlay.fontFamily,
-                  fontSize: overlay.fontSize,
-                  color: overlay.color,
-                  fontWeight: overlay.fontWeight === 'bold' ? 700 : 400,
-                  textAlign: overlay.textAlign,
-                  whiteSpace: 'pre-wrap',
-                  userSelect: 'none',
-                }}
-              >
-                {overlay.content}
-              </div>
+              <>
+                <div
+                  style={{
+                    fontFamily: overlay.fontFamily,
+                    fontSize: overlay.fontSize,
+                    color: overlay.color,
+                    fontWeight: overlay.fontWeight === 'bold' ? 700 : 400,
+                    textAlign: overlay.textAlign,
+                    whiteSpace: 'pre-wrap',
+                    userSelect: 'none',
+                    visibility: editingOverlayId === overlay.id ? 'hidden' : 'visible',
+                  }}
+                >
+                  {overlay.content}
+                </div>
+                {editingOverlayId === overlay.id && (
+                  <InlineTextEditor
+                    overlay={overlay as TextOverlay}
+                    onCommit={(newContent) => {
+                      updateOverlay(overlay.id, { content: newContent });
+                      setEditingOverlayId(null);
+                    }}
+                    onCancel={() => setEditingOverlayId(null)}
+                  />
+                )}
+              </>
             )}
             {overlay.type === 'emoji' && (
               <span style={{ fontSize: overlay.width }}>

@@ -29,3 +29,42 @@ export type ContainerNode = {
 };
 
 export type GridNode = ContainerNode | LeafNode;
+
+// ---------------------------------------------------------------------------
+// Phase 13 Overlay types
+// ---------------------------------------------------------------------------
+// NOTE: x and y are VISUAL CENTER coordinates in canvas pixel space (0–1080 / 0–1920).
+// This matches the DOM translate(-50%,-50%) wrapper in OverlayLayer (Plan 02) and
+// the center-to-top-left conversion in Plan 03's drawOverlaysToCanvas.
+// All overlay `x`, `y`, `width` are in canvas pixel space (D-08).
+
+export type OverlayBase = {
+  id: string;
+  x: number;        // canvas pixel space 0–1080; VISUAL CENTER (matches DOM translate(-50%,-50%))
+  y: number;        // canvas pixel space 0–1920; VISUAL CENTER
+  width: number;    // canvas pixel space
+  rotation: number; // degrees, 0 = no rotation
+  zIndex: number;
+};
+
+export type TextOverlay = OverlayBase & {
+  type: 'text';
+  content: string;
+  fontFamily: string;         // 'Geist' | 'Playfair Display' | 'Dancing Script'
+  fontSize: number;           // 16..256 canvas px
+  color: string;              // hex (#rrggbb)
+  fontWeight: 'regular' | 'bold';
+  textAlign: 'left' | 'center' | 'right';
+};
+
+export type EmojiOverlay = OverlayBase & {
+  type: 'emoji';
+  char: string;               // raw Unicode emoji
+};
+
+export type StickerOverlay = OverlayBase & {
+  type: 'sticker';
+  stickerRegistryId: string;  // key into overlayStore.stickerRegistry
+};
+
+export type Overlay = TextOverlay | EmojiOverlay | StickerOverlay;

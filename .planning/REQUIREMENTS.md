@@ -121,24 +121,71 @@ Explicitly excluded from v1.2 to prevent scope creep. Many were considered durin
 
 ## Traceability
 
-Which phases cover which requirements. Populated by roadmapper during Step 10.
+Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _(empty — pending roadmap)_ | | |
+| EFF-01 | Phase 11 | Pending |
+| EFF-02 | Phase 11 | Pending |
+| EFF-03 | Phase 11 | Pending |
+| EFF-04 | Phase 11 | Pending |
+| EFF-05 | Phase 11 | Pending |
+| EFF-06 | Phase 11 | Pending |
+| EFF-07 | Phase 11 | Pending |
+| EFF-08 | Phase 11 | Pending |
+| EFF-09 | Phase 11 | Pending |
+| EFF-10 | Phase 11 | Pending |
+| AUD-01 | Phase 12 | Pending |
+| AUD-02 | Phase 12 | Pending |
+| AUD-03 | Phase 12 | Pending |
+| AUD-04 | Phase 12 | Pending |
+| AUD-05 | Phase 12 | Pending |
+| AUD-06 | Phase 12 | Pending |
+| AUD-07 | Phase 12 | Pending |
+| AUD-08 | Phase 12 | Pending |
+| AUD-09 | Phase 12 | Pending |
+| OVL-01 | Phase 13 | Pending |
+| OVL-02 | Phase 13 | Pending |
+| OVL-03 | Phase 13 | Pending |
+| OVL-04 | Phase 13 | Pending |
+| OVL-05 | Phase 13 | Pending |
+| OVL-06 | Phase 13 | Pending |
+| OVL-07 | Phase 13 | Pending |
+| OVL-08 | Phase 13 | Pending |
+| OVL-09 | Phase 13 | Pending |
+| OVL-10 | Phase 13 | Pending |
+| OVL-11 | Phase 13 | Pending |
+| OVL-12 | Phase 13 | Pending |
+| OVL-13 | Phase 13 | Pending |
+| OVL-14 | Phase 13 | Pending |
+| OVL-15 | Phase 13 | Pending |
+| OVL-16 | Phase 13 | Pending |
+| OVL-17 | Phase 13 | Pending |
+| PERS-01 | Phase 14 | Pending |
+| PERS-02 | Phase 14 | Pending |
+| PERS-03 | Phase 14 | Pending |
+| PERS-04 | Phase 14 | Pending |
+| PERS-05 | Phase 14 | Pending |
+| PERS-06 | Phase 14 | Pending |
+| PERS-07 | Phase 14 | Pending |
+| PERS-08 | Phase 14 | Pending |
+| PERS-09 | Phase 14 | Pending |
+| PERS-10 | Phase 14 | Pending |
+| PERS-11 | Phase 14 | Pending |
+| PERS-12 | Phase 14 | Pending |
 
 **Coverage:**
-- v1.2 requirements: 43 total (10 EFF + 17 OVL + 12 PERS + 9 AUD — wait, recount below)
-- Mapped to phases: 0
-- Unmapped: 43 ⚠️ (pending roadmap)
+- v1.2 requirements: 48 total (10 EFF + 9 AUD + 17 OVL + 12 PERS)
+- Mapped to phases: 48
+- Unmapped: 0 ✓
 
 **Counts:**
-- EFF: 10 requirements
-- OVL: 17 requirements
-- PERS: 12 requirements
-- AUD: 9 requirements
+- EFF: 10 requirements → Phase 11
+- AUD: 9 requirements → Phase 12
+- OVL: 17 requirements → Phase 13
+- PERS: 12 requirements → Phase 14
 - **Total: 48 requirements**
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial v1.2 definition*
+*Last updated: 2026-04-09 — traceability table populated by roadmapper*

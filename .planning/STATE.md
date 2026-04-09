@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
-status: defining_requirements
-stopped_at: Milestone started — defining requirements
+status: roadmap_ready
+stopped_at: Roadmap created — ready to plan Phase 11
 last_updated: "2026-04-09T00:00:00.000Z"
 last_activity: 2026-04-09
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,19 +18,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-07)
+See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** v1.2 milestone — defining requirements
+**Current focus:** v1.2 milestone — Phase 11: Effects & Filters (not yet started)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 11 — Effects & Filters (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-09 — Milestone v1.2 Effects, Overlays & Persistence started
+Status: Roadmap ready — run `/gsd:plan-phase 11`
+Last activity: 2026-04-09 — v1.2 roadmap created (Phases 11–14)
 
-Progress: [░░░░░░░░░░] 0% (milestone starting)
+Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 
 ## Performance Metrics
 
@@ -44,7 +44,10 @@ Progress: [░░░░░░░░░░] 0% (milestone starting)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 11. Effects & Filters | TBD | - | - |
+| 12. Per-Cell Audio Toggle | TBD | - | - |
+| 13. Text & Sticker Overlay Layer | TBD | - | - |
+| 14. Project Persistence | TBD | - | - |
 
 **Recent Trend:**
 
@@ -206,15 +209,15 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
-- v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
-- Phase 9 added: Improve cell movement and swapping (2026-04-08)
+- v1.1 phases 7–10 added: UI Polish & Bug Fixes (2026-04-07 → 2026-04-08)
+- v1.2 phases 11–14 added: Effects, Overlays & Persistence (2026-04-09)
 
 ### Blockers/Concerns
 
-None active. Defining v1.2 requirements.
+None active. Roadmap ready — run `/gsd:plan-phase 11` to start.
 
 ## Session Continuity
 
 Last session: 2026-04-09T00:00:00.000Z
-Stopped at: Milestone v1.2 started — defining requirements
+Stopped at: v1.2 roadmap created — Phase 11 ready to plan
 Resume file: None

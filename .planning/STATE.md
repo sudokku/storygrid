@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
-status: roadmap_ready
-stopped_at: Roadmap created — ready to plan Phase 11
-last_updated: "2026-04-09T00:00:00.000Z"
-last_activity: 2026-04-09
+status: "Roadmap ready — run `/gsd:plan-phase 11`"
+stopped_at: Phase 11 context gathered
+last_updated: "2026-04-09T12:41:15.687Z"
+last_activity: 2026-04-09 — v1.2 roadmap created (Phases 11–14)
 progress:
   total_phases: 4
   completed_phases: 0
@@ -218,6 +218,6 @@ None active. Roadmap ready — run `/gsd:plan-phase 11` to start.
 
 ## Session Continuity
 
-Last session: 2026-04-09T00:00:00.000Z
-Stopped at: v1.2 roadmap created — Phase 11 ready to plan
-Resume file: None
+Last session: 2026-04-09T12:41:15.683Z
+Stopped at: Phase 11 context gathered
+Resume file: .planning/phases/11-effects-filters/11-CONTEXT.md

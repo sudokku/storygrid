@@ -77,7 +77,11 @@ Plans:
   3. Exporting an MP4 with one cell muted produces audio from only the enabled cells.
   4. Exporting an MP4 with all cells muted produces a file with no audio track.
   5. Audio toggle state survives undo/redo.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — Data model, toggleAudioEnabled store action, and test fixture migration (AUD-01, AUD-08, AUD-09)
+- [ ] 12-02-PLAN.md — UI: ActionBar speaker icon + Sidebar Playback subsection (AUD-02, AUD-03, AUD-04)
+- [ ] 12-03-PLAN.md — Export pipeline Web Audio graph + AudioContext lifecycle (AUD-05, AUD-06, AUD-07)
 
 **Key pitfalls:**
 - This is a pipeline rewrite, not a flag: `video.muted = true` on export video elements blocks `createMediaElementAudioSourceNode()`; must set `muted = false` on audio-enabled cells before wiring the Web Audio graph (the Export button click satisfies the user-gesture requirement for AudioContext).

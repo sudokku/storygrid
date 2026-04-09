@@ -107,7 +107,7 @@ export function OverlayLayer() {
                 {overlay.char}
               </span>
             )}
-            {overlay.type === 'sticker' && (
+            {overlay.type === 'sticker' && stickerRegistry[overlay.stickerRegistryId] && (
               <img
                 src={stickerRegistry[overlay.stickerRegistryId]}
                 style={{ width: overlay.width, height: 'auto', display: 'block' }}

@@ -38,23 +38,22 @@ created: 2026-04-10
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 13-01-01 | 01 | 0 | OVL-01 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-02 | 01 | 1 | OVL-02 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-03 | 01 | 1 | OVL-03 | T-13-01 | SVG sanitized before store | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-04 | 01 | 1 | OVL-04 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-05 | 01 | 1 | OVL-05 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-02-01 | 02 | 1 | OVL-06 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-02-02 | 02 | 1 | OVL-07 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-02-03 | 02 | 2 | OVL-08 | — | N/A | manual | — | — | ⬜ pending |
-| 13-02-04 | 02 | 2 | OVL-09 | — | N/A | manual | — | — | ⬜ pending |
-| 13-03-01 | 03 | 2 | OVL-10 | — | N/A | unit | `npx vitest run src/utils/__tests__/canvasExport.test.ts` | ❌ W0 | ⬜ pending |
-| 13-03-02 | 03 | 2 | OVL-11 | — | N/A | unit | `npx vitest run src/utils/__tests__/canvasExport.test.ts` | ❌ W0 | ⬜ pending |
-| 13-03-03 | 03 | 2 | OVL-12 | — | N/A | unit | `npx vitest run src/utils/__tests__/canvasExport.test.ts` | ❌ W0 | ⬜ pending |
-| 13-04-01 | 04 | 3 | OVL-13 | — | N/A | manual | — | — | ⬜ pending |
-| 13-04-02 | 04 | 3 | OVL-14 | — | N/A | manual | — | — | ⬜ pending |
-| 13-04-03 | 04 | 3 | OVL-15 | — | N/A | manual | — | — | ⬜ pending |
-| 13-05-01 | 05 | 3 | OVL-16 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
-| 13-05-02 | 05 | 3 | OVL-17 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
+| 13-01-01 | 01 | 1 | OVL-01 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts src/store/__tests__/stickerRegistry.test.ts src/utils/__tests__/canvasExport.test.ts` | ❌ W0 | ⬜ pending |
+| 13-01-02 | 01 | 1 | OVL-14 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
+| 13-01-03 | 01 | 1 | OVL-15 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
+| 13-01-04 | 01 | 1 | OVL-17 | — | N/A | unit | `npx vitest run src/store/__tests__/overlayStore.test.ts` | ❌ W0 | ⬜ pending |
+| 13-02-01 | 02 | 2 | OVL-13 | T-13-09 | Delete key guard: INPUT target must NOT call deleteOverlay | unit | `npx vitest run src/Grid/__tests__/OverlayLayer.test.tsx` | ❌ W0 | ⬜ pending |
+| 13-02-02 | 02 | 2 | OVL-10 | — | N/A | unit | `npx vitest run src/Editor/__tests__/OverlayHandles.test.tsx` | ❌ W0 | ⬜ pending |
+| 13-02-03 | 02 | 2 | OVL-11 | — | N/A | unit | `npx vitest run src/Editor/__tests__/OverlayHandles.test.tsx` | ❌ W0 | ⬜ pending |
+| 13-02-04 | 02 | 2 | OVL-12 | — | N/A | unit | `npx vitest run src/Editor/__tests__/OverlayHandles.test.tsx` | ❌ W0 | ⬜ pending |
+| 13-03-01 | 03 | 2 | OVL-16 | — | N/A | unit | `npx vitest run src/lib/__tests__/overlayExport.test.ts src/utils/__tests__/canvasExport.test.ts` | ❌ W0 | ⬜ pending |
+| 13-03-02 | 03 | 2 | OVL-16 | — | N/A | unit | `npx tsc --noEmit && npx vitest run` | — | ⬜ pending |
+| 13-04-01 | 04 | 3 | OVL-09 | T-13-09 | SVG sanitized via DOMPurify before store | unit | `npx vitest run src/lib/__tests__/svgSanitize.test.ts` | ❌ W0 | ⬜ pending |
+| 13-04-02 | 04 | 3 | OVL-08 | — | N/A | manual | — | — | ⬜ pending |
+| 13-04-03 | 04 | 3 | OVL-13 | — | N/A | manual | — | — | ⬜ pending |
+| 13-05-01 | 05 | 3 | OVL-02..07 | — | N/A | unit | `npx vitest run src/Editor/__tests__/OverlayPanel.test.tsx` | ❌ W0 | ⬜ pending |
+| 13-05-02 | 05 | 3 | OVL-14 | — | N/A | manual | — | — | ⬜ pending |
+| 13-05-03 | 05 | 3 | OVL-15 | — | N/A | manual | — | — | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -62,9 +61,11 @@ created: 2026-04-10
 
 ## Wave 0 Requirements
 
-- [ ] `src/store/__tests__/overlayStore.test.ts` — stubs for OVL-01 through OVL-07, OVL-16, OVL-17 (store actions, coordinate math, DOMPurify call, z-index reorder, selection exclusion)
-- [ ] `src/utils/__tests__/canvasExport.test.ts` — stubs for OVL-10, OVL-11, OVL-12 (canvas overlay drawing pass)
-- [ ] `src/store/__tests__/stickerRegistry.test.ts` — stubs for registry add/get/remove (mirrors mediaRegistry tests)
+All 3 Wave 0 files are created in Plan 01 Task 1 (Wave 1) before any Wave 2 tasks execute:
+
+- [ ] `src/store/__tests__/overlayStore.test.ts` — stubs for OVL-01, OVL-14, OVL-15, OVL-17 (store actions, z-index reorder, mutual exclusion, undo/redo)
+- [ ] `src/utils/__tests__/canvasExport.test.ts` — stubs for OVL-16 (canvas overlay draw pass — created in Plan 01, expanded in Plan 03)
+- [ ] `src/store/__tests__/stickerRegistry.test.ts` — stubs for registry add/get/remove (mirrors mediaRegistry pattern)
 
 ---
 

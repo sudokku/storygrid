@@ -99,6 +99,7 @@ type GridStoreState = {
   resize: (containerId: string, index: number, delta: number) => void;
   setMedia: (nodeId: string, mediaId: string) => void;
   updateCell: (nodeId: string, updates: Partial<Omit<LeafNode, 'type' | 'id'>>) => void;
+  toggleAudioEnabled: (nodeId: string) => void;
   setEffects: (nodeId: string, partial: Partial<EffectSettings>) => void;
   beginEffectsDrag: (nodeId: string) => void;
   applyPreset: (nodeId: string, presetName: PresetName) => void;
@@ -212,6 +213,16 @@ export const useGridStore = create<GridStoreState>()(
       set(state => {
         pushSnapshot(state);
         state.root = updateLeaf(current(state.root), nodeId, updates);
+      }),
+
+    toggleAudioEnabled: (nodeId) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        pushSnapshot(state);
+        state.root = updateLeaf(current(state.root), nodeId, {
+          audioEnabled: !leaf.audioEnabled,
+        });
       }),
 
     // ---------------------------------------------------------------------

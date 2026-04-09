@@ -17,6 +17,7 @@ export type LeafNode = {
   panY: number;    // percentage offset -100 to +100, default 0
   panScale: number; // 1.0-3.0, default 1
   effects: EffectSettings;
+  audioEnabled: boolean;
 };
 
 export type ContainerNode = {

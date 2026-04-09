@@ -1,4 +1,5 @@
 import { getAllLeaves } from './tree';
+import { DEFAULT_EFFECTS, effectsToFilterString } from './effects';
 import type { GridNode, LeafNode } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -305,30 +306,57 @@ export function drawLeafToCanvas(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
   rect: Rect,
-  leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor'>,
+  leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor' | 'effects'>,
 ): void {
   const objPos = parseObjectPosition(leaf.objectPosition ?? 'center center');
   const bgColor = leaf.backgroundColor ?? '#ffffff';
   const hasPan = (leaf.panX ?? 0) !== 0 || (leaf.panY ?? 0) !== 0 || (leaf.panScale ?? 1) !== 1;
 
+  // Phase 11: effects hook. Fast path (filter === 'none') skips save/restore
+  // so cells without active effects pay no overhead. Non-neutral effects set
+  // ctx.filter inside a save/restore block. Blur expands the destination rect
+  // under a cell-rect clip so bleed outside the cell is trimmed (D-04).
+  const effects = leaf.effects ?? DEFAULT_EFFECTS;
+  const filterStr = effectsToFilterString(effects);
+  const hasFilter = filterStr !== 'none';
+  const blurPad = effects.blur > 0 ? effects.blur * 2 : 0;
+
+  if (hasFilter) {
+    ctx.save();
+    ctx.filter = filterStr;
+  }
+  if (blurPad > 0) {
+    ctx.beginPath();
+    ctx.rect(rect.x, rect.y, rect.w, rect.h);
+    ctx.clip();
+  }
+
+  const drawRect: Rect = blurPad > 0
+    ? { x: rect.x - blurPad, y: rect.y - blurPad, w: rect.w + blurPad * 2, h: rect.h + blurPad * 2 }
+    : rect;
+
   if (leaf.fit === 'cover') {
     if (hasPan) {
       drawPannedCoverImage(
-        ctx, img, rect, objPos,
+        ctx, img, drawRect, objPos,
         leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
       );
     } else {
-      drawCoverImage(ctx, img, rect, objPos);
+      drawCoverImage(ctx, img, drawRect, objPos);
     }
   } else {
     if (hasPan) {
       drawPannedContainImage(
-        ctx, img, rect, objPos, bgColor,
+        ctx, img, drawRect, objPos, bgColor,
         leaf.panX ?? 0, leaf.panY ?? 0, leaf.panScale ?? 1,
       );
     } else {
-      drawContainImage(ctx, img, rect, objPos, bgColor);
+      drawContainImage(ctx, img, drawRect, objPos, bgColor);
     }
+  }
+
+  if (hasFilter) {
+    ctx.restore();
   }
 }
 

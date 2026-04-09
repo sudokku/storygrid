@@ -320,6 +320,166 @@ describe('hasVideoCell', () => {
 });
 
 // ---------------------------------------------------------------------------
+// drawLeafToCanvas effects hook (Phase 11 — Plan 02)
+// ---------------------------------------------------------------------------
+
+function makeFilterCtx() {
+  const filterAssignments: string[] = [];
+  let filter = '';
+  const ctx = {
+    get filter() {
+      return filter;
+    },
+    set filter(v: string) {
+      filter = v;
+      filterAssignments.push(v);
+    },
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+    fillStyle: '',
+    fillRect: vi.fn(),
+    drawImage: vi.fn(),
+  };
+  return { ctx, filterAssignments };
+}
+
+describe('drawLeafToCanvas effects hook', () => {
+  it('no filter assignment / save / restore when effects are DEFAULT', async () => {
+    const { drawLeafToCanvas } = await import('../lib/export');
+    const { ctx, filterAssignments } = makeFilterCtx();
+    const leaf = makeTestLeaf({ id: 'l1' });
+    const fakeImg = {} as HTMLImageElement;
+    drawLeafToCanvas(
+      ctx as unknown as CanvasRenderingContext2D,
+      fakeImg,
+      { x: 0, y: 0, w: 200, h: 200 },
+      leaf,
+    );
+    expect(filterAssignments).toHaveLength(0);
+    expect(ctx.save).not.toHaveBeenCalled();
+    expect(ctx.restore).not.toHaveBeenCalled();
+    expect(ctx.clip).not.toHaveBeenCalled();
+  });
+
+  it('sets ctx.filter to brightness(1.5) for brightness:50', async () => {
+    const { drawLeafToCanvas } = await import('../lib/export');
+    const { ctx, filterAssignments } = makeFilterCtx();
+    const leaf = makeTestLeaf({
+      id: 'l1',
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0 },
+    });
+    drawLeafToCanvas(
+      ctx as unknown as CanvasRenderingContext2D,
+      {} as HTMLImageElement,
+      { x: 0, y: 0, w: 200, h: 200 },
+      leaf,
+    );
+    expect(filterAssignments).toEqual(['brightness(1.5)']);
+    expect(ctx.save).toHaveBeenCalledTimes(1);
+    expect(ctx.restore).toHaveBeenCalledTimes(1);
+    expect(ctx.clip).not.toHaveBeenCalled();
+  });
+
+  it('blur=10 expands draw rect to 240x240 and clips to original 200x200', async () => {
+    const { drawLeafToCanvas } = await import('../lib/export');
+    const { ctx } = makeFilterCtx();
+    const leaf = makeTestLeaf({
+      id: 'l1',
+      mediaId: 'm',
+      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 10 },
+    });
+    const fakeImg = { width: 100, height: 100 } as HTMLImageElement;
+    drawLeafToCanvas(
+      ctx as unknown as CanvasRenderingContext2D,
+      fakeImg,
+      { x: 0, y: 0, w: 200, h: 200 },
+      leaf,
+    );
+    // Clip rect uses ORIGINAL cell dimensions
+    expect(ctx.rect).toHaveBeenCalledWith(0, 0, 200, 200);
+    expect(ctx.clip).toHaveBeenCalledTimes(1);
+    // drawImage destination dimensions reflect the expanded draw rect (200 + 2*20 = 240)
+    const lastCall = ctx.drawImage.mock.calls[ctx.drawImage.mock.calls.length - 1];
+    // Cover-fit dispatch goes through drawCoverImage which uses drawImage with
+    // signature (img, sx, sy, sw, sh, dx, dy, dw, dh). dw/dh are last two.
+    const dw = lastCall[lastCall.length - 2] as number;
+    const dh = lastCall[lastCall.length - 1] as number;
+    expect(dw).toBe(240);
+    expect(dh).toBe(240);
+  });
+
+  it('blur=5 on 100x100 cell expands draw rect to 120x120', async () => {
+    const { drawLeafToCanvas } = await import('../lib/export');
+    const { ctx } = makeFilterCtx();
+    const leaf = makeTestLeaf({
+      id: 'l1',
+      mediaId: 'm',
+      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 5 },
+    });
+    drawLeafToCanvas(
+      ctx as unknown as CanvasRenderingContext2D,
+      { width: 50, height: 50 } as HTMLImageElement,
+      { x: 0, y: 0, w: 100, h: 100 },
+      leaf,
+    );
+    const lastCall = ctx.drawImage.mock.calls[ctx.drawImage.mock.calls.length - 1];
+    const dw = lastCall[lastCall.length - 2] as number;
+    const dh = lastCall[lastCall.length - 1] as number;
+    expect(dw).toBe(120);
+    expect(dh).toBe(120);
+  });
+
+  it('combined brightness + blur composes filter string and applies overdraw', async () => {
+    const { drawLeafToCanvas } = await import('../lib/export');
+    const { ctx, filterAssignments } = makeFilterCtx();
+    const leaf = makeTestLeaf({
+      id: 'l1',
+      mediaId: 'm',
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 5 },
+    });
+    drawLeafToCanvas(
+      ctx as unknown as CanvasRenderingContext2D,
+      { width: 100, height: 100 } as HTMLImageElement,
+      { x: 0, y: 0, w: 100, h: 100 },
+      leaf,
+    );
+    expect(filterAssignments).toEqual(['brightness(1.5) blur(5px)']);
+    expect(ctx.save).toHaveBeenCalledTimes(1);
+    expect(ctx.restore).toHaveBeenCalledTimes(1);
+    expect(ctx.clip).toHaveBeenCalledTimes(1);
+  });
+
+  it('three-path parity: renderGridIntoContext forwards effects through to drawLeafToCanvas', async () => {
+    const { renderGridIntoContext } = await import('../lib/export');
+    const { ctx, filterAssignments } = makeFilterCtx();
+    const leaf: LeafNode = makeTestLeaf({
+      id: 'leaf-1',
+      mediaId: 'm1',
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0 },
+    });
+    // Provide a fake image cache so renderNode does NOT call loadImage.
+    const imageCache = new Map<string, HTMLImageElement>();
+    imageCache.set('data:image/png;base64,abc', { width: 10, height: 10 } as HTMLImageElement);
+
+    await renderGridIntoContext(
+      ctx as unknown as CanvasRenderingContext2D,
+      leaf as unknown as GridNode,
+      { m1: 'data:image/png;base64,abc' },
+      1080,
+      1920,
+      undefined,
+      undefined,
+      imageCache,
+    );
+
+    expect(filterAssignments).toContain('brightness(1.5)');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // downloadDataUrl (unchanged function — still passes)
 // ---------------------------------------------------------------------------
 

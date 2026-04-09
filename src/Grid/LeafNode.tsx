@@ -270,7 +270,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         curr.panScale !== prevLeaf.panScale ||
         curr.fit !== prevLeaf.fit ||
         curr.mediaId !== prevLeaf.mediaId ||
-        curr.objectPosition !== prevLeaf.objectPosition
+        curr.objectPosition !== prevLeaf.objectPosition ||
+        curr.effects !== prevLeaf.effects
       ) {
         drawRef.current();
       }

@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: executing
 stopped_at: Phase 11 UI-SPEC approved
-last_updated: "2026-04-09T13:22:03.081Z"
-last_activity: 2026-04-09 -- Phase 11 execution started
+last_updated: "2026-04-09T19:39:01.185Z"
+last_activity: 2026-04-09
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 3
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 11 (effects-filters) — EXECUTING
-Plan: 1 of 3
+Phase: 12
+Plan: Not started
 Status: Executing Phase 11
-Last activity: 2026-04-09 -- Phase 11 execution started
+Last activity: 2026-04-09
 
 Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 

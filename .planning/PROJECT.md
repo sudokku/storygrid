@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.2 Effects, Overlays & Persistence in progress (started 2026-04-09). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics.
+**Current State:** v1.2 Effects, Overlays & Persistence in progress (started 2026-04-09); Phase 11 Effects & Filters shipped 2026-04-09. v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 kicked off with per-cell effects and presets (6 presets + 4 sliders + 2 reset buttons) rendered via a single-hook `drawLeafToCanvas` path that guarantees preview ≡ PNG ≡ MP4 parity.
 
 ## Core Value
 
@@ -100,6 +100,14 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ ActionBar sizing re-settled as fixed `w-16 h-16` (64px) in viewport-space portal (CELL-02 reframed) — v1.1
 - ✓ LeafNode `isolate` removed; stale "no isolate" comment corrected; regression test locks invariant (CELL-01) — v1.1
 - ✓ Sidebar Replace input accepts `video/*` with proper blob-URL + mediaType branching (MEDIA-01 upload path) — v1.1
+
+**Phase 11 — Effects & Filters** (v1.2)
+- ✓ Per-cell effects data model — required `effects: EffectSettings` field on LeafNode (EFF-01, EFF-02, EFF-03, EFF-04, EFF-07) — v1.2
+- ✓ Six preset filters (B&W, Sepia, Vivid, Fade, Warm, Cool) with contract-locked numeric tuples (EFF-01, EFF-10) — v1.2
+- ✓ Four sliders — brightness, contrast, saturation, blur — with drag-to-one-undo semantics (EFF-02, EFF-03, EFF-04, EFF-05, EFF-09) — v1.2
+- ✓ Single-hook draw path — `drawLeafToCanvas` applies `ctx.filter` from `leaf.effects` with blur overdraw + clip, guaranteeing preview ≡ PNG ≡ MP4 (EFF-08) — v1.2
+- ✓ Reset effects / Reset cell buttons in the sidebar EffectsPanel (EFF-06) — v1.2
+- ✓ UAT confirmed by user — 2-video + 2-image story exported successfully with presets and sliders applied (2026-04-09)
 
 ### Active
 

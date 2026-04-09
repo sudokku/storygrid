@@ -144,7 +144,7 @@ Plans:
 | 8. Canvas & Workspace UX | v1.1 | 3/3 | Complete | 2026-04-07 |
 | 9. Improve cell movement and swapping | v1.1 | 4/4 | Complete | 2026-04-08 |
 | 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete | 2026-04-08 |
-| 11. Effects & Filters | v1.2 | 3/3 | Complete   | 2026-04-09 |
+| 11. Effects & Filters | v1.2 | 3/3 | Complete    | 2026-04-09 |
 | 12. Per-Cell Audio Toggle | v1.2 | 0/? | Not started | - |
 | 13. Text & Sticker Overlay Layer | v1.2 | 0/? | Not started | - |
 | 14. Project Persistence | v1.2 | 0/? | Not started | - |

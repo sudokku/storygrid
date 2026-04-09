@@ -25,6 +25,7 @@ const leafNoMedia: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 const leafWithImageMedia: GridNode = {
@@ -34,6 +35,7 @@ const leafWithImageMedia: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 const leafWithVideoMedia: GridNode = {
@@ -43,6 +45,7 @@ const leafWithVideoMedia: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 // ---------------------------------------------------------------------------

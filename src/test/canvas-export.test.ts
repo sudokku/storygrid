@@ -20,6 +20,7 @@ function makeTestLeaf(overrides: Partial<LeafNode> & { id: string }): LeafNode {
     panY: 0,
     panScale: 1,
     effects: { ...DEFAULT_EFFECTS },
+    audioEnabled: true,
     ...overrides,
   };
 }

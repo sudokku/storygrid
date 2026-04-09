@@ -42,6 +42,7 @@ const singleLeaf: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 const STORAGE_KEY = 'storygrid_onboarding_done';

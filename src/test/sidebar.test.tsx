@@ -14,6 +14,7 @@ const singleLeaf: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 // A leaf with a media item
@@ -24,6 +25,7 @@ const leafWithMedia: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 // Two-leaf container for dimension testing
@@ -33,8 +35,8 @@ const twoLeafContainer: GridNode = {
   direction: 'vertical',
   sizes: [1, 1],
   children: [
-    { type: 'leaf', id: 'child-1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null },
-    { type: 'leaf', id: 'child-2', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null },
+    { type: 'leaf', id: 'child-1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true },
+    { type: 'leaf', id: 'child-2', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true },
   ],
 };
 
@@ -220,8 +222,8 @@ describe('Sidebar', () => {
         direction: 'horizontal',
         sizes: [1, 1],
         children: [
-          { type: 'leaf', id: 'h-child-1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null },
-          { type: 'leaf', id: 'h-child-2', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null },
+          { type: 'leaf', id: 'h-child-1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true },
+          { type: 'leaf', id: 'h-child-2', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true },
         ],
       };
       useGridStore.setState({ root: hContainer });

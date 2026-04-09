@@ -38,11 +38,11 @@ describe('swapLeafContent', () => {
   it('swaps mediaId, fit, backgroundColor, panX, panY, panScale between two leaves', () => {
     const leafA: LeafNode = {
       type: 'leaf', id: 'a', mediaId: 'media-a', fit: 'cover',
-      backgroundColor: '#ff0000', panX: 10, panY: 20, panScale: 1.5,
+      backgroundColor: '#ff0000', panX: 10, panY: 20, panScale: 1.5, audioEnabled: true,
     };
     const leafB: LeafNode = {
       type: 'leaf', id: 'b', mediaId: 'media-b', fit: 'contain',
-      backgroundColor: '#00ff00', panX: -5, panY: 15, panScale: 2.0,
+      backgroundColor: '#00ff00', panX: -5, panY: 15, panScale: 2.0, audioEnabled: true,
     };
     const root: GridNode = {
       type: 'container', id: 'root', direction: 'vertical', sizes: [1, 1],

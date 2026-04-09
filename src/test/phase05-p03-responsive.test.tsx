@@ -18,6 +18,7 @@ const singleLeaf: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 // matchMedia mock factory

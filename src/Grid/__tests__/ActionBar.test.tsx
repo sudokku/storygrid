@@ -22,6 +22,7 @@ function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
     fit: 'cover',
     objectPosition: 'center center',
     backgroundColor: null,
+    audioEnabled: true,
     ...overrides,
   };
 }

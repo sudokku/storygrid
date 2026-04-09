@@ -26,6 +26,7 @@ const initialRoot: GridNode = {
   fit: 'cover',
   objectPosition: 'center center',
   backgroundColor: null,
+  audioEnabled: true,
 };
 
 beforeEach(() => {

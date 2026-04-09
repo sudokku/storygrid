@@ -22,6 +22,7 @@ function resetStores() {
     fit: 'cover',
     objectPosition: 'center center',
     backgroundColor: null,
+    audioEnabled: true,
   };
   useGridStore.setState({
     root: leaf,
@@ -255,6 +256,7 @@ describe('ExportSplitButton', () => {
       fit: 'cover',
       objectPosition: 'center center',
       backgroundColor: null,
+      audioEnabled: true,
     };
     useGridStore.setState({
       root: leafWithVideo,
@@ -294,6 +296,7 @@ describe('exportVideoGrid', () => {
       fit: 'cover',
       objectPosition: 'center center',
       backgroundColor: null,
+      audioEnabled: true,
     };
 
     await expect(

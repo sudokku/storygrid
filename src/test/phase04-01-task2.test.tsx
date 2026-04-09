@@ -56,17 +56,17 @@ describe('downloadDataUrl', () => {
 
 describe('hasVideoCell', () => {
   it('returns false when all media entries are image type', () => {
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'img1', fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'img1', fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     expect(hasVideoCell(leaf, { img1: 'image' })).toBe(false);
   });
 
   it('returns true when any media entry has type "video"', () => {
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'vid1', fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'vid1', fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     expect(hasVideoCell(leaf, { vid1: 'video' })).toBe(true);
   });
 
   it('returns false when tree has no media at all', () => {
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     expect(hasVideoCell(leaf, {})).toBe(false);
   });
 });
@@ -81,7 +81,7 @@ import { useEditorStore } from '../store/editorStore';
 
 describe('EditorShell — ExportSurface removed', () => {
   it('ExportSurface is NOT present in EditorShell DOM (Canvas API replaces DOM capture)', () => {
-    const leaf: LeafNode = { type: 'leaf', id: 'root-leaf', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null };
+    const leaf: LeafNode = { type: 'leaf', id: 'root-leaf', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     useGridStore.setState({ root: leaf, mediaRegistry: {}, history: [{ root: leaf }], historyIndex: 0 });
     useEditorStore.setState({ selectedNodeId: null });
     render(<EditorShell />);

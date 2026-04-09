@@ -60,6 +60,7 @@ function makeLeaf(id: string, overrides?: Partial<LeafNode>): LeafNode {
     panX: 0,
     panY: 0,
     panScale: 1,
+    audioEnabled: true,
     ...overrides,
   };
 }

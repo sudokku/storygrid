@@ -15,7 +15,7 @@ import type { ContainerNode, LeafNode, GridNode } from '../types';
 // ---------------------------------------------------------------------------
 
 function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
-  return { type: 'leaf', id: 'leaf-1', mediaId: null, fit: 'cover', ...overrides };
+  return { type: 'leaf', id: 'leaf-1', mediaId: null, fit: 'cover', audioEnabled: true, ...overrides };
 }
 
 function makeContainer(direction: 'horizontal' | 'vertical' = 'horizontal', children?: GridNode[]): ContainerNode {

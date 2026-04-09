@@ -8,9 +8,9 @@ import { useEditorStore } from '../store/editorStore';
 // Reset stores before each test
 beforeEach(() => {
   useGridStore.setState({
-    root: { type: 'leaf', id: 'root', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null },
+    root: { type: 'leaf', id: 'root', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true },
     mediaRegistry: {},
-    history: [{ root: { type: 'leaf', id: 'root', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null } }],
+    history: [{ root: { type: 'leaf', id: 'root', mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, audioEnabled: true } }],
     historyIndex: 0,
   });
   useEditorStore.setState({
@@ -130,7 +130,7 @@ describe('Toolbar', () => {
   });
 
   it('Undo button is enabled when history has entries', () => {
-    const leaf = { type: 'leaf' as const, id: 'root', mediaId: null, fit: 'cover' as const, objectPosition: 'center center', backgroundColor: null };
+    const leaf = { type: 'leaf' as const, id: 'root', mediaId: null, fit: 'cover' as const, objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     useGridStore.setState({
       history: [{ root: leaf }, { root: leaf }],
       historyIndex: 1,
@@ -142,7 +142,7 @@ describe('Toolbar', () => {
 
   it('clicking Undo calls gridStore.undo', () => {
     const undo = vi.fn();
-    const leaf = { type: 'leaf' as const, id: 'root', mediaId: null, fit: 'cover' as const, objectPosition: 'center center', backgroundColor: null };
+    const leaf = { type: 'leaf' as const, id: 'root', mediaId: null, fit: 'cover' as const, objectPosition: 'center center', backgroundColor: null, audioEnabled: true };
     useGridStore.setState({
       history: [{ root: leaf }, { root: leaf }],
       historyIndex: 1,

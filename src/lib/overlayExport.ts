@@ -94,7 +94,10 @@ export async function drawOverlaysToCanvas(
             ? drawX + overlay.width
             : drawX;
 
-      ctx.fillText(overlay.content, alignX, drawY);
+      const lines = overlay.content.split('\n');
+      lines.forEach((line, i) => {
+        ctx.fillText(line, alignX, drawY + i * (overlay.fontSize * 1.2));
+      });
     } else if (overlay.type === 'emoji') {
       ctx.font = `${overlay.width}px serif`;
       ctx.textAlign = 'center';

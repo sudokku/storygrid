@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { current } from 'immer';
 import type { GridNode, SplitDirection, LeafNode } from '../types';
+import type { EffectSettings, PresetName } from '../lib/effects';
+import { DEFAULT_EFFECTS, PRESET_VALUES } from '../lib/effects';
 import {
   splitNode,
   mergeNode,
@@ -97,6 +99,11 @@ type GridStoreState = {
   resize: (containerId: string, index: number, delta: number) => void;
   setMedia: (nodeId: string, mediaId: string) => void;
   updateCell: (nodeId: string, updates: Partial<Omit<LeafNode, 'type' | 'id'>>) => void;
+  setEffects: (nodeId: string, partial: Partial<EffectSettings>) => void;
+  beginEffectsDrag: (nodeId: string) => void;
+  applyPreset: (nodeId: string, presetName: PresetName) => void;
+  resetEffects: (nodeId: string) => void;
+  resetCell: (nodeId: string) => void;
   addMedia: (mediaId: string, dataUri: string, type?: 'image' | 'video') => void;
   removeMedia: (mediaId: string) => void;
   clearGrid: () => void;
@@ -205,6 +212,81 @@ export const useGridStore = create<GridStoreState>()(
       set(state => {
         pushSnapshot(state);
         state.root = updateLeaf(current(state.root), nodeId, updates);
+      }),
+
+    // ---------------------------------------------------------------------
+    // Effects actions (Phase 11 — D-14, D-15, D-19, D-20, D-21)
+    // ---------------------------------------------------------------------
+
+    // setEffects: NO snapshot — caller pairs with beginEffectsDrag on drag
+    // start so a full drag produces one undo entry. Per D-15, touching any
+    // numeric slider while a preset is active clears the preset flag.
+    setEffects: (nodeId, partial) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        const nextEffects: EffectSettings = { ...leaf.effects, ...partial };
+        const touchesNumeric =
+          'brightness' in partial ||
+          'contrast' in partial ||
+          'saturation' in partial ||
+          'blur' in partial;
+        if (touchesNumeric && leaf.effects.preset !== null) {
+          nextEffects.preset = null;
+        }
+        state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
+      }),
+
+    // beginEffectsDrag: pushes the pre-drag snapshot only. No tree write.
+    // No-op if nodeId doesn't resolve to a leaf (avoids polluting history).
+    beginEffectsDrag: (nodeId) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        pushSnapshot(state);
+      }),
+
+    // applyPreset: one snapshot + write. Sets preset flag + numeric values.
+    applyPreset: (nodeId, presetName) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        pushSnapshot(state);
+        const nextEffects: EffectSettings = {
+          preset: presetName,
+          ...PRESET_VALUES[presetName],
+        };
+        state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
+      }),
+
+    // resetEffects: one snapshot + write. Only touches effects (preserves
+    // pan/fit/backgroundColor/objectPosition/mediaId).
+    resetEffects: (nodeId) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        pushSnapshot(state);
+        state.root = updateLeaf(current(state.root), nodeId, {
+          effects: { ...DEFAULT_EFFECTS },
+        });
+      }),
+
+    // resetCell: one snapshot + write. Clears effects + pan/zoom/fit/bg/
+    // objectPosition. Preserves mediaId (the media stays; presentation resets).
+    resetCell: (nodeId) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        pushSnapshot(state);
+        state.root = updateLeaf(current(state.root), nodeId, {
+          effects: { ...DEFAULT_EFFECTS },
+          panX: 0,
+          panY: 0,
+          panScale: 1,
+          fit: 'cover',
+          objectPosition: 'center center',
+          backgroundColor: null,
+        });
       }),
 
     // clearGrid resets root, mediaRegistry, mediaTypeMap, thumbnailMap, and history to initial state

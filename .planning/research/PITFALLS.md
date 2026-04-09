@@ -1,601 +1,446 @@
-# Pitfalls Research
+# Domain Pitfalls
 
-**Domain:** Client-side canvas collage editor — adding effects, overlays, persistence, and audio to StoryGrid v1.2
-**Researched:** 2026-04-08
-**Confidence:** HIGH (architecture-specific pitfalls verified against existing codebase; browser-specific claims verified against MDN / caniuse / WebKit Bugzilla)
+**Domain:** Browser-based media editor (Instagram Story collage, recursive split-tree, CSS→image export)
+**Stack:** Vite + React 18 + TypeScript + Zustand + Immer + Tailwind + html-to-image + @dnd-kit + @ffmpeg/ffmpeg
+**Researched:** 2026-03-31
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: ctx.filter Is Disabled By Default in All Safari Versions
-
-**What goes wrong:**
-`CanvasRenderingContext2D.filter` — the property that enables canvas-side filters like `blur(8px)`, `grayscale(100%)`, `brightness(1.5)` — is not supported in any Safari version including Safari 18. According to caniuse, Safari marks the feature as "Disabled by default" from 3.1 through the Technical Preview. Chrome 52+ and Firefox 49+ have full support; Safari has zero shipping support.
-
-**Why it happens:**
-Developers test in Chrome/Firefox where `ctx.filter = 'brightness(1.5)'` works correctly, then ship without Safari testing. At runtime in Safari, the filter assignment is silently ignored and the image draws unfiltered.
-
-**How to avoid:**
-Do not use `ctx.filter` as the primary filter path. Instead, implement effects using manual per-pixel manipulation or the Canvas ImageData API, or use an offscreen canvas with `filter:` CSS applied and then `drawImage()` that canvas. For the specific filters needed (brightness, contrast, saturation, grayscale, sepia), each has a well-known compositing equivalent:
-- Brightness/contrast: apply via `ctx.globalCompositeOperation` + colored overlay draws
-- Grayscale: convert via `ImageData` pixel manipulation or a ColorMatrix-equivalent approach
-- Blur: draw overflowed source and clip (see Pitfall 2)
-
-Alternatively, use a pure Canvas 2D color-matrix approach that works in all browsers without the `filter` property. Build a `applyEffects(ctx, rect, leaf)` function called in the existing `drawLeafToCanvas()` pipeline at both preview and export sites — this guarantees parity.
-
-**Warning signs:**
-- Filters visible in Chrome but completely absent in Safari
-- `ctx.filter` assignment does not throw — it fails silently in Safari
-
-**Phase to address:**
-Effects & Filters phase — must be designed upfront. Cannot retrofit after building on `ctx.filter`.
+Mistakes that cause rewrites, blank exports, or unshippable features.
 
 ---
 
-### Pitfall 2: Blur Filter Edge Bleeding When Combined with Clip Paths
+### Pitfall 1: html-to-image produces a blank or partial PNG on the first call
 
 **What goes wrong:**
-When `ctx.filter = 'blur(Npx)'` is applied before `drawImage()`, the Gaussian blur algorithm samples outside the image boundary and blends with transparent pixels, producing a semi-transparent fade along all four edges. In StoryGrid, each cell has a clip path applied for border-radius. The blur bleeds produce faded/transparent edges inside the clip boundary, creating a visible halo artifact particularly noticeable on cells with dark images.
-
-The existing `drawPannedCoverImage` and `drawCoverImage` already use `ctx.save()`/`ctx.clip()`/`ctx.restore()` for border-radius clipping — adding a filter on top of this interacts with the clip bounds.
+`toPng()` internally serializes the DOM to SVG, then draws that SVG onto a canvas. On the first invocation, external resources — images, fonts, stylesheets — may not have finished fetching into the library's internal base64 cache. The result is a PNG where image cells are white rectangles and text uses the browser's fallback font.
 
 **Why it happens:**
-The blur algorithm needs real pixels beyond the draw boundary. When drawing to the clip boundary exactly, there are no pixels on the outside, so the algorithm blends edge pixels with transparency.
+The library fetches every external resource referenced in computed CSS (including `@font-face` sources and `<img>` `src` attributes) during each call, re-encoding them as data URIs inside the SVG blob. On the first call the fetches race against SVG serialization. Subsequent calls often succeed because the fetches complete before serialization begins.
 
-**How to avoid:**
-Draw the source image `blurRadius * 2` pixels beyond each edge of the cell rect, then let the existing clip path trim it. The formula: draw to `{x: rect.x - r*2, y: rect.y - r*2, w: rect.w + r*4, h: rect.h + r*4}` before applying the blur. The clip path from `ctx.rect(rect.x, rect.y, rect.w, rect.h)` removes the overflow, and the blur now has real pixels on all sides.
+**Consequences:**
+- MVP export silently delivers corrupt PNGs.
+- Users report "blank download" but cannot reproduce after retrying.
+- The bug is masked in dev because localhost has near-zero latency.
+
+**Prevention:**
+1. Call `toPng()` twice and discard the first result. This is the documented community workaround (verified: multiple issues on `bubkoo/html-to-image`).
+2. Call `getFontEmbedCSS()` once at app load, store the result, and pass it as `{ fontEmbedCSS: cachedValue }` to every subsequent `toPng()` call — this skips redundant font fetching on each export.
+3. Pre-load all user images as base64 data URIs at the time of upload (convert `File` → `data:` URL via `FileReader.readAsDataURL`), and store that data URI in the cell state instead of a blob URL. The export element then contains only inline data, eliminating all network fetches during capture.
 
 **Warning signs:**
-- Blurred cells show a soft transparent border inside the cell boundary
-- Artifact is proportional to blur radius — small blur hides it, large blur reveals it
-- Particularly visible when blur cell is adjacent to a gap or different-colored cell
+- Export works in development, fails or is incomplete in staging/production.
+- First export call in a fresh session produces blank cells; retrying works.
+- Console shows `SecurityError: Failed to fetch` or CORS errors during export.
 
-**Phase to address:**
-Effects & Filters phase, blur slider implementation task.
+**Phase relevance:** Phase 4 (Export Engine) — must be addressed before export is considered done.
 
 ---
 
-### Pitfall 3: Preview/Export Filter Divergence — CSS vs Canvas Path
+### Pitfall 2: html-to-image and video elements — always renders blank
 
 **What goes wrong:**
-The LeafNode preview renders via `<canvas>` using `drawLeafToCanvas()`. If filters are applied as CSS `filter:` on the preview canvas element instead of inside `drawLeafToCanvas()`, the export (which calls `drawLeafToCanvas()` directly) will produce unfiltered output. The preview looks right; the PNG/MP4 export is wrong.
+`toPng()` cannot capture the current frame of a `<video>` element. The SVG serialization step omits video content entirely; the canvas cell that corresponds to the video is blank (black or transparent). This is a hard limitation of the SVG-serialization approach — it does not use `drawImage` against the video element.
 
 **Why it happens:**
-CSS `filter:` on a canvas element is the path of least resistance for quick preview implementation. It works immediately in all browsers. The mistake is not wiring the same filter into the Canvas 2D draw path used by the export engine.
+The library rasterizes by drawing SVG into a canvas via `new Image().src = svgBlob`. At that point, video security restrictions (`tainted canvas` rules) prevent the browser from drawing cross-origin video frames, and no frame callback fires during serialization.
 
-**How to avoid:**
-Apply ALL visual effects inside `drawLeafToCanvas()` using Canvas 2D operations — never via CSS on the preview element. The existing architecture already enforces this for pan/zoom/fit. Extend the `LeafNode` type to include an `effects` object (brightness, contrast, saturation, blur, preset) and pass it through `drawLeafToCanvas()` so both paths are identical by construction.
+**Consequences:**
+- Phase 6 (Video Support) cannot use the Phase 4 export path for cells that contain video.
+- Shipping video cells without solving this means video frames are always missing from exports.
 
-Add an integration test that renders a leaf with a specific effect to a canvas, exports it, and asserts the export canvas pixel at the center is within tolerance of the expected filtered value.
+**Prevention:**
+For video export (Phase 6) use ffmpeg.wasm's `xstack` filter entirely — do not attempt html-to-image for video frames. The architecture is already correct: Phase 4 is image-only, Phase 6 is ffmpeg-only. Never attempt to use `toPng()` on a container that has live `<video>` children.
+
+For a "poster frame" thumbnail during video export progress display, use `requestVideoFrameCallback` or draw the video to an offscreen canvas first, then export that canvas as a data URL.
 
 **Warning signs:**
-- Filters look correct in the editor but the exported PNG looks unfiltered
-- Video export also unfiltered while preview canvas shows filters correctly
-- No test failures during development because tests don't cross preview/export boundaries
+- Any code that calls `toPng()` on a parent element containing `<video>` tags.
+- Export function is not branching on whether any cells contain video.
 
-**Phase to address:**
-Effects & Filters phase, at the type design and `drawLeafToCanvas` extension step.
+**Phase relevance:** Phase 4 (confirm image-only path) and Phase 6 (enforce ffmpeg-only path).
 
 ---
 
-### Pitfall 4: Effects Stored in LeafNode Snapshot — History Bloat When Combined with Base64 Images
+### Pitfall 3: CORS tainted canvas prevents export of user images from object URLs or external URLs
 
 **What goes wrong:**
-The current `pushSnapshot()` calls `structuredClone({ root: plainRoot })`. Once effects are added to `LeafNode`, the snapshots still only contain the `root` tree (not `mediaRegistry`). This is correct and intentional — base64 image data lives in `mediaRegistry` which is excluded from snapshots. However, if effects values are non-trivial objects (e.g., nested preset metadata), each slider drag fires a `pushSnapshot` producing up to 50 structuredClone calls on the full tree before the cap kicks in. With a 12-cell grid, each clone copies 12 × N effect fields per snapshot.
+If any `<img>` inside the export container has a `src` that is cross-origin (including some CDN-hosted assets or improperly handled local file URLs), the browser marks the canvas as tainted, throwing `SecurityError: The operation is insecure` when `toPng()` calls `canvas.toDataURL()`.
 
-The real danger: if sticker/overlay embedded base64 (PNG stickers) is stored inside the `root` tree snapshot instead of a separate registry, every snapshot carries the full sticker image data. With a 200KB sticker and 50 history entries, that's 10MB of in-memory history.
+Separately, Chromium has a documented cache behavior: if an image is first loaded without CORS headers and then re-requested with `crossOrigin="anonymous"`, Chromium serves the cached non-CORS response, which re-taints the canvas. This is flagged as `WontFix` in Chromium's tracker.
 
 **Why it happens:**
-Overlay/sticker model is designed alongside the effects feature. The temptation is to embed sticker base64 directly in overlay data because it co-locates cleanly with position/rotation/scale. But the history machinery clones everything in `root`.
+- User drops an image from an external URL (not a local file) directly into a cell.
+- The export div uses `<img src="blob:...">` — blob URLs are same-origin, so these are safe. But if the user pastes an `https://` URL, it becomes cross-origin.
+- CSS `background-image` from cross-origin URLs in the export element triggers the same failure.
 
-**How to avoid:**
-Follow the existing pattern: create a `stickerRegistry` (same shape as `mediaRegistry`) and store only a `stickerId` reference in the overlay node — never the raw base64. History snapshots will then contain only IDs. Keep overlay/sticker base64 out of any snapshot path.
+**Consequences:**
+Export silently produces a tainted canvas error; the download never happens.
 
-For effects values (numbers: brightness 0-200, blur 0-20px), the structuredClone cost is negligible — no special handling needed. Only blob-like data needs the registry pattern.
+**Prevention:**
+1. At upload time, convert every user-supplied `File` object to a `data:` URI immediately using `FileReader.readAsDataURL`. Store only the data URI in `MediaItem.src`. Never store raw blob URLs in export state.
+2. If external URL pasting is ever supported, proxy the image through a same-origin fetch, convert to data URI, then store.
+3. In the export container, all `<img>` elements must have `crossOrigin="anonymous"` set AND be loaded against a server that returns `Access-Control-Allow-Origin: *`.
 
 **Warning signs:**
-- DevTools heap snapshot shows Memory spiking when undoing through steps with sticker overlays
-- `history` array visible in Zustand devtools contains large objects
+- `MediaItem.src` stores `https://` URLs or `blob:` URLs.
+- Console shows `SecurityError` or `tainted canvas` during export.
+- Export works on localhost but fails on deployed Vercel/Netlify.
 
-**Phase to address:**
-Overlay layer phase, at the overlay data model design step. Effects phase also — confirm `effects` fields are number-only primitives, not complex objects.
+**Phase relevance:** Phase 3 (Media Upload — enforce data URI conversion) and Phase 4 (Export Engine).
 
 ---
 
-### Pitfall 5: Overlay Coordinate Space — Three Incompatible Systems
+### Pitfall 4: ffmpeg.wasm fails without COOP/COEP headers — and those headers break third-party embeds
 
 **What goes wrong:**
-StoryGrid has three coordinate spaces that are easy to confuse:
-1. **Viewport/CSS pixels** — where `createPortal(document.body)` elements like ActionBar live. Pointer events use `clientX/clientY`.
-2. **Scaled preview space** — the canvas is displayed at `transform: scale(K)` where K varies with viewport. Mouse events inside the canvas wrapper have coordinates in scaled CSS pixels.
-3. **Canvas space (1080×1920)** — the internal coordinate system used by all drawing, export, and the `drawLeafToCanvas()` pipeline.
+`@ffmpeg/ffmpeg` requires `SharedArrayBuffer`, which browsers only expose in cross-origin isolated contexts. Without the following headers on every page response, ffmpeg.wasm throws `ReferenceError: SharedArrayBuffer is not defined`:
 
-Overlay items (text, stickers) need to be positioned in one canonical system. If stored in CSS pixels, they break when the editor is resized or zoomed. If stored in viewport pixels, they depend on window size. If stored in canvas space (1080×1920), they must be mapped through scale+translate for all pointer interactions.
-
-**Why it happens:**
-The natural instinct is to store overlay position in the same coordinates returned by pointer events. But `clientX/clientY` is in viewport space; the canvas is scaled and offset from the viewport top-left by a variable amount.
-
-**How to avoid:**
-Store ALL overlay positions in canvas space (0–1080 for X, 0–1920 for Y). Convert incoming pointer events to canvas space using:
 ```
-const rect = canvasWrapper.getBoundingClientRect();
-const scaleX = 1080 / rect.width;
-const scaleY = 1920 / rect.height;
-const canvasX = (event.clientX - rect.left) * scaleX;
-const canvasY = (event.clientY - rect.top) * scaleY;
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
 ```
-This is the same conversion already used for the pan/zoom gesture. Overlay rendering in the preview converts back: multiply by `(rect.width / 1080)`. Export uses canvas coordinates directly.
 
-**Warning signs:**
-- Overlay items appear in wrong position when browser window is resized
-- Overlay position correct at one zoom level but offset at others
-- Export places text in a different position than preview shows
-
-**Phase to address:**
-Overlay layer phase, at the data model and event handling design step. Must be locked in before any drag-move implementation.
-
----
-
-### Pitfall 6: Hit-Testing Conflict Between Overlay Drag and Cell Selection
-
-**What goes wrong:**
-The overlay layer renders above the grid (higher z-index). When a user clicks on an empty area of the overlay (not on any overlay item), the click must fall through to the grid cells below to enable cell selection. If the overlay layer captures all pointer events, clicking a cell becomes impossible when the overlay is active.
-
-Conversely, when dragging an overlay item, the drag must not accidentally trigger cell selection or the ActionBar portal.
+The secondary trap: once COEP is set to `require-corp`, every sub-resource (images, fonts, iframes, workers) loaded by the page must also serve `Cross-Origin-Resource-Policy: cross-origin` or `same-origin`. Any third-party resource without this header is blocked — breaking Google Fonts, external CDN images, analytics scripts, social embeds, etc.
 
 **Why it happens:**
-Rendering an overlay `<div>` with `position: absolute; inset: 0` captures all pointer events by default. The natural fix — `pointer-events: none` on the overlay — breaks overlay item interaction.
+COEP `require-corp` enforces that no sub-resource is loaded without explicit opt-in. It was designed for post-Spectre isolation. Most public CDNs do not serve `CORP` headers.
 
-**How to avoid:**
-Use `pointer-events: none` on the overlay container div and `pointer-events: auto` on each individual overlay item element. This allows clicks to pass through empty overlay space while still capturing events on items. For drag events on overlay items, use `stopPropagation()` selectively to prevent cell grid interaction during overlay drags.
+**Consequences:**
+- Adding these headers for MVP breaks Google Fonts or any externally hosted asset.
+- Not adding them means ffmpeg.wasm never loads.
+- Safari on iOS as of mid-2025 still has intermittent `SharedArrayBuffer` availability issues even with correct headers.
 
-Also guard the ActionBar portal: ActionBar shows based on `selectedNodeId`, which is set by cell click. If overlay item clicks do not call `setSelectedNode(null)` explicitly, a stale cell selection can remain active while editing an overlay item.
+**Prevention:**
+1. Do NOT set COOP/COEP headers in Phase 0-5 (MVP). Only add them in Phase 6 configuration.
+2. In Vercel (`vercel.json`) and Netlify (`netlify.toml`), scope the headers to a specific route if possible, or accept that the whole app becomes cross-origin isolated for v1.
+3. Use `COEP: credentialless` instead of `require-corp` where browser support allows (Chrome 96+, Firefox 119+). This is less restrictive — anonymous resources load without needing a CORP header.
+4. All fonts must be self-hosted (not Google Fonts CDN) before COEP is enabled.
+5. Implement ffmpeg.wasm behind a feature-flag that is only initialized after user interaction (lazy load the ~25MB WASM on first video export request).
+6. Keep Safari video export explicitly out of scope — `SharedArrayBuffer` on iOS WebKit is unreliable.
 
-**Warning signs:**
-- Clicking a cell while overlay mode is active does nothing
-- Dragging overlay items simultaneously triggers cell split/merge actions
-- ActionBar appears unexpectedly while manipulating overlay items
-
-**Phase to address:**
-Overlay layer phase, event routing task.
-
----
-
-### Pitfall 7: Text Rendering Divergence Between DOM and Canvas (`ctx.fillText`)
-
-**What goes wrong:**
-Text overlays shown in the editor preview as DOM `<div>` elements will render differently than the same text drawn via `ctx.fillText()` in the export. Specific divergences:
-- **Line height:** DOM `line-height` has no direct Canvas 2D equivalent. `ctx.fillText` draws single lines; manual wrapping via `ctx.measureText()` produces different line spacing.
-- **Kerning and letter spacing:** `ctx.font` string parsing varies across browsers. Safari can misinterpret shorthand font strings.
-- **TextMetrics cross-browser:** `fontBoundingBoxAscent` values differ by up to 21px between Chrome and Safari per browser test interop issue #427 (2024).
-- **Text wrapping:** DOM wraps automatically with CSS `width` + `word-break`. Canvas requires manual word-wrap logic that must precisely match visual output.
-
-**Why it happens:**
-It is tempting to show text overlays as DOM elements (simple CSS styling) while planning to "export them to canvas later." But Canvas 2D text rendering is not a faithful replica of CSS text rendering, and the gap becomes apparent at export time.
-
-**How to avoid:**
-Use the preview canvas element itself to render text overlays using `ctx.fillText()` — do not use DOM elements for the preview. Maintain a single `drawOverlayItem(ctx, item, canvasWidth, canvasHeight)` function used identically in preview and export. For text wrapping, implement a `wrapText(ctx, text, maxWidth)` helper that returns line arrays, and use the same helper in both paths.
-
-For Safari `ctx.font` parsing: use the canonical form `"bold 48px 'Helvetica Neue', sans-serif"` rather than shorthand. Verify the rendered font on Safari by checking `ctx.font` after assignment — Safari sometimes ignores invalid font strings silently.
-
-**Warning signs:**
-- Text in preview looks different from text in exported PNG (position, size, line breaks)
-- Line breaks occur at different positions in export vs preview
-- Font appears different weight/size in Safari export vs Chrome preview
-
-**Phase to address:**
-Overlay layer phase, text overlay rendering task.
-
----
-
-### Pitfall 8: Emoji Rendering Inconsistency Across Platforms in Canvas Export
-
-**What goes wrong:**
-Emoji drawn via `ctx.fillText("🔥", x, y)` render as Apple Color Emoji on macOS/iOS, Noto Color Emoji on Linux/Android, and Segoe UI Emoji on Windows. The visual appearance (design, color, proportions) differs significantly between these font sets. Additionally, mobile Safari (iOS) ignores `fontSize` on emoji in canvas contexts in some historical versions and renders at a fixed size.
-
-This is not a fixable divergence — it is an OS font system constraint. The export PNG will look different when generated on different devices.
-
-**Why it happens:**
-Emoji rendering in the browser canvas falls back to the system emoji font, which is OS-determined. There is no way to force a specific emoji font unless you embed it as a web font (which emoji color fonts are typically not available as WOFF2 for legal reasons).
-
-**How to avoid:**
-Do not render emoji via `ctx.fillText` in the export. Instead, convert emoji to a rendered image before export using one of:
-1. Draw emoji to a temporary offscreen canvas using the browser's native rendering, then `drawImage()` that canvas into the export canvas (preserves OS rendering but at least bakes it in)
-2. Use an emoji-as-SVG library (e.g., Twemoji) to convert emoji codepoints to deterministic SVG/PNG representations
-
-Option 2 gives cross-platform consistency. For the MVP, option 1 is acceptable — document that emoji appearance depends on the user's OS. Add a warning UI note near the emoji picker.
-
-**Warning signs:**
-- Emoji look different on reviewer's device than creator's device
-- Reports that "the fire emoji looks wrong" — this is an OS difference, not a bug
-
-**Phase to address:**
-Overlay layer phase, emoji/sticker picker task.
-
----
-
-### Pitfall 9: SVG Sticker XSS via User-Uploaded SVG Files
-
-**What goes wrong:**
-SVG files are XML and can contain `<script>` tags, `javascript:` href attributes, `onload` event handlers, and `<foreignObject>` with embedded HTML. If a user-uploaded SVG is inlined into the DOM or rendered directly as an `<img>` with `src=blob:`, the script content can execute.
-
-Even rendering an SVG via `drawImage()` onto a canvas after creating a blob URL is potentially unsafe — some browsers allow script execution within SVGs loaded as images.
-
-**Why it happens:**
-SVG looks like an image format. Developers treat it like PNG/JPEG and skip sanitization.
-
-**How to avoid:**
-Sanitize all user-uploaded SVG files with DOMPurify before any use:
-```typescript
-import DOMPurify from 'dompurify';
-const clean = DOMPurify.sanitize(svgString, {
-  USE_PROFILES: { svg: true, svgFilters: true }
-});
-```
-Store only the sanitized SVG string (never the raw blob URL) in the sticker registry. When rendering to canvas, create a Blob from the sanitized string and draw it via `drawImage`. Never inject the raw SVG string into the DOM.
-
-Pin DOMPurify to a version after the CVE-2024-47875 patch (version 3.1.7+).
-
-**Warning signs:**
-- User-uploaded SVG causes unexpected UI behavior
-- Browser console shows script errors from inside SVG content
-
-**Phase to address:**
-Overlay layer phase, image sticker upload task.
-
----
-
-### Pitfall 10: localStorage Quota Exceeded — Silent Auto-Save Failure
-
-**What goes wrong:**
-`localStorage` has a 5MB per-origin limit. StoryGrid stores base64 images in `mediaRegistry`. A single high-res JPEG can be 500KB–2MB as base64. A project with 6 images easily exceeds the quota. When `localStorage.setItem()` throws `QuotaExceededError`, the auto-save silently fails — the user sees no error, continues editing, closes the tab, and loses all work.
-
-Additionally, browsers throw different error names (`QuotaExceededError`, `NS_ERROR_DOM_QUOTA_REACHED`, code 22) so a plain `catch (e)` may behave unexpectedly if not checking specifically.
-
-**Why it happens:**
-Auto-save is typically implemented as a fire-and-forget `useEffect` subscription. The error is thrown synchronously inside `setItem()` but is caught in a generic catch that logs to console rather than surfacing to the user.
-
-**How to avoid:**
-Wrap all `localStorage` writes in a try/catch that detects quota errors specifically:
-```typescript
-function safeSetItem(key: string, value: string): boolean {
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch (e) {
-    if (e instanceof DOMException && (
-      e.code === 22 ||
-      e.name === 'QuotaExceededError' ||
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    )) {
-      return false; // Quota hit — caller must handle
+**Vercel configuration:**
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
+      ]
     }
-    throw e; // Rethrow unexpected errors
-  }
+  ]
 }
 ```
-On quota failure, surface a non-dismissible toast: "Project too large to auto-save. Export a .storygrid file to save your work." Do not silently swallow the error.
-
-For video cells: video blob URLs CANNOT be persisted in localStorage at all — they are revoked on page unload. The auto-save strategy must exclude video media. For the `.storygrid` export file, videos must be either omitted or embedded as base64 (which will be large). Document this limitation explicitly in the UI.
 
 **Warning signs:**
-- Auto-save appears to work (no error shown) but project is lost on reload
-- Projects with video cells reload with empty video cells
-- Console shows `QuotaExceededError` that the app does not surface
+- `SharedArrayBuffer is not defined` in console.
+- Third-party fonts or images stop loading after adding COEP headers.
+- ffmpeg.wasm imported at module level (not lazily) — adds 25MB to initial bundle.
 
-**Phase to address:**
-Persistence phase, auto-save implementation task.
+**Phase relevance:** Phase 6 (Video Support) exclusively. No COOP/COEP in MVP phases.
 
 ---
 
-### Pitfall 11: Blob URLs Must Not Be Stored in `.storygrid` Files
+### Pitfall 5: CSS `transform: scale()` on the preview canvas does NOT affect the export container — but it can break `overflow: hidden` clipping in Safari
 
 **What goes wrong:**
-`blob:` URLs (used for video media) are session-scoped. They are created by `URL.createObjectURL()` and become invalid when the page unloads. If a `.storygrid` JSON file is exported containing `blob:https://localhost/abc-123` in `mediaRegistry`, importing that file on a different device (or even a new tab) will produce broken cells — the blob URL will 404 silently when `drawImage()` tries to use it.
+The architecture uses a scaled-down preview (`transform: scale(viewportScale)`) alongside a hidden full-resolution export div. This is correct. The trap is two-fold:
 
-The current `cleanupStaleBlobMedia()` action already handles the detection side (removes blob-URL media on startup), but the issue is upstream: storing blob URLs in the exported file in the first place.
+1. **Safari overflow clipping bug**: `overflow: hidden` + `border-radius` on a parent element fails to clip children when a `transform` is applied on a descendant. The image visually overflows its cell boundary. Safari requires `isolation: isolate` on the container to enforce clipping.
+
+2. **Export div must NOT use `transform: scale()`**: If the hidden 1080×1920px div is positioned off-screen using negative `transform: translateX(-9999px)`, html-to-image will capture it correctly. But if the export div itself has a `scale()` transform applied (e.g., mistakenly inheriting from a parent), the captured dimensions will be wrong.
 
 **Why it happens:**
-`mediaRegistry` is a flat `Record<string, string>`. Both base64 data URIs and `blob:` URLs are strings. Serializing the entire `mediaRegistry` to JSON includes both, without distinction.
+- `transform: scale()` is a visual-only operation. It does not affect layout dimensions or `getBoundingClientRect()` for capture libraries that read CSS computed styles.
+- Safari's compositing layer for `overflow: hidden` does not always apply when child elements have transforms.
 
-**How to avoid:**
-When generating the `.storygrid` export, filter `mediaRegistry` to exclude any entries where the value starts with `blob:`. For video cells, two strategies:
-1. Omit video from the file and warn the user ("Video cells are not saved in .storygrid files")
-2. Convert blob URLs to base64 before export (large file size, but preserves video)
+**Consequences:**
+- Cell images overflow their borders in Safari preview mode.
+- Export PNG is the wrong size (scaled instead of full-res) if the export div has an accidental scale transform.
 
-Whichever strategy is chosen, validate in the import path: reject any `.storygrid` file whose `mediaRegistry` contains `blob:` URLs (they are useless anyway).
+**Prevention:**
+1. Add `isolation: isolate` to every `LeafNode` container that applies `overflow: hidden` with `border-radius`.
+2. The export div must be a completely separate React subtree that never inherits the preview's scale transform. Position it with `position: absolute; left: -9999px; top: 0` (NOT `transform: translate`), so it is visually off-screen but layout-present at full resolution.
+3. Confirm export div dimensions with `div.getBoundingClientRect()` in a test — should be exactly `1080 × 1920`.
+4. Use `transform: scale()` only on the preview canvas wrapper, never on the export canvas wrapper.
 
 **Warning signs:**
-- Imported `.storygrid` file shows correct grid layout but black video cells
-- `drawImage()` fails silently when trying to render a revoked blob URL
-- Video cells clear themselves on reload (because `cleanupStaleBlobMedia` fires)
+- Cell images render outside cell borders in Safari.
+- Export PNG is smaller than 1080×1920.
+- Export div is a child of the scaled preview container.
 
-**Phase to address:**
-Persistence phase, file export and import tasks.
+**Phase relevance:** Phase 2 (Grid Rendering — Safari overflow fix) and Phase 4 (Export Engine — export div isolation).
 
 ---
 
-### Pitfall 12: Schema Evolution — Old `.storygrid` Files Break on New Versions
+### Pitfall 6: @dnd-kit causes every tree node to re-render on drag start/move
 
 **What goes wrong:**
-When a `LeafNode` gains new required fields (e.g., `effects: EffectSettings`), importing a `.storygrid` file from a prior version that lacks those fields will produce `undefined` values, potentially crashing the Canvas renderer or Zustand actions that expect the field to exist.
+`DndContext` exposes an `active` property on its context. When dragging starts, `active` changes, and every component that consumes `useDraggable`, `useDroppable`, or `useSortable` gets a new context value, triggering a re-render — regardless of whether `React.memo` is applied.
+
+In a recursive tree with 20+ leaf nodes each registered as a drop target, this means 20+ re-renders on every pointer move event, causing visible lag during divider drag-resize.
 
 **Why it happens:**
-JSON import typically does `JSON.parse(text)` then spreads the result directly into store state. No version check, no field migration, no default filling.
+React Context re-renders all consumers when the context value reference changes. The dnd-kit maintainer has acknowledged this as an architectural trade-off pending official React `useContextSelector` support. A partial fix (context splitting) was merged in PR #569, but re-renders are not fully eliminated.
 
-**How to avoid:**
-Use Zod (already compatible with the TypeScript stack — install `zod`) to define a versioned schema for `.storygrid` files. Use `.safeParse()` to validate on import:
-```typescript
-const result = StorygridFileSchema.safeParse(parsed);
-if (!result.success) {
-  showError('Cannot open this file — it may be from an incompatible version.');
-  return;
-}
-```
-Include a `version` field in the file schema. On import, run a `migrate(fileVersion, data)` function that fills missing fields with defaults before loading into the store. Follow the pattern established by Zustand's `persist` middleware `migrate` callback.
+**Consequences:**
+- Divider drag-resize stutters at >10 cells on mid-tier hardware.
+- Any expensive computation (tree traversal, layout recalculation) in a node's render body fires on every pointer move.
 
-Never blindly spread imported JSON into the store: `set({ ...importedData })` is a crash waiting to happen with schema drift.
+**Prevention:**
+1. StoryGrid does not use dnd-kit for the divider resize interaction. Dividers use raw `pointerdown`/`pointermove`/`pointerup` handlers, completely bypassing dnd-kit's context. This is the correct architecture per PROJECT.md.
+2. For any dnd-kit usage (file drop onto leaf cells), keep `DndContext` scoped as narrowly as possible — ideally wrapping only the active drop zone, not the entire canvas.
+3. Every tree node component (`GridNode`, `ContainerNode`, `LeafNode`) must be wrapped with `React.memo`. Even though `React.memo` does not prevent the context-triggered re-render inside the dnd-kit hook, it prevents the render propagating to child components that are NOT dnd-kit consumers.
+4. Move all state selectors inside leaf components to use per-node Zustand selectors (select `state.nodes[nodeId]`, not the entire `state.grid`), so that leaf nodes only re-render when their own data changes.
 
 **Warning signs:**
-- Import of a `.storygrid` file throws a runtime TypeError immediately
-- Canvas renderer calls `drawLeafToCanvas` with `undefined` for `effects`
-- Only crashes on files created before a specific deploy date
+- `DndContext` wrapping the entire editor canvas.
+- Leaf node components using `useSelector(state => state.grid)` — subscribes to the entire tree.
+- No `React.memo` on recursive node components.
+- Drag-resize latency increases linearly with cell count.
 
-**Phase to address:**
-Persistence phase, file import task. Schema version must be established at the first persistence release and incremented on every structural change.
+**Phase relevance:** Phase 2 (Grid Rendering) and Phase 3 (Media Upload & Cell Controls).
 
 ---
 
-### Pitfall 13: Audio Feature Requires Significant MediaRecorder Pipeline Change — Not an Add-On
+### Pitfall 7: Object URL memory leak — `URL.createObjectURL` without `revokeObjectURL`
 
 **What goes wrong:**
-The current `exportVideoGrid()` in `videoExport.ts` creates a `canvas.captureStream(FPS)` and passes it directly to `new MediaRecorder(stream)`. This stream is video-only — it has no audio track. Simply toggling a cell's audio on/off has no effect without restructuring the export pipeline to:
-1. Create a Web Audio API `AudioContext`
-2. Create `MediaStreamAudioSourceNode` instances from the video elements' streams
-3. Connect them through a `ChannelMergerNode` to a `MediaStreamAudioDestinationNode`
-4. Add the audio destination's track to the canvas stream before passing to `MediaRecorder`
+Every call to `URL.createObjectURL(file)` allocates a blob URL that holds a reference to the file's bytes in memory. These URLs persist until the page is unloaded or `revokeObjectURL` is explicitly called. In a single-page app with media replacement (user drops a new image on a cell that already has media), the old blob URL is never freed, accumulating memory with each swap.
 
-This is a non-trivial pipeline change, not a parameter toggle. Treating it as a quick add-on will result in a broken export that silently produces video-only MP4.
+In a multi-slide v1+ session with many images replaced across many slides, Chrome's soft limit (~10,000 active blob URLs) can be reached, causing `createObjectURL` to fail silently or the tab to crash with OOM.
 
 **Why it happens:**
-The audio feature looks conceptually simple ("just include audio from the video cells"). The complexity is hidden in the Web Audio graph wiring that must happen before `recorder.start()` is called.
+Zustand stores the blob URL string in `MediaItem.src`. When `setMedia` replaces the media item, the old string is overwritten in state, but the browser's blob registry still holds the underlying bytes until revoked.
 
-**How to avoid:**
-Design the audio pipeline as a first-class architectural change to `exportVideoGrid`. The revised pipeline:
-1. For cells with `audioEnabled: true`: call `video.captureStream()` on the dedicated export video element to get its `MediaStream`, then `AudioContext.createMediaStreamSource(stream)` to tap it
-2. Connect all audio sources to a `ChannelMergerNode` → `MediaStreamAudioDestinationNode`
-3. Call `canvasStream.addTrack(audioDestination.stream.getAudioTracks()[0])` before creating `MediaRecorder`
-4. Create `MediaRecorder` from the combined stream (video from canvas + audio from merger)
+**Consequences:**
+- Memory grows ~5-20MB per replaced image, never reclaimed.
+- Long editing sessions crash the tab.
+- Harder to diagnose than JS heap leaks because the memory is in the browser's blob registry, not the JS heap.
 
-Note: `video.muted = true` on the export video elements (currently set to suppress preview audio during export) must be changed — a muted `HTMLVideoElement` produces a muted `MediaStream` from `captureStream()`. Set `video.muted = false` for audio-enabled cells and manage audio suppression at the Web Audio graph level (AudioContext gain nodes) instead.
+**Prevention:**
+1. At upload time, convert `File` → `data:` URI (base64) using `FileReader.readAsDataURL`. Do NOT use `createObjectURL` for images stored in state. Data URIs are owned by the JS heap (garbage collected normally) and have no separate registry.
+2. If `blob:` URLs are needed for performance with large video files, implement a `MediaStore` utility that:
+   - Tracks every active blob URL keyed by `nodeId`.
+   - On `setMedia(nodeId, newMedia)`, calls `URL.revokeObjectURL(oldUrl)` before replacing.
+   - On `removeNode(nodeId)`, revokes the URL.
+   - On React component unmount, revokes the URL.
+3. In `useEffect` cleanup for any component that calls `createObjectURL`, always revoke:
+   ```typescript
+   useEffect(() => {
+     const url = URL.createObjectURL(file);
+     setPreviewUrl(url);
+     return () => URL.revokeObjectURL(url);
+   }, [file]);
+   ```
 
 **Warning signs:**
-- Exported MP4 has no audio track (silent) even when cells have `audioEnabled: true`
-- `video.captureStream()` returns a stream with no audio tracks when `video.muted = true`
-- Audio works in Chrome but not Firefox (sample rate mismatch — see Pitfall 14)
+- Task Manager shows tab memory growing continuously during editing.
+- `blob:` URLs appear in `MediaItem.src` in the Zustand devtools store.
+- No `URL.revokeObjectURL` call anywhere in the codebase.
 
-**Phase to address:**
-Audio toggle phase, entire export pipeline task. Must be scoped as a pipeline rewrite, not a parameter.
+**Phase relevance:** Phase 3 (Media Upload) — must be correct from day one; retrofitting revocation logic into stored state is painful.
 
 ---
 
-### Pitfall 14: AudioContext Must Be Unlocked by User Gesture Before Export
+## Moderate Pitfalls
+
+---
+
+### Pitfall 8: Zustand + Immer undo history — full state snapshots grow unbounded
 
 **What goes wrong:**
-`new AudioContext()` created before a user gesture is in `suspended` state (Chrome autoplay policy) or fails silently (Safari). Calling `AudioContext.createMediaStreamSource()` on a suspended context produces a valid but silent audio graph. The export produces a video file with no audio, and no error is thrown.
+The PROJECT.md architecture stores undo history as an array of full `GridState` snapshots (one snapshot per mutating action). A complex grid with 8 cells, each with a base64 image (~500KB each), produces state snapshots of ~4MB each. With 50 undo steps, that is ~200MB of JS heap used for history alone.
 
 **Why it happens:**
-`exportVideoGrid()` is called from a button click handler — which IS a user gesture in most cases. However, if the `AudioContext` is created eagerly at module load time or in a store initializer (to avoid creation cost during export), it will be created without a gesture and remain suspended.
+Immer produces structurally-shared immutable trees, so unchanged subtrees share references. However, when images are stored as base64 data URIs in state, those large strings are duplicated across every snapshot that postdates the upload, because Immer treats strings as primitives (no sharing).
 
-**How to avoid:**
-Create the `AudioContext` inside the button click handler — specifically inside the `exportVideoGrid` function itself, or in the React handler that calls it. Never create it at module level or in a store initializer. After creation, call `audioContext.resume()` explicitly:
-```typescript
-const audioCtx = new AudioContext();
-await audioCtx.resume(); // Ensures it is running even if browser needs nudging
-```
-After export completes, call `audioCtx.close()` to release resources.
+**Consequences:**
+- Memory exhaustion in long editing sessions.
+- `JSON.stringify` for persistence to localStorage fails or produces huge strings.
+- Undo/redo becomes slow as the history array grows.
 
-For Safari: `AudioContext` on Safari 15 also requires a user gesture. The export button click satisfies this. Do NOT pre-create the context in a `useEffect` on mount.
+**Prevention:**
+1. Do NOT store image data URIs in the undo-tracked state. Store a `mediaId` string instead, and keep a separate `mediaRegistry: Record<mediaId, dataUri>` that is excluded from undo history (it is append-only; images are never un-uploaded by undo).
+2. Cap the undo stack at 50 entries maximum. On push, if `history.length >= 50`, shift the oldest entry.
+3. For the undo history, only snapshot the `grid` tree structure (node IDs, split directions, size ratios, selected media IDs) — not the full editor UI state (zoom level, selected node, safe zone toggle). These should be separate Zustand slices.
+4. Consider `zundo` (< 700B, Zustand middleware) for production-quality undo/redo with built-in equality checks that skip no-op actions.
 
 **Warning signs:**
-- `audioCtx.state === 'suspended'` when checked after construction
-- Audio works when tested via console (user gestures in DevTools count) but not in production
-- Silent MP4 exported on Safari even though audio toggle is enabled
+- `history` array in Zustand devtools shows snapshots with large `dataUri` strings.
+- `localStorage.setItem` throws `QuotaExceededError`.
+- Browser memory profiler shows heap growing with each image upload.
 
-**Phase to address:**
-Audio toggle phase, AudioContext initialization task.
+**Phase relevance:** Phase 1 (Grid Tree Engine — design history correctly before it is hard to change) and Phase 7 (Save/Load — serialize only what is necessary).
 
 ---
 
-### Pitfall 15: Private Browsing Disables localStorage in Safari — Crash Without Guard
+### Pitfall 9: Stale closures in memoized recursive tree nodes
 
 **What goes wrong:**
-In Safari Private Browsing mode, `localStorage` is disabled. Any call to `localStorage.setItem()` throws a `SecurityError` immediately. The auto-save feature will crash the app on every state change for Safari private browsing users. This is different from a `QuotaExceededError` — it is a `SecurityError` and must be caught separately.
+In a recursive component tree (`GridNode → ContainerNode → LeafNode`), each node receives callbacks via props (e.g., `onSplit`, `onRemove`, `onResize`). If these callbacks are created in a parent and memoized with `useCallback`, they capture state at their creation time. When a sibling node is added/removed, the captured tree snapshot is stale. The callback fires with the old tree, overwriting the current state.
 
 **Why it happens:**
-Auto-save is implemented as a Zustand subscription on every state change. In normal browsing it works. In private mode, Safari throws on the very first `setItem` call and if the error propagates up through React's render cycle, it can result in an unhandled promise rejection or React error boundary trigger.
+`React.memo` prevents re-render from propagating down; `useCallback` caches the closure. Together they create a classic stale closure: the child component never gets a new callback, so the callback still references the old state.
 
-**How to avoid:**
-Wrap `localStorage` access in a detection function run at app startup:
-```typescript
-function isLocalStorageAvailable(): boolean {
-  try {
-    const key = '__storygrid_test__';
-    localStorage.setItem(key, '1');
-    localStorage.removeItem(key);
-    return true;
-  } catch {
-    return false;
-  }
-}
-```
-If `false`, disable auto-save silently and show a persistent banner: "Auto-save unavailable in private browsing. Export a .storygrid file to save your work."
+**Consequences:**
+- Split / resize operations silently operate on outdated state, corrupting the tree.
+- Difficult to debug — the bug depends on the sequence of actions.
+
+**Prevention:**
+1. Do NOT pass tree-mutating callbacks as props. Instead, each node component calls a Zustand action directly (`useGridStore(s => s.splitNode)`). Zustand actions always operate on current state, never on captured snapshots.
+2. Selectors per node: `useGridStore(s => s.nodes[props.nodeId])`. This is a stable subscription — the component re-renders only when its own node data changes.
+3. If callbacks must be passed as props (e.g., for testing), use a `ref`-wrapped callback pattern:
+   ```typescript
+   const callbackRef = useRef(callback);
+   callbackRef.current = callback; // always fresh
+   const stableCallback = useCallback((...args) => callbackRef.current(...args), []);
+   ```
 
 **Warning signs:**
-- Unhandled exception in Safari private tab immediately on app load
-- `SecurityError: DOM Exception 18` in console
-- Auto-save subscription triggers an error on every Zustand state change
+- Tree mutation callbacks defined in `App.tsx` or a high-level `Editor` component and drilled down via props.
+- `useCallback` with `[]` dependency array on functions that read tree state.
+- Intermittent "wrong cell got split" bugs that depend on operation order.
 
-**Phase to address:**
-Persistence phase, storage availability check task (must be the first thing implemented before any localStorage write).
+**Phase relevance:** Phase 1 (store design) and Phase 2 (Grid Rendering).
 
 ---
 
-### Pitfall 16: Filter Slider Drag Triggers pushSnapshot on Every Mouse-Move
+### Pitfall 10: html-to-image fails silently on Safari / iOS — blank PNG with no error
 
 **What goes wrong:**
-If the effects slider (`oninput` handler) calls `gridStore.updateCell()` directly, it fires `pushSnapshot` on every mouse-move event during drag (potentially 60× per second). Each `pushSnapshot` calls `structuredClone` on the entire grid tree. With 12 cells and 50 history entries being maintained, this is noticeable CPU jank during slider drag and pollutes the undo history with hundreds of near-identical snapshots.
+On Safari (macOS and iOS), `toPng()` frequently returns a valid-looking but blank PNG. The promise resolves (no rejection), but the image contains only the background color. No error is thrown. The issue is caused by Safari's stricter canvas security model and different `foreignObject` SVG rendering behavior.
 
 **Why it happens:**
-`updateCell` is already wired to `pushSnapshot` because all cell mutations are historically reversible. Sliders naturally fire rapidly.
+Safari renders SVG `foreignObject` content differently from Chrome. Specifically, remote resources (images, fonts) that have not already been painted in the current tab's rendering context are not re-fetched during SVG serialization, leaving those elements invisible.
 
-**How to avoid:**
-Separate the slider's "live preview" path from the "commit to history" path:
-- On `onInput` (drag): update a **local React state** or a separate transient store field (not `updateCell`) and redraw the preview canvas without touching history.
-- On `onPointerUp` / `onChange` (drag end): commit the final value via `updateCell()` which pushes one snapshot.
+**Consequences:**
+- Export appears to succeed (no error, download happens), but the PNG is blank.
+- Users may not notice until they open the downloaded file.
 
-This is the same pattern React controlled inputs use for expensive operations. The preview canvas for the affected cell subscribes to the transient value during drag; on commit, the Zustand snapshot takes over.
+**Prevention:**
+1. Use the double-call workaround: call `toPng()` twice; use the second result.
+2. All images must be pre-converted to data URIs before the export div is mounted (not just before export is triggered).
+3. Test export on Safari explicitly in Phase 4. Do not rely on Chrome-passing tests as proxy.
+4. Display an export progress indicator that shows "Preparing assets…" during the pre-flight image conversion step, so the user does not click export while images are still loading.
 
 **Warning signs:**
-- Undo history fills up instantly while dragging a slider (50 undos = 50 tiny increments instead of one)
-- CPU usage spikes during slider drag visible in DevTools Performance tab
-- The slider feels laggy on mid-range mobile devices
+- Export not tested on Safari.
+- Images stored as `blob:` or `https://` URLs in cell state (not data URIs).
+- No double-call pattern in export code.
 
-**Phase to address:**
-Effects & Filters phase, slider implementation task.
-
----
-
-## Technical Debt Patterns
-
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| CSS `filter:` on preview canvas element for effects | Fast to implement, all browsers | Export shows no effects (critical divergence) | Never |
-| Storing sticker base64 inside root tree snapshot | Simple data model | 10MB+ in-memory history with 3 stickers | Never |
-| Storing blob URLs in `.storygrid` file | Simple serialization | Imported video cells are always broken | Never |
-| Eager AudioContext creation at module load | Lower latency on export | Silent audio in all browsers (suspended state) | Never |
-| Skipping SVG sanitization for user-uploaded stickers | Faster upload flow | XSS vulnerability | Never |
-| Single `JSON.parse` without schema validation on file import | One line of code | Runtime crash on schema drift | Never |
-| Skipping private browsing detection for localStorage | No extra code | SecurityError crash for Safari private users | Never |
-| `updateCell` on every slider tick | Simple event handler | 60 snapshots/second, jank, history pollution | Never — use transient state |
+**Phase relevance:** Phase 4 (Export Engine).
 
 ---
 
-## Integration Gotchas
-
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| `ctx.filter` + Safari | Assume Safari supports it because it's in MDN docs | Verify caniuse — it is disabled-by-default in ALL Safari versions including 18; use Canvas ImageData or compositing instead |
-| Web Audio + MediaRecorder | Create AudioContext at app init | Create inside the export button click handler; call `audioCtx.resume()` explicitly |
-| `video.muted = true` + Web Audio tap | Assume muted element still exposes audio to captureStream | A muted video's captureStream returns a stream with no audio; use gain nodes in the Web Audio graph instead |
-| Zustand persist + localStorage | Assume persist handles quota gracefully | persist does not catch QuotaExceededError; wrap all setItem calls manually |
-| Overlay coordinate mapping | Use `event.clientX/clientY` directly | Map through `canvasWrapper.getBoundingClientRect()` and scale by `1080/rect.width`, `1920/rect.height` |
-| `.storygrid` import | Spread parsed JSON directly into store | Parse with Zod schema, run version migration, fill defaults before loading |
-| DOMPurify + SVG | Use default sanitize config | Use `USE_PROFILES: { svg: true, svgFilters: true }` and pin to ≥ 3.1.7 (post-CVE-2024-47875) |
+## Minor Pitfalls
 
 ---
 
-## Performance Traps
+### Pitfall 11: `html-to-image` captures content outside viewport — but only if layout is correct
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| `pushSnapshot` on every slider tick | History floods 50 entries in 1 second of dragging; jank | Transient local state for live preview; commit on pointer-up only | Any slider with > 5px travel |
-| structuredClone on large tree at 60fps | CPU spike visible in DevTools during any drag | Only call `pushSnapshot` on committed user intent, never in animation loops | Tree depth > 3 with 12+ leaves |
-| Blur at 60fps in preview canvas | Frame drops in cells with high blur radius | Apply blur only in export path; use CSS `filter:` on overlay div for preview (not the leaf canvas) | Blur radius > 8px on mid-range mobile |
-| Per-pixel ImageData filters in 60fps rAF | Drops below 30fps on 1080×1920 | Use compositing operations instead of ImageData for live preview; ImageData only at export | Canvas size > 500×500 |
+**What goes wrong:**
+If the export div (1080×1920px) is positioned such that it causes page scroll (e.g., `position: relative` in normal document flow), `toPng()` only captures the portion of the element that is within the viewport. Content below the fold is missing from the export.
 
----
+**Prevention:**
+The export div must be `position: absolute` (or `fixed`) and removed from normal document flow. Using `position: absolute; left: -9999px; width: 1080px; height: 1920px; overflow: hidden` ensures the full element is present in the layout without affecting scroll.
 
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Inlining user-uploaded SVG without sanitization | XSS — malicious script executes in app context | DOMPurify with SVG profile before any use |
-| Loading unsanitized SVG via `<img src=blob:>` | Contained in Chrome/Firefox but exploitable in some contexts | Sanitize then recreate blob from clean string |
-| Blindly spreading imported `.storygrid` JSON into store | Prototype pollution or state corruption if file is crafted | Zod schema parse with safeParse; never use `...parsed` pattern |
-| Embedding user text in `ctx.font` string directly | Not XSS, but can break canvas rendering | Validate font size is a number; whitelist font family strings |
+**Phase relevance:** Phase 4 (Export Engine).
 
 ---
 
-## "Looks Done But Isn't" Checklist
+### Pitfall 12: Divider resize updates cause excessive Zustand state writes
 
-- [ ] **Effects preview:** Verify the exported PNG matches the effect seen in the editor — not just that sliders move
-- [ ] **Effects in video export:** Verify effects appear in the MP4, not just in the PNG export path
-- [ ] **Blur cells in Safari:** Open in Safari 15+ — filter should degrade gracefully (no effect), not crash or show blank
-- [ ] **Audio in exported MP4:** Play the MP4 in a media player (not the browser), check audio with multiple cells toggled on/off
-- [ ] **Audio with `video.muted`:** Confirm export video elements are un-muted before audio tap; test that muted-toggle cells produce silence in export
-- [ ] **Overlay position fidelity:** Resize the browser window, then export — overlay items should be at the same relative position as seen in the editor
-- [ ] **Text in export:** Export a PNG with text overlay and compare character-by-character positioning against the preview at 1:1 pixel scale
-- [ ] **Persistence quota:** Test auto-save with a project containing 8 high-res JPEGs; confirm QuotaExceededError produces a user-visible warning
-- [ ] **Private browsing:** Open app in Safari private tab — confirm no crash, confirm warning banner appears
-- [ ] **File import:** Import a `.storygrid` file missing the `effects` field — confirm graceful default-fill, not crash
-- [ ] **Blob URL in file:** Import a `.storygrid` file containing a `blob:` URL — confirm it is rejected gracefully
-- [ ] **SVG sticker:** Upload an SVG with a `<script>` tag — confirm it is sanitized and the script does not execute
-- [ ] **Emoji in export:** Generate export on macOS and verify emoji appearance is documented or consistent
+**What goes wrong:**
+Divider drag fires `pointermove` at 60fps. If each move event directly calls the Zustand `resize` action (which Immer wraps in a full state production), 60 state writes per second trigger 60 re-renders across all subscribed components.
+
+**Prevention:**
+1. Throttle `pointermove` handler to ~16ms using `requestAnimationFrame`.
+2. Use a local React `useRef` to accumulate the drag delta during drag; only commit to Zustand state on `pointerup` (or at most on animation frames). This means intermediate positions are purely local state, not global.
+3. Pattern: `localSizeRef.current = newRatio` during drag, `store.resize(nodeId, localSizeRef.current)` on release.
+
+**Phase relevance:** Phase 2 (Grid Rendering).
 
 ---
 
-## Recovery Strategies
+### Pitfall 13: Recursive tree can render infinitely if a `ContainerNode` with zero children is created
 
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| ctx.filter built on Safari (discovered late) | HIGH | Rewrite all effect rendering to use compositing/ImageData; no shortcuts |
-| Sticker base64 in history snapshots (memory issue) | MEDIUM | Migrate sticker registry out of root tree; add migration in loadProject |
-| Blob URLs in exported .storygrid files (discovered after release) | MEDIUM | Add import-time filter to strip blob: entries; add export-time filter; users lose video cells on old files |
-| AudioContext suspended (silent MP4) | LOW | Move AudioContext construction inside export handler; 5 line change |
-| QuotaExceededError silently swallowed | LOW | Add try/catch wrapper around all localStorage writes with user toast |
-| Schema crash on import | LOW | Add Zod parse + migration before store load; provide "Reset project" fallback |
+**What goes wrong:**
+If a bug in `removeNode` or `mergeNode` produces a `ContainerNode` with an empty `children` array, the recursive renderer enters an infinite loop trying to render the container's children, causing a React stack overflow.
+
+**Prevention:**
+1. Add a guard in `splitNode` and `removeNode` pure functions: a `ContainerNode` must always have exactly 2 children. Throw a descriptive error (in dev) or auto-correct to a `LeafNode` (in prod) if this invariant is violated.
+2. Add a `MAX_DEPTH = 8` guard in the renderer: `if (depth > 8) return <ErrorBoundary />`.
+3. TypeScript discriminated union (`NodeType: 'container' | 'leaf'`) enforced at every mutation site prevents accidental creation of invalid states.
+
+**Phase relevance:** Phase 1 (Grid Tree Engine) and Phase 2 (Grid Rendering).
 
 ---
 
-## Pitfall-to-Phase Mapping
+### Pitfall 14: `@ffmpeg/ffmpeg` vite build requires explicit WASM plugin configuration
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| ctx.filter unsupported in Safari | Effects & Filters — effect engine design | Test in Safari 15+: effects appear correct or degrade gracefully |
-| Blur edge bleeding | Effects & Filters — blur slider task | Visual QA: blurred cell has no transparent halo at edges |
-| Preview/export filter divergence | Effects & Filters — drawLeafToCanvas extension | Integration test: pixel comparison of preview canvas vs exported PNG |
-| History bloat from sticker base64 | Overlay layer — data model design | Heap snapshot: history array < 1MB with 3 sticker overlays |
-| Overlay coordinate space confusion | Overlay layer — data model and event handling | Resize browser, export: overlay items at correct positions in PNG |
-| Hit-testing overlay vs cell conflict | Overlay layer — event routing | Click through overlay empty space → cell selected; drag overlay item → no cell action |
-| Text rendering divergence DOM vs Canvas | Overlay layer — text rendering implementation | Export PNG: text matches preview in font size, line breaks, position |
-| Emoji cross-platform inconsistency | Overlay layer — emoji picker | Document known behavior; or implement Twemoji for consistency |
-| SVG sticker XSS | Overlay layer — image sticker upload | Upload SVG with `<script>` — script does not execute |
-| localStorage quota | Persistence — auto-save implementation | Test with 8 large images: QuotaExceededError shows user warning |
-| Blob URLs in .storygrid file | Persistence — file export | Export .storygrid after adding video cell: file contains no `blob:` strings |
-| Schema evolution crash | Persistence — file import | Import file with missing `effects` field: app loads with defaults, no crash |
-| Audio pipeline scope underestimate | Audio toggle — pipeline design | Exported MP4 contains audio track: verify with `ffprobe` |
-| AudioContext suspended | Audio toggle — AudioContext initialization | Export on Safari private + Chrome: MP4 has audio |
-| Private browsing crash | Persistence — storage availability check | Open in Safari private: no crash, warning banner visible |
-| Slider history flooding | Effects & Filters — slider implementation | Drag slider for 2 seconds: only 1 undo entry added |
+**What goes wrong:**
+Vite does not natively support ES Module WebAssembly imports. Without `vite-plugin-wasm` (or equivalent), the Vite production build either inlines the 25MB WASM as base64 (bloating the JS bundle) or fails to load it entirely with a `TypeError: Failed to fetch dynamically imported module`.
+
+**Prevention:**
+1. Install `vite-plugin-wasm` and add it to `vite.config.ts` before Phase 6.
+2. The ffmpeg WASM core and worker files must be served as static assets, not bundled. Configure Vite to copy them to `public/`:
+   ```typescript
+   // vite.config.ts
+   import wasm from 'vite-plugin-wasm';
+   export default { plugins: [wasm()] }
+   ```
+3. Use the `@ffmpeg/ffmpeg` dynamic import pattern: `const { createFFmpeg } = await import('@ffmpeg/ffmpeg')` inside the export handler — never at module top level.
+
+**Warning signs:**
+- ffmpeg imported at the top of any file (not lazy).
+- Build output includes a >5MB JS chunk.
+- `TypeError: WebAssembly.instantiate` errors in production console.
+
+**Phase relevance:** Phase 6 (Video Support).
+
+---
+
+## Phase-Specific Warnings
+
+| Phase | Topic | Likely Pitfall | Mitigation |
+|-------|-------|----------------|------------|
+| Phase 1 | Undo history design | Large base64 images duplicated in every snapshot | Store mediaId references only; exclude media registry from history |
+| Phase 1 | Tree invariants | `ContainerNode` with 0 or 1 children causes infinite render | Enforce 2-child invariant in all pure tree functions |
+| Phase 2 | Recursive rendering | Stale closure callbacks mutate wrong state | Nodes call Zustand actions directly; no drilled callbacks |
+| Phase 2 | Safari overflow clipping | `overflow: hidden` + border-radius not respected with transforms | Add `isolation: isolate` to all leaf containers |
+| Phase 2 | Divider drag performance | 60fps Zustand writes | Buffer delta in `useRef`; commit on `pointerup` |
+| Phase 3 | Media upload | `blob:` URLs leak memory on cell replace | Convert to data URI at upload; revoke on replace |
+| Phase 4 | Export PNG blank | First `toPng()` call races with resource fetch | Double-call; pre-convert images; cache `getFontEmbedCSS()` |
+| Phase 4 | Export off-screen div | Wrong position causes viewport-clipped capture | `position: absolute; left: -9999px`; no scale transform |
+| Phase 4 | Cross-origin images | CORS taint blocks canvas export | Data URIs only in export div |
+| Phase 6 | COOP/COEP activation | Breaks third-party resources; not needed for MVP | Enable only in Phase 6; use `credentialless` mode; self-host fonts first |
+| Phase 6 | ffmpeg.wasm bundle size | 25MB hits initial load | Lazy import behind user interaction; Vite WASM plugin |
+| Phase 6 | Video in html-to-image | Always blank | Never call `toPng()` when video cells exist; ffmpeg-only path |
 
 ---
 
 ## Sources
 
-- CanvasRenderingContext2D.filter support: https://caniuse.com/mdn-api_canvasrenderingcontext2d_filter (Safari disabled-by-default confirmed across all versions)
-- WebKit bug #198416 ctx.filter: https://bugs.webkit.org/show_bug.cgi?id=198416
-- Canvas blur edge bleeding fix: https://dev.to/shaishav_patel_271fdcd61a/building-a-browser-based-image-blur-tool-with-canvas-api-no-libraries-3g8h
-- Canvas text metrics cross-browser interop issue (2024): https://github.com/web-platform-tests/interop/issues/427
-- DOMPurify SVG sanitization: https://dompurify.com/can-dompurify-handle-sanitization-of-svg-or-mathml-content-if-so-how/
-- CVE-2024-47875 DOMPurify: https://security.snyk.io/vuln/SNYK-JS-DOMPURIFY-8184974
-- localStorage QuotaExceededError handling: https://mmazzarolo.com/blog/2022-06-25-local-storage-status/
-- Storage quotas MDN: https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
-- Safari private browsing localStorage disabled: https://michalzalecki.com/why-using-localStorage-directly-is-a-bad-idea/
-- Web Audio autoplay policy Chrome: https://developer.chrome.com/blog/autoplay
-- Web Audio best practices MDN: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
-- Combining audio + video in MediaRecorder: https://copyprogramming.com/howto/combining-audio-and-video-tracks-into-new-mediastream
-- MediaStreamAudioSourceNode MDN: https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamAudioSourceNode
-- Web Audio delayed/glitchy Safari bug: https://bugs.webkit.org/show_bug.cgi?id=221334
-- Safari WebM Opus Safari 15 bug: https://bugs.webkit.org/show_bug.cgi?id=226922
-- Zustand persist middleware docs: https://zustand.docs.pmnd.rs/reference/middlewares/persist
-- Zustand schema migration guide: https://dev.to/diballesteros/how-to-migrate-zustand-local-storage-store-to-a-new-version-njp
-- Zod safeParse for file import: https://medium.com/@bashaus/validating-file-uploads-and-their-contents-with-zod-in-typescript-38a122b5b926
-- Canvas hit detection methods: https://joshuatz.com/posts/2022/canvas-hit-detection-methods/
-- Emoji cross-platform rendering inconsistencies: https://apptools.wiki/articles/14328-how-can-global-product-development-teams-standardize-the-implementation-of-emoji-assets
-- MediaRecorder audio memory leak (Firefox bug): https://bugzilla.mozilla.org/show_bug.cgi?id=1376134
-
----
-*Pitfalls research for: StoryGrid v1.2 — Effects, Overlays, Persistence, Audio*
-*Researched: 2026-04-08*
+- [html-to-image GitHub issues — CORS, Safari, fonts](https://github.com/bubkoo/html-to-image/issues)
+- [html-to-image issue #179: CORS/Crossdomain](https://github.com/bubkoo/html-to-image/issues/179)
+- [html-to-image issue #207: Google Fonts CORS](https://github.com/bubkoo/html-to-image/issues/207)
+- [html-to-image issue #199: Blank Safari](https://github.com/bubkoo/html-to-image/issues/199)
+- [html-to-image issue #461: Blank Safari (more recent)](https://github.com/bubkoo/html-to-image/issues/461)
+- [dnd-kit issue #389: Unnecessary re-renders](https://github.com/clauderic/dnd-kit/issues/389)
+- [dnd-kit issue #898: Sortable tree performance](https://github.com/clauderic/dnd-kit/issues/898)
+- [dnd-kit issue #1071: Re-rendering all draggable items](https://github.com/clauderic/dnd-kit/issues/1071)
+- [ffmpeg.wasm issue #263: SharedArrayBuffer not defined](https://github.com/ffmpegwasm/ffmpeg.wasm/issues/263)
+- [ffmpeg.wasm issue #299: iOS support](https://github.com/ffmpegwasm/ffmpeg.wasm/issues/299)
+- [Zustand discussions #1773: Out of memory with large state](https://github.com/pmndrs/zustand/discussions/1773)
+- [zundo — undo/redo middleware for Zustand](https://github.com/charkour/zundo)
+- [URL.revokeObjectURL — MDN](https://developer.mozilla.org/en-US/docs/Web/API/URL/revokeObjectURL_static)
+- [COEP header — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy)
+- [Setting COOP/COEP on static hosting](https://blog.tomayac.com/2025/03/08/setting-coop-coep-headers-on-static-hosting-like-github-pages/)
+- [Netlify custom headers docs](https://docs.netlify.com/manage/routing/headers/)
+- [React stale closures — TkDodo](https://tkdodo.eu/blog/hooks-dependencies-and-stale-closures)
+- [Zustand re-render optimization](https://dev.to/eraywebdev/optimizing-zustand-how-to-prevent-unnecessary-re-renders-in-your-react-app-59do)

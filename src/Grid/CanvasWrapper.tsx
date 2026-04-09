@@ -4,6 +4,7 @@ import { useGridStore } from '../store/gridStore';
 import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
+import { OverlayLayer } from './OverlayLayer';
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
@@ -93,6 +94,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
         data-testid="canvas-surface"
       >
         <GridNodeComponent id={rootId} />
+        <OverlayLayer />
         {showSafeZone && <SafeZoneOverlay />}
       </div>
     </div>

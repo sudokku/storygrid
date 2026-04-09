@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 0–6 + 5.1 INSERTED (shipped 2026-04-07) — see `.planning/milestones/v1.0-ROADMAP.md`
-- 🔄 **v1.1 UI Polish & Bug Fixes** — Phases 7–10 (in progress; Phase 10 added 2026-04-08 to close audit gaps)
+- 🔄 **v1.1 UI Polish & Bug Fixes** — Phases 7–8 (in progress)
 
 ## Phases
 
@@ -25,8 +25,7 @@
 
 - [x] **Phase 7: Cell Controls & Display Polish** — Fix cell action bar overflow, size stability, empty cell scaling, and video thumbnails in sidebar (completed 2026-04-07)
 - [ ] **Phase 8: Canvas & Workspace UX** — Replace safe zone with visual overlay, remove template confirmation, expand drop zone to full workspace
-- [x] **Phase 9: Improve cell movement and swapping** — Add 5-zone drag (edges + center) so users can MOVE a cell into a new tree position, not just swap content (completed 2026-04-08)
-- [x] **Phase 10: Restore Cell Controls Sizing & Stacking Fix** — Re-land reverted CELL-02 clamp() sizing, resolve CELL-01 `isolate` stacking-context risk, and unblock sidebar video uploads (gap closure from v1.1 audit) (completed 2026-04-08)
+- [ ] **Phase 9: Improve cell movement and swapping** — Add 5-zone drag (edges + center) so users can MOVE a cell into a new tree position, not just swap content
 
 ## Phase Details
 
@@ -80,24 +79,6 @@
 **Branch discipline**: runs directly on `main` (D-09 — no worktree, no feature branch)
 **UI hint**: yes
 
-### Phase 10: Restore Cell Controls Sizing & Stacking Fix
-**Goal**: Close v1.1 audit gaps — re-land the CELL-02 viewport-stable button sizing reverted in 1476df2, resolve the CELL-01 stacking-context risk introduced by `isolate` on LeafNode root, and extend the sidebar Replace input to accept video files (MEDIA-01 polish)
-**Depends on**: Phase 9
-**Requirements**: CELL-01, CELL-02, MEDIA-01 (polish)
-**Gap Closure**: Closes gaps from `.planning/v1.1-MILESTONE-AUDIT.md` — CELL-02 unsatisfied, CELL-01 partial, Flow E broken, Sidebar video-upload tech debt
-**Success Criteria** (what must be TRUE):
-  1. `ActionBar.tsx` button size is driven by `clamp(28px, 2.2vw, 36px)` (or equivalent vw-based sizing); the fixed `w-16 h-16` and `ICON_SIZE = 32` constants are gone
-  2. Resizing the viewport from a small laptop to a 4K display keeps ActionBar buttons within the 28-36px range (Flow E passes in real browser)
-  3. `LeafNode.tsx` root no longer creates a stacking context that clips the ActionBar at sibling boundaries — either `isolate` is removed or CELL-01 is re-verified to remain visually correct in a real browser at small cell sizes
-  4. The stale "no isolate" comment at `LeafNode.tsx:678` is corrected to match actual className state
-  5. Sidebar Replace file input accepts video files (`accept` includes `video/*`), matching ActionBar / drag-drop upload paths
-  6. Phase 7 regression tests still pass; new real-browser check (or equivalent) confirms ActionBar visibility at small cell + sibling boundaries
-**Branch discipline**: runs directly on `main` (no worktree, no feature branch)
-**UI hint**: yes
-**Plans:** 2/2 plans complete
-  - [x] 10-01-actionbar-clamp-sizing-PLAN.md — Re-land clamp(28px, 2.2vw, 36px) ActionBar sizing (CELL-02)
-  - [x] 10-02-leafnode-stacking-sidebar-video-PLAN.md — Remove LeafNode `isolate`, fix stale comment, extend Sidebar accept to video/* (CELL-01, MEDIA-01)
-
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -113,4 +94,3 @@
 | 7. Cell Controls & Display Polish | v1.1 | 2/2 | Complete   | 2026-04-07 |
 | 8. Canvas & Workspace UX | v1.1 | 0/3 | Planned | - |
 | 9. Improve cell movement and swapping | v1.1 | 0/4 | Planned | - |
-| 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete    | 2026-04-08 |

@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
-import { ImageIcon, Upload, ImageOff, Trash2 } from 'lucide-react';
+import { ImageIcon, Upload, ImageOff, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { EffectsPanel } from './EffectsPanel';
 
 // ---------------------------------------------------------------------------
@@ -212,6 +212,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
     const n = findNode(s.root, nodeId) as LeafNode | null;
     return n?.mediaId ? s.thumbnailMap[n.mediaId] ?? null : null;
   });
+  const audioEnabled = useGridStore(s => {
+    const n = findNode(s.root, nodeId) as LeafNode | null;
+    return n && n.type === 'leaf' ? n.audioEnabled : true;
+  });
+  const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
   const root = useGridStore(s => s.root);
   const updateCell = useGridStore(s => s.updateCell);
   const remove = useGridStore(s => s.remove);
@@ -313,6 +318,36 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           <ImageIcon size={24} className="text-neutral-600" />
         )}
       </div>
+
+      {/* Playback (Phase 12 — video-only; above EffectsPanel per D-10..D-14) */}
+      {mediaType === 'video' && (
+        <div
+          data-testid="playback-section"
+          className="space-y-2 border-b border-[#2a2a2a] pb-4 mb-4"
+        >
+          <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            Playback
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-neutral-400">Cell audio</span>
+            <button
+              data-testid="sidebar-audio-button"
+              className={`flex items-center justify-center rounded p-2 transition-colors ${
+                audioEnabled
+                  ? 'hover:bg-white/10 text-white'
+                  : 'hover:bg-red-500/20 text-red-500'
+              }`}
+              onClick={() => toggleAudioEnabled(nodeId)}
+              aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+            >
+              {audioEnabled
+                ? <Volume2 size={20} />
+                : <VolumeX size={20} />
+              }
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Effects (Phase 11 — D-10: above existing pan/fit controls) */}
       <EffectsPanel nodeId={nodeId} />

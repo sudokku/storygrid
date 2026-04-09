@@ -44,6 +44,115 @@ beforeEach(() => {
 // ActionBar clamp-based sizing tests (CELL-02, D-04, D-05, D-06)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Phase 12-02: audio button tests (AUD-02, AUD-03)
+// ---------------------------------------------------------------------------
+
+describe('ActionBar audio button (12-02)', () => {
+  it('Test 1: does NOT render audio button when cell has no media (empty cell)', () => {
+    const leaf = makeLeaf({ mediaId: null });
+    setStoreRoot(leaf);
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={false} onUploadClick={vi.fn()} />);
+    expect(screen.queryByTestId('audio-button')).not.toBeInTheDocument();
+  });
+
+  it('Test 2: does NOT render audio button when cell mediaType is image', () => {
+    const leaf = makeLeaf({ mediaId: 'img-1' });
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'img-1': 'data:image/png;base64,x' },
+      mediaTypeMap: { 'img-1': 'image' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    expect(screen.queryByTestId('audio-button')).not.toBeInTheDocument();
+  });
+
+  it('Test 3: DOES render audio button when cell mediaType is video', () => {
+    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'vid-1': 'blob:video' },
+      mediaTypeMap: { 'vid-1': 'video' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    expect(screen.getByTestId('audio-button')).toBeInTheDocument();
+  });
+
+  it('Test 4: when audioEnabled=true shows Volume2 icon and aria-label "Mute cell audio"', () => {
+    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: true });
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'vid-1': 'blob:video' },
+      mediaTypeMap: { 'vid-1': 'video' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    const btn = screen.getByTestId('audio-button');
+    expect(btn.getAttribute('aria-label')).toBe('Mute cell audio');
+    // lucide Volume2 svg has class containing "lucide-volume-2"
+    expect(btn.querySelector('svg')?.getAttribute('class') ?? '').toMatch(/volume-2/);
+  });
+
+  it('Test 5: when audioEnabled=false shows VolumeX icon with text-red-500 and aria-label "Unmute cell audio"', () => {
+    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: false });
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'vid-1': 'blob:video' },
+      mediaTypeMap: { 'vid-1': 'video' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    const btn = screen.getByTestId('audio-button');
+    expect(btn.getAttribute('aria-label')).toBe('Unmute cell audio');
+    const svg = btn.querySelector('svg');
+    expect(svg).toBeTruthy();
+    expect(svg!.getAttribute('class') ?? '').toMatch(/volume-x|volume-off/);
+    expect(svg!.getAttribute('class') ?? '').toContain('text-red-500');
+  });
+
+  it('Test 6: clicking the audio button calls toggleAudioEnabled with nodeId', () => {
+    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    const toggleAudioEnabled = vi.fn();
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'vid-1': 'blob:video' },
+      mediaTypeMap: { 'vid-1': 'video' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+      toggleAudioEnabled,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    screen.getByTestId('audio-button').click();
+    expect(toggleAudioEnabled).toHaveBeenCalledWith('leaf-1');
+  });
+
+  it('Test 7: audio button renders after fit toggle and before clear media button in DOM order', () => {
+    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    useGridStore.setState({
+      root: leaf,
+      mediaRegistry: { 'vid-1': 'blob:video' },
+      mediaTypeMap: { 'vid-1': 'video' },
+      history: [{ root: leaf }],
+      historyIndex: 0,
+    });
+    render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+    const buttons = screen.getAllByRole('button');
+    const labels = buttons.map(b => b.getAttribute('aria-label'));
+    const fitIdx = labels.findIndex(l => l && /switch to contain/i.test(l));
+    const audioIdx = labels.findIndex(l => l === 'Mute cell audio');
+    const clearIdx = labels.findIndex(l => l === 'Clear media');
+    expect(fitIdx).toBeGreaterThanOrEqual(0);
+    expect(audioIdx).toBeGreaterThan(fitIdx);
+    expect(clearIdx).toBeGreaterThan(audioIdx);
+  });
+});
+
 describe('ActionBar clamp-based sizing (07-01)', () => {
   it('Test 1: ActionBar root container renders with flex and gap classes preserved', () => {
     const leaf = makeLeaf();

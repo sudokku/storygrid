@@ -1,289 +1,315 @@
-# Stack Research — StoryGrid
+# Stack Research
 
-**Project:** StoryGrid (client-side Instagram Story collage editor)
-**Researched:** 2026-03-31
-**Overall confidence:** HIGH for core choices, MEDIUM for export libraries, LOW for video export stability
-
----
-
-## Recommended Stack
-
-| Layer | Library | Recommended Version | Confidence | Notes |
-|-------|---------|---------------------|------------|-------|
-| Build tool | Vite | ^8.0.2 | HIGH | Current stable; Rolldown-powered |
-| React plugin | @vitejs/plugin-react | ^6.0.0 | HIGH | Ships with Vite 8; Babel → Oxc |
-| UI framework | React | ^18.3.x | HIGH | Pin to 18 — see rationale |
-| Language | TypeScript | ^5.8.x | HIGH | Current; no blockers |
-| State | Zustand | ^5.0.12 | HIGH | Current stable; React 18-native |
-| Immutable updates | Immer (via zustand/middleware/immer) | ^10.1.x | HIGH | Bundled via zustand; install separately |
-| Styling | Tailwind CSS | **v3.4.x** | HIGH | Pin v3 — see rationale |
-| Drag and drop | @dnd-kit/core + @dnd-kit/sortable + @dnd-kit/utilities | ^6.3.1 | MEDIUM | Stable API but slow maintenance |
-| DOM-to-image (MVP export) | html-to-image | ^1.11.13 | MEDIUM | Stale but ~3M weekly downloads; no active drop-in replacement |
-| Icons | lucide-react | ^1.7.0 | HIGH | Current; React 18 + 19 compatible |
-| ID generation | nanoid | ^5.1.7 | HIGH | Current; ESM-only at v5 |
-| Video export (v1 only) | @ffmpeg/ffmpeg + @ffmpeg/util | ^0.12.15 | MEDIUM | Last release ~1 year ago; no successor yet |
-| Video export core | @ffmpeg/core (or @ffmpeg/core-mt) | ^0.12.x | MEDIUM | Load from CDN at runtime — not bundled |
+**Domain:** Client-side photo/video collage editor (v1.2 additions)
+**Researched:** 2026-04-08
+**Confidence:** HIGH (all critical choices verified against MDN, npm, caniuse, or official docs)
 
 ---
 
-## Rationale and Gotchas
+## Context: What Is Already Shipped
 
-### Vite 8
+These packages are installed and working — do NOT re-evaluate:
 
-**Why:** Vite 8 (released March 12, 2026) is the current stable version. It replaces the dual esbuild/Rollup architecture with Rolldown, a Rust-based bundler delivering 10–30x faster builds. The `@vitejs/plugin-react` v6 replaces Babel with Oxc for React Refresh, reducing install size further. Both `.wasm?init` SSR fixes and TypeScript path alias support are built in — both relevant for this project.
+| Package | Installed Version | Role |
+|---------|-------------------|------|
+| Vite | ^8.0.1 | Build tool |
+| React | ^18.3.1 | UI framework |
+| TypeScript | ~5.9.3 | Language |
+| Zustand | ^5.0.12 | State |
+| Immer | ^10.2.0 | Immutable updates |
+| Tailwind CSS | ^3.4.19 | Styling |
+| @dnd-kit/core | ^6.3.1 | Drag and drop |
+| lucide-react | ^1.7.0 | Icons |
+| nanoid | ^5.1.7 | ID generation |
+| mediabunny | ^1.40.1 | Installed but NOT used in export pipeline |
 
-**Gotchas:**
-- `@vitejs/plugin-react` v5 still works with Vite 8 if a gradual migration is needed, but start fresh with v6.
-- The Rolldown bundler is architecturally new; if obscure Rollup plugin edge cases arise, the workaround is to swap to the `rolldown-vite` compatibility layer first (documented in Vite 8 migration guide).
-- ffmpeg.wasm WASM loading (`.wasm?url` or CDN) works correctly with Vite 8's improved WASM handling.
-
-**Alternatives considered:** Vite 6 / Vite 7 — both still receive security patches but are not recommended for new projects started in 2026. Webpack is not worth the DX regression.
-
----
-
-### React 18 (pin to 18, do not use 19)
-
-**Why:** React 19 is the current stable release, but the PROJECT.md explicitly constrains `@dnd-kit/core` and `html-to-image` — neither of which has verified React 19 peer dependency support. More importantly, `lucide-react-native` (not relevant here, but indicative of ecosystem lag) and some UI helper libraries still declare `react@^18` as a peer. React 18 is fully supported, actively maintained, and introduces zero risk for a new project in this domain. The gains of React 19 (Server Components, Actions, automatic compiler) are irrelevant for a 100% client-side SPA with no RSC.
-
-**Gotchas:**
-- React 19 peer dependency errors will surface during `npm install` if any library in the tree declares `react@"^16 || ^17 || ^18"`. Pin React 18 to avoid this class of problem entirely.
-- The React 19 compiler's automatic memoization is not a substitute for the explicit `React.memo` strategy required for the recursive GridNode tree. Do not depend on a compiler to fix re-render hot paths.
-
-**Alternatives considered:** React 19 — not recommended yet; ecosystem compatibility risk outweighs marginal gains for this app type.
+**Critical architecture note:** Video export currently uses `canvas.captureStream()` + `MediaRecorder` — NOT Mediabunny. The existing `videoExport.ts` renders all cells into a 1080×1920 canvas and captures the stream. The canvas is `muted=true` on all video elements. There is no audio in the current export pipeline.
 
 ---
 
-### TypeScript 5.8
+## v1.2 New Stack Additions
 
-**Why:** Current stable version. No breaking changes that affect this project. Enables all modern type narrowing patterns needed for the discriminated union `GridNode` tree type.
+### 1. Canvas Filters / Effects
 
-**Gotchas:** Some older eslint plugins may not yet parse TS 5.8 syntax. Pin `typescript@~5.8` (minor-pinned) rather than `^5` to avoid unexpected type-check behavior upgrades mid-development.
+**Recommendation: `ctx.filter` + `context-filter-polyfill` for Safari 15**
 
----
+`CanvasRenderingContext2D.filter` is the only approach that works natively in the Canvas export renderer without a runtime graphics library. All the required filters (brightness, contrast, saturation, grayscale, sepia, blur) are supported via this CSS-filter-syntax property.
 
-### Zustand 5.0.x
+**Safari blocker:** `ctx.filter` is NOT supported in Safari 15 (not even in Safari 17; disabled-by-default in Safari 18). The project targets Safari 15+. Source: [caniuse CanvasRenderingContext2D.filter](https://caniuse.com/mdn-api_canvasrenderingcontext2d_filter).
 
-**Why:** Zustand 5 is the current major version. It drops React < 18 support (which aligns perfectly with this project), removes the `use-sync-external-store` package dependency, and simplifies TypeScript types. The immer middleware (`zustand/middleware/immer`) is bundled — no separate import path change required vs v4.
+**Solution:** Install `context-filter-polyfill` — a lightweight npm package that polyfills `CanvasRenderingContext2D.filter` by intercepting drawing calls. Supports all required filters: blur, brightness, contrast, grayscale, hue-rotate, invert, opacity, saturate, sepia. Latest version: 0.3.23 (June 2025). Small package (105 stars, actively maintained).
 
-**Gotchas:**
-- Zustand v5 removed the `create` API's custom equality function parameter. If `shallow` comparison is needed on derived selectors, use `useShallow` from `zustand/react/shallow` — not a custom equality function passed to `create`.
-- TypeScript regression noted in v5.0.9: middleware types broken in some configurations (Discussion #3331). Pin to `^5.0.12` which includes the fix.
-- The `persist` middleware behavior changed: initial state is no longer stored during store creation. This matters for the Phase 7 save/load feature — test persist middleware behavior explicitly.
+**Do NOT use:**
+- WebGL shaders — massive added complexity, requires a separate WebGL canvas context, total mismatch with the existing 2D canvas export pipeline.
+- glfx.js / camanjs — abandoned/unmaintained, WebGL-only, incompatible with canvas `drawImage` export pipeline.
+- CSS `filter:` on `<canvas>` element in the preview — works visually but impossible to replicate in the Canvas API export context (CSS properties are not available inside `ctx.drawImage`).
+- Pixel-by-pixel getImageData/putImageData manipulation — slow on 1080×1920 canvas, complexity is not justified when the polyfill solves the Safari gap cleanly.
 
-**Alternatives considered:** Jotai (atom-based, excellent for tree node selection but higher boilerplate for history/undo), Valtio (proxy-based, problematic with serialization/undo). Zustand + Immer is the right pairing for a deeply nested mutable tree with undo history.
+**Integration:** Apply `ctx.filter = 'brightness(1.2) contrast(0.9)'` before each `ctx.drawImage()` call in `drawLeafToCanvas()` / `renderGridIntoContext()`. Reset to `'none'` after each leaf. Same code path works in preview canvas AND in the export canvas AND in the MediaRecorder export canvas.
 
----
+| Package | Version | Bundle Impact | Install |
+|---------|---------|---------------|---------|
+| context-filter-polyfill | ^0.3.23 | ~5KB gzip (estimated) | `npm install context-filter-polyfill` |
 
-### Immer 10.x (via zustand/middleware/immer)
-
-**Why:** Immer is a peer dependency of the Zustand immer middleware — install it separately (`npm install immer`). v10 is current stable. The `immer` middleware wrapper enables direct draft mutation on deeply nested GridNode trees without manual spreading.
-
-**Gotchas:**
-- Immer must be installed as a direct dependency even though the middleware is inside the zustand package. Omitting it causes a "Cannot find module 'immer'" runtime error.
-- For the undo/redo history array, store plain serializable snapshots (not Immer drafts). Snapshots should be taken of the committed state, not inside a produce call.
-- Do not use `enableMapSet()` unless Map or Set types appear in the store — it adds bundle weight unnecessarily.
-
-**Alternatives considered:** `zustand-mutative` (uses Mutative instead of Immer, ~10x faster according to benchmarks). Worth reconsidering if profiling shows Immer as a bottleneck, but premature for MVP.
+**Note:** Import the polyfill once at app entry (e.g., `import 'context-filter-polyfill'`). It detects and skips browsers that natively support `ctx.filter`.
 
 ---
 
-### Tailwind CSS v3.4.x (PIN TO v3 — do not use v4)
+### 2. Overlay UX: Drag / Resize / Rotate Stickers and Text
 
-**Why (pin to v3):** Tailwind CSS v4 was released in 2025 and is actively developed, but it is a breaking change in several ways that directly conflict with this project:
+**Recommendation: Build with raw pointer events + CSS transform math. Do NOT add a library.**
 
-1. **Config model change:** v4 moves all configuration to CSS `@theme` directives — no `tailwind.config.js`. The PROJECT.md specifies "Tailwind configured with canvas dimensions and safe zone as CSS variables" — this is straightforward in v3. In v4 it requires relearning the config model.
-2. **Browser requirement:** Tailwind v4 requires Safari 16.4+, Chrome 111+, Firefox 128+. The project targets Safari 15+. v4 is incompatible with Safari 15.
-3. **Removed utilities:** `bg-opacity-*`, `text-opacity-*`, container config options, and other v3 utilities are gone. Using v3 means zero migration tax.
-4. **Ecosystem stability:** As of early 2026, many Tailwind component libraries and references still target v3. Developer productivity is higher on the known API.
+**Analysis of candidates:**
 
-**Use v3.4.x** (latest stable 3.x) — it receives security patches and will for the foreseeable future.
+| Library | Version | Last Published | React 18 | Gzipped | Verdict |
+|---------|---------|----------------|-----------|---------|---------|
+| react-moveable | 0.56.0 | 2 years ago | YES (needs flushSync) | ~100KB est. | Too large, stale |
+| interactjs | 1.10.27 | Active | YES (no React adapter) | ~30KB | Low-level, no React state binding |
+| konva + react-konva | 9.x | Active | YES | ~150KB | Full canvas renderer, replaces DOM |
 
-**Gotchas:**
-- Install `tailwindcss@^3.4`, `postcss`, and `autoprefixer` explicitly.
-- Vite 8 with Tailwind v3 requires the standard PostCSS plugin setup (`postcss.config.js`) — no special integration issues.
-- CSS variables for canvas dimensions and safe zones (`--canvas-width`, `--safe-zone-top`) should be defined in the Tailwind config's `extend.spacing` / `extend.height` sections or directly in a global CSS `:root {}` block and referenced via Tailwind's `arbitrary value` syntax (`h-[var(--canvas-height)]`).
+**react-moveable** is the only library with first-class drag + resize + rotate in React, but it was last published 2 years ago and its bundle size is substantial. More importantly, the overlays live in DOM (React) space above the canvas, meaning the existing React/Zustand data flow already handles state. Adding a library that manages its own internal transform state creates a synchronization problem.
 
-**Alternatives considered:** Tailwind v4 — defer until Safari 15 is out of scope and ecosystem matures. Plain CSS modules — unnecessary complexity for a UI-heavy app.
+**react-konva / Konva** would replace the entire preview rendering with a Konva canvas — a major architectural break. Not viable.
 
----
+**The raw approach is correct here:** Each overlay element is a `position: absolute` div with `transform: translate(x,y) rotate(deg)`. Drag = `onPointerDown` + `onPointerMove` on the element. Resize = resize handle `onPointerDown`. Rotation = rotation handle at top of element + `Math.atan2` calculation. This is ~150 lines of utility code total, fully integrated with Zustand store, no new dependencies, and renders identically in preview and export (since export reads the overlay state from the Zustand store and paints overlays onto the canvas directly via `ctx.fillText` / `ctx.drawImage`).
 
-### @dnd-kit/core + @dnd-kit/sortable (6.3.1)
-
-**Why:** For StoryGrid, drag-and-drop is used specifically for dragging image files onto cells (not for reordering cells — cells are split/merged, not sorted). `@dnd-kit/core` handles pointer-event-based file drag detection with custom sensors. It is the best-designed DnD library for pointer-event use cases.
-
-**Maintenance caveat:** @dnd-kit/core's last release was ~1 year ago (v6.3.1). There is an active GitHub discussion (Issue #1830) about maintenance status. A new `@dnd-kit/react` adapter (v0.3.x) is in development but is explicitly not production-ready. Use `@dnd-kit/core` v6.3.1 — it is stable and will not receive breaking changes.
-
-**Gotchas:**
-- Performance issue (Issue #389): in large sortable lists, every item re-renders on drag. This project has at most ~20 cells in a grid, so this is irrelevant.
-- Do NOT migrate to `@dnd-kit/react` for this project — it is in alpha/beta, has breaking API changes in progress, and adds migration risk without benefit.
-- For file-drop-onto-cell, the native HTML5 drag API (`onDragOver` + `onDrop` on each Leaf component) may be simpler and more reliable than @dnd-kit for this specific use case. @dnd-kit handles drag-between-cells for media reordering; native drag events handle file-from-desktop drops.
-
-**Alternatives considered:** `react-dnd` — pointer event support is worse, more boilerplate. `pragmatic-drag-and-drop` (Atlassian) — newer, actively maintained, but less community documentation for React-specific use cases. @dnd-kit remains the best documented choice for this use case.
+**Why no library:** The overlay count is small (typical Instagram post: 3-6 stickers), interaction events are straightforward, and the export path MUST read overlay positions from Zustand state anyway — a library managing its own internal DOM transform state would need to be synced back to the store on every move, which is error-prone. Building raw keeps both paths (preview + export) reading from one ground truth.
 
 ---
 
-### html-to-image 1.11.13
+### 3. Font Loading for Text Overlays
 
-**Why:** The only actively used client-side DOM-to-image library that correctly handles modern CSS (flexbox, CSS variables, `object-fit`, custom fonts). `html2canvas` cannot handle CSS `transform: scale()` or `object-fit: cover` reliably, making it unusable for the scaled canvas preview render. `dom-to-image` is deprecated.
+**Recommendation: `@fontsource-variable` packages (already in project) + CSS Font Loading API (`document.fonts`)**
 
-**Maintenance concern:** Last publish was ~1 year ago. No releases since. The library has ~3M weekly downloads suggesting it is stable-in-use rather than actively evolved. The GitHub repository (bubkoo/html-to-image) is not archived.
+The project already has `@fontsource-variable/geist` installed. This approach is correct for text overlays.
 
-**Alternative worth watching:** `modern-screenshot` (v4.6.8, published 2 months ago, 575K weekly downloads) — actively maintained fork-of-a-fork with better CSS support. It is a valid drop-in alternative if `html-to-image` proves problematic. API is nearly identical (`domToCanvas`, `domToPng`, etc.).
+**Pattern for Canvas export parity:**
 
-**Gotchas (critical):**
+1. Import the fontsource CSS at app entry (e.g., `import '@fontsource-variable/geist'`). This registers the font via `@font-face` in the document.
+2. Before the export canvas draws text, explicitly await `document.fonts.ready` (or `document.fonts.load('16px Geist Variable')`). This guarantees the font is loaded before `ctx.fillText()` is called.
+3. Set `ctx.font = '700 48px "Geist Variable"'` and then `ctx.fillText(...)`.
 
-1. **CORS / canvas taint:** Any `<img>` whose `src` is a user-provided object URL (via `URL.createObjectURL()`) is same-origin and will NOT cause CORS issues. However, if any image is loaded from an external URL (e.g., a CDN), the canvas will be tainted and `toPng()` will throw. Mitigation: always use object URLs from `File` objects — never raw external URLs.
+**No new packages needed.** The CSS Font Loading API is fully supported in Chrome 90+, Firefox 90+, Safari 15+ (source: [MDN CSS Font Loading API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API) — "works across latest devices since March 2025").
 
-2. **Chrome cache/CORS race:** If images are loaded without `crossOrigin="anonymous"` initially and then re-requested with it, Chrome returns a cached response without CORS headers and the export fails. Mitigation: always set `crossOrigin="anonymous"` on all `<img>` elements from the initial render, even for object URLs (it's a no-op for same-origin but prevents cache race conditions).
+**Font selection for v1.2:** Offer the user 3-5 fonts maximum. Recommended starter set from fontsource:
+- `@fontsource-variable/geist` (already installed) — clean modern sans
+- `@fontsource/playfair-display` — elegant serif for headings
+- `@fontsource/dancing-script` — script/handwritten style
 
-3. **Off-screen render div must be in DOM:** `html-to-image` requires the target element to be attached to the document. The hidden full-res 1080×1920 div (the dual-render export element) must be in the DOM with `position: absolute; left: -9999px; visibility: hidden` — not `display: none` (which breaks layout).
+Each `@fontsource` package is a static CSS + woff2 asset. Import only the weights needed (`/400.css`, `/700.css`) to minimize bundle impact. Typical gzipped woff2 per weight: ~15-40KB (loaded async, not in JS bundle).
 
-4. **CSS custom properties on the export div:** The export div must have all CSS variables defined in its scope or on `:root`. If canvas dimensions are CSS variables, verify they resolve correctly on the export div (they will if defined on `:root`).
+| Package | Version | Purpose |
+|---------|---------|---------|
+| @fontsource/playfair-display | ^5.x | Optional serif overlay font |
+| @fontsource/dancing-script | ^5.x | Optional script overlay font |
 
-5. **`requestAnimationFrame` before capture:** Call `toPng()` inside a `requestAnimationFrame` callback after triggering the off-screen render to ensure all layout/paint has settled.
-
-6. **Font embedding:** Fonts from Google Fonts or other external sources will fail to embed unless served with CORS headers. Mitigation: self-host any fonts used in the canvas (Inter, system-ui, etc.) or use only system fonts in the export div.
-
----
-
-### lucide-react 1.7.0
-
-**Why:** Current stable (v1.7.0, published ~1 day ago as of research date). Tree-shakeable by default — only imported icons are bundled. Compatible with React 18 and 19. Comprehensive icon set covering all UI actions needed (split, merge, download, eye, etc.).
-
-**Gotchas:** At v0.x this library had breaking icon renames every few releases. Since reaching v1.x the API is stable. No known issues.
-
-**Alternatives considered:** `heroicons/react`, `react-icons` — both valid. `lucide-react` has better TypeScript types and the cleanest import API.
+(Geist Variable already installed — covers the default font.)
 
 ---
 
-### nanoid 5.1.7
+### 4. Emoji Picker
 
-**Why:** Current stable (v5.1.7). Tiny, secure, URL-safe IDs for GridNode `id` fields. No external dependencies.
+**Recommendation: `emoji-mart` v5 + `@emoji-mart/data` + `@emoji-mart/react`**
 
-**Gotchas:**
-- nanoid v5 is **ESM-only**. If any tooling in the project is CommonJS (Jest with CJS config, for example), importing nanoid will fail. Mitigation: use Vite's native ESM test runner (Vitest) — no CJS issue. Do not use Jest with CJS config.
-- For Node.js scripts (e.g., config generation), use `import { nanoid } from 'nanoid'` in ESM context or use the `customAlphabet` export with a CJS-compatible alternative if truly needed.
+| Package | Version | Weekly Downloads | Notes |
+|---------|---------|-----------------|-------|
+| emoji-mart | ^5.6.0 | 3M+ | Framework-agnostic core |
+| @emoji-mart/data | ^1.x | 3M+ | Emoji dataset (load separately) |
+| @emoji-mart/react | ^1.1.1 | active | React wrapper |
 
-**Alternatives considered:** `uuid` — larger bundle, less ergonomic API. `crypto.randomUUID()` — available in modern browsers but returns hyphenated UUID format; nanoid is more compact.
+**Why emoji-mart:** Most popular emoji picker in the React ecosystem (3M+ weekly downloads). Framework-agnostic core (works as a web component). The React wrapper is thin. It supports search, categories, skin tone selection, and recent emoji — all table-stakes for a sticker picker.
 
----
+**Bundle strategy:** `@emoji-mart/data` is large (~1MB uncompressed). Load it lazily when the user opens the picker:
+```ts
+const data = await import('@emoji-mart/data');
+```
+This keeps the main bundle unaffected. The picker itself renders in a popover that's only mounted when activated.
 
-### @ffmpeg/ffmpeg 0.12.15 + @ffmpeg/util + @ffmpeg/core (CDN only)
+**Alternative: `emoji-picker-react` v4.18.0** — 34MB package weight (unacceptable), eliminate from consideration.
 
-**Why:** The only practical in-browser FFmpeg solution for MP4 encoding. Used exclusively for Phase 6 (video export). Must be lazy-loaded — the WASM core is ~25MB.
-
-**Critical constraints:**
-
-1. **SharedArrayBuffer requirement:** @ffmpeg/ffmpeg v0.12.x uses SharedArrayBuffer, which is only available in cross-origin isolated contexts. You MUST serve the app with:
-   ```
-   Cross-Origin-Opener-Policy: same-origin
-   Cross-Origin-Embedder-Policy: require-corp
-   ```
-   These headers must be set in Vercel/Netlify config (the PROJECT.md already flags this for Phase 6). These headers are NOT needed for the MVP (no video).
-
-2. **Single-threaded vs multi-threaded core:**
-   - `@ffmpeg/core` — single-threaded, compatible with all target browsers, no additional header requirements beyond the two above. Use this for MVP video support.
-   - `@ffmpeg/core-mt` — multi-threaded, faster encoding, but requires SharedArrayBuffer AND Worker support. Use only as an opt-in performance upgrade once single-threaded is validated.
-
-3. **Do NOT bundle the WASM core:** Load `@ffmpeg/core` from jsDelivr CDN at runtime:
-   ```
-   https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.x/dist/esm
-   ```
-   Bundle only `@ffmpeg/ffmpeg` and `@ffmpeg/util` — these are small JS wrappers.
-
-4. **Safari video export is explicitly out of scope** (PROJECT.md) — SharedArrayBuffer support in Safari is unreliable even with COOP/COEP headers in cross-origin contexts.
-
-5. **Maintenance status:** v0.12.15 was the last release, published ~1 year ago. The maintainer has not indicated end-of-life, but activity is low. No viable drop-in alternative exists for in-browser MP4 encoding. This is an accepted risk for Phase 6.
-
-**Alternatives considered:** `wasm-vp9`, MediaRecorder API — MediaRecorder cannot capture a static layout at full resolution; it only records what's playing in the viewport. Not suitable for 1080×1920 export.
+**Peer dependency:** `@emoji-mart/react@1.1.1` declares `react@>=16.8` — React 18 is compatible. The core `emoji-mart` has no React peer dependency (web component approach).
 
 ---
 
-## Version Pinning Recommendations
+### 5. SVG Sticker Rendering in Canvas Export
 
-```json
-{
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zustand": "^5.0.12",
-    "immer": "^10.1.1",
-    "lucide-react": "^1.7.0",
-    "nanoid": "^5.1.7",
-    "html-to-image": "^1.11.13",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^8.0.0",
-    "@dnd-kit/utilities": "^3.2.2"
-  },
-  "devDependencies": {
-    "vite": "^8.0.2",
-    "@vitejs/plugin-react": "^6.0.0",
-    "typescript": "~5.8.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0"
-  }
-}
+**Recommendation: Serialize to `Blob` URL → `Image()` element → `ctx.drawImage()`. No library needed.**
+
+The native browser approach for SVG-on-canvas works reliably in Chrome 90+, Firefox 90+, and Safari 15+:
+
+```ts
+const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+const url = URL.createObjectURL(svgBlob);
+const img = new Image();
+img.onload = () => {
+  ctx.drawImage(img, x, y, width, height);
+  URL.revokeObjectURL(url);
+};
+img.src = url;
 ```
 
-**Lazy-loaded at runtime (Phase 6 only — do not bundle):**
-```
-@ffmpeg/ffmpeg@^0.12.15
-@ffmpeg/util@^0.12.1
-```
-Load `@ffmpeg/core` from CDN, not npm.
+For user-uploaded SVG files: read as text with `FileReader.readAsText()`, store the SVG string in the Zustand overlay store (not a blob URL — SVG strings are serializable and can be persisted to localStorage/file without expiry). On export, reconstruct the Image from the string as above.
 
-### Key pinning rationale
+**Why not canvg:** canvg v4.0.3 (1.29MB package size) is heavy for a use case where the native browser SVG renderer already handles the task. The `Image()` approach uses the browser's own SVG renderer, which is more capable and correct than canvg's JavaScript reimplementation for complex SVGs. canvg is only needed for Node.js server-side rendering or headless canvas — not required here.
 
-| Package | Pin style | Reason |
-|---------|-----------|--------|
-| `typescript` | `~5.8.0` (minor-pinned) | Avoid unexpected type-check changes in patch |
-| `tailwindcss` | `^3.4.0` | Stay on v3 branch; ^ is safe within major |
-| `react` | `^18.3.1` | Explicitly stay on 18; do not allow 19 upgrade |
-| `vite` | `^8.0.2` | Current major; patch updates are safe |
-| `html-to-image` | `^1.11.13` | Low maintenance; ^ is safe since no new releases expected |
-| `@dnd-kit/core` | `^6.3.1` | Stable; no breaking changes expected on 6.x |
+**Important caveat:** SVGs with external resource references or `<foreignObject>` may fail in the `Image()` approach due to CORS/security restrictions. For sticker use cases (decorative SVGs), this is not a practical concern.
 
 ---
 
-## What NOT to Use
+### 6. Project Persistence / Serialization
 
-| Library | Why Not |
-|---------|---------|
-| Tailwind CSS v4 | Requires Safari 16.4+ (project targets 15+); CSS-first config is a breaking change; ecosystem still maturing |
-| React 19 | Peer dependency compatibility risk with dnd-kit and html-to-image; Server Components / Actions provide zero value for this app |
-| dom-to-image | Deprecated, unmaintained, replaced by html-to-image |
-| html2canvas | Cannot handle `object-fit: cover`, `CSS transform`, or CSS custom properties reliably — will produce incorrect exports |
-| react-dnd | Worse pointer event support than @dnd-kit; more boilerplate |
-| @dnd-kit/react (new adapter) | Alpha/beta, not production-ready, breaking API changes in flight |
-| Vite 6 / Vite 7 | Older; start new projects on v8 |
-| @ffmpeg/core-mt (multi-threaded) | Requires deeper SharedArrayBuffer/Worker browser support; use single-threaded @ffmpeg/core first |
-| webpack / CRA | No DX benefit over Vite; larger config overhead |
+**Recommendations:**
+
+#### Storage backend: `idb-keyval` for media, `localStorage` for project metadata
+
+localStorage (5-10MB limit, synchronous, strings only) cannot store video blobs or large base64 image strings reliably across multiple projects. The correct split:
+
+| Data | Storage | Rationale |
+|------|---------|-----------|
+| Project metadata (tree structure, overlay positions, settings) | localStorage | Small JSON (<100KB), fast sync reads for auto-save |
+| Image media (base64) | IndexedDB via idb-keyval | Binary-safe, async, large capacity |
+| Video media (blob URLs) | Re-upload required on reload | Blob URLs expire on tab close — cannot persist |
+
+**idb-keyval** is the right IndexedDB wrapper for this use case:
+- 295 bytes brotli'd (get/set only) — effectively zero bundle impact
+- Promise-based, tree-shakeable
+- Version 6.2.2 (Jake Archibald, actively maintained)
+- `npm install idb-keyval`
+
+**Video persistence strategy:** Blob URLs cannot be serialized — they expire when the tab closes. On project load, video cells must show a "re-upload required" state. The `.storygrid` file format should store a video cell placeholder (filename, duration, thumbnail frame as base64) so the user knows which file to re-upload. This is consistent with how Figma and similar tools handle external file references.
+
+#### Schema validation for `.storygrid` file import: **Zod v4**
+
+**Why:** `.storygrid` files are user-provided JSON. Without validation, malformed files cause cryptic runtime errors deep in the tree renderer. Zod provides TypeScript-first schema definition, parse-time type narrowing, and clear error messages. v4 is 14x faster than v3 and ~57% smaller.
+
+**Bundle:** Full zod v4 is ~17KB gzipped. `@zod/mini` is ~1.9KB gzipped for tree-shakeable usage. For file import validation (small, infrequent operation), load zod lazily with the import action:
+```ts
+const { z } = await import('zod');
+```
+
+| Package | Version | Gzipped | Notes |
+|---------|---------|---------|-------|
+| zod | ^4.x | ~17KB (lazy-loaded) | TypeScript-first schema validation |
+
+**File versioning:** Store a `"version": 1` field at the root of the `.storygrid` JSON. Write a migration function for each version bump. Keep migrations pure (no side effects). This is a standard approach (used by Figma plugins, Excalidraw, etc.).
+
+**No ORM or database wrapper beyond idb-keyval.** The data model is a serializable Zustand store snapshot — no relational queries needed.
 
 ---
 
-## Open Questions
+### 7. Per-Cell Audio Toggle on Video Export
 
-- **html-to-image vs modern-screenshot:** If html-to-image produces rendering artifacts in Phase 4 testing (e.g., CSS blur filters, border-radius clipping at export), swap to `modern-screenshot@^4.6.8` as a direct API-compatible replacement. This should be validated in Phase 4 before declaring the export engine stable.
-- **@dnd-kit/react timeline:** Monitor GitHub Discussion #1842 for production-readiness announcement. If @dnd-kit/react reaches stable before Phase 3 is built, evaluate migration. Otherwise stick to @dnd-kit/core v6.
-- **Vite 8 Rolldown edge cases:** Rolldown is architecturally new. If any dependency produces unusual bundling behavior (especially @ffmpeg WASM), check the Vite 8 migration docs and rolldown-vite compatibility layer.
+**Recommendation: Web Audio API — `AudioContext` + `MediaElementAudioSourceNode` + `ChannelMergerNode` → `MediaStreamAudioDestinationNode`. No new library needed.**
+
+The existing video export uses `canvas.captureStream()` → `MediaRecorder`. To add audio from selected video cells, add a Web Audio graph alongside:
+
+**Architecture:**
+
+```
+HTMLVideoElement (cell A, audio on)  → createMediaElementAudioSourceNode()  ──┐
+HTMLVideoElement (cell B, audio on)  → createMediaElementAudioSourceNode()  ──┤→ GainNode → MediaStreamAudioDestinationNode
+HTMLVideoElement (cell C, audio off) → (not connected)                         │
+                                                                               ↓
+MediaRecorder(canvas.captureStream() + audioDestination.stream.getAudioTracks())
+```
+
+1. Create one `AudioContext`.
+2. For each video cell with audio enabled: `ctx.createMediaElementAudioSourceNode(videoElement)` → connect to a `GainNode` → connect to `MediaStreamAudioDestinationNode`.
+3. Combine the canvas video track and the audio destination's audio track into a single `MediaStream`: `new MediaStream([...canvasStream.getVideoTracks(), ...audioDestination.stream.getAudioTracks()])`.
+4. Pass the combined stream to `MediaRecorder`.
+
+**Verified:** `AudioContext.createMediaStreamDestination()` is supported Chrome 51+, Firefox 43+ — matching existing video export browser support. Source: [MDN AudioContext.createMediaStreamDestination](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaStreamDestination).
+
+**Important constraint:** `createMediaElementAudioSourceNode` requires the video element NOT to be `muted=true` at the time of connection. The existing export video elements are created with `video.muted = true`. This must change: set `video.muted = false` for audio-enabled cells before connecting to the audio graph. The muted state was set to enable autoplay policy bypass — with the audio routing through Web Audio, the HTMLVideoElement's muted attribute can be false while still playing back correctly.
+
+**No new packages needed.** Web Audio API is a browser built-in. No wrapper library adds value here.
+
+---
+
+## Summary: New Packages to Install
+
+```bash
+# Production
+npm install context-filter-polyfill emoji-mart @emoji-mart/data @emoji-mart/react idb-keyval zod
+
+# Optional font additions (install only chosen fonts)
+npm install @fontsource/playfair-display @fontsource/dancing-script
+```
+
+| Package | Version | Gzipped Size | Purpose |
+|---------|---------|-------------|---------|
+| context-filter-polyfill | ^0.3.23 | ~5KB | Safari 15 polyfill for ctx.filter |
+| emoji-mart | ^5.6.0 | ~15KB (lazy data) | Emoji picker core |
+| @emoji-mart/data | ^1.x | ~1MB (lazy-loaded) | Emoji dataset — lazy import only |
+| @emoji-mart/react | ^1.1.1 | ~5KB | React wrapper for emoji picker |
+| idb-keyval | ^6.2.2 | <1KB | IndexedDB key-value store for media |
+| zod | ^4.x | ~17KB (lazy) | .storygrid file import validation |
+
+**Estimated new JS bundle addition (lazy-excluded):** ~25KB gzipped. Well within the 500KB budget.
+
+---
+
+## What NOT to Add
+
+| Avoid | Why | Instead |
+|-------|-----|---------|
+| react-moveable | 2-year stale, ~100KB, external transform state conflicts with Zustand | Raw pointer events + transform math (~150 LOC) |
+| react-konva / konva | Replaces entire DOM preview with canvas — breaks existing component architecture | Keep DOM preview, use canvas only for export |
+| interactjs | Vanilla JS, no React state integration, requires manual sync | Raw pointer events |
+| glfx.js / camanjs | Abandoned, WebGL-only, incompatible with 2D canvas pipeline | ctx.filter + context-filter-polyfill |
+| html2canvas | Drops CSS transforms, object-fit — wrong for export | Already rejected; existing Canvas API renderer is correct |
+| emoji-picker-react | 34MB package weight | emoji-mart |
+| canvg | 1.29MB, duplicates browser SVG renderer | Native Image() + blob URL |
+| WebGL shaders for filters | Enormous complexity, separate GPU context, fragile cross-browser | ctx.filter + polyfill |
+| @emoji-mart/react fork (@slidoapp) | Unofficial fork, unnecessary | Official @emoji-mart/react 1.1.1 |
+| Mediabunny for audio mixing | Mediabunny is for WebCodecs-based encode — current pipeline is MediaRecorder; mixing layers is mismatched | Web Audio API AudioContext |
+
+---
+
+## Version Compatibility
+
+| Package | React 18 | Safari 15 | Chrome 90+ | Firefox 90+ |
+|---------|----------|-----------|------------|-------------|
+| context-filter-polyfill | N/A | YES (polyfills gap) | YES (no-op) | YES (no-op) |
+| emoji-mart + @emoji-mart/react | YES (react >=16.8) | YES | YES | YES |
+| idb-keyval | N/A | YES | YES | YES |
+| zod v4 | N/A | YES | YES | YES |
+| ctx.filter (native) | N/A | NO — use polyfill | YES (52+) | YES (49+) |
+| Web Audio AudioContext | N/A | YES (Safari 14.1+) | YES | YES |
+| FontFace / document.fonts | N/A | YES (Safari 10+) | YES | YES |
+| SVG → Image() → ctx.drawImage | N/A | YES | YES | YES |
+
+---
+
+## Open Questions / Risks
+
+1. **context-filter-polyfill + blur on Safari 15:** The polyfill GitHub has a known issue (#3) where only a rectangular portion of the image draws in Safari. Verify blur filter output on Safari 15 during Phase 11 implementation. If issue persists, skip blur on Safari (degrade gracefully — blur is a nice-to-have, not table stakes).
+
+2. **MediaRecorder audio + muted video elements:** Existing export code sets `video.muted = true` to bypass autoplay policy on Chrome. Removing `muted` for audio-enabled cells may re-trigger autoplay restrictions. Mitigation: Only set `muted = false` after the export has been triggered by a user gesture (the Export button click satisfies the gesture requirement). Test explicitly.
+
+3. **localStorage size with multiple projects:** If users create many projects with base64 images, localStorage will fill up (5-10MB limit). Plan B: move ALL project data to IndexedDB (idb-keyval) at Phase 11 implementation time, using localStorage only for the list of project IDs and names. This is a design decision for the planner, flagged here as a risk.
+
+4. **emoji-mart @emoji-mart/react v1.1.1 last published 3 years ago:** The React wrapper has not been updated but it is a thin wrapper over the stable web-component core. Verify React 18 concurrent mode compatibility with `flushSync` if picker updates cause tearing. The core `emoji-mart` package IS actively maintained.
+
+5. **Mediabunny package installed but unused:** mediabunny ^1.40.1 is in package.json but no source file imports it. It should remain unused for v1.2 — the MediaRecorder pipeline is the correct approach given no COOP/COEP requirement. Consider removing it to reduce node_modules bloat, but this is out of scope for v1.2.
 
 ---
 
 ## Sources
 
-- Vite 8 release: https://vite.dev/blog/announcing-vite8
-- Zustand v5 announcement: https://pmnd.rs/blog/announcing-zustand-v5
-- Zustand v5 migration guide: https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-- Tailwind v4 upgrade guide: https://tailwindcss.com/docs/upgrade-guide
-- html-to-image GitHub: https://github.com/bubkoo/html-to-image
-- modern-screenshot npm: https://www.npmjs.com/package/modern-screenshot
-- @dnd-kit maintenance discussion: https://github.com/clauderic/dnd-kit/issues/1830
-- @dnd-kit roadmap discussion: https://github.com/clauderic/dnd-kit/discussions/1842
-- @ffmpeg/ffmpeg npm: https://www.npmjs.com/package/@ffmpeg/ffmpeg
-- nanoid npm: https://www.npmjs.com/package/nanoid
-- lucide-react React 19 issue: https://github.com/lucide-icons/lucide/issues/2951
-- html-to-image CORS issue: https://github.com/bubkoo/html-to-image/issues/40
-- Best HTML-to-canvas solutions 2025: https://portalzine.de/best-html-to-canvas-solutions-in-2025/
+- [caniuse: CanvasRenderingContext2D.filter](https://caniuse.com/mdn-api_canvasrenderingcontext2d_filter) — Safari 15 not supported, confirmed
+- [MDN: CanvasRenderingContext2D.filter](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/filter) — filter syntax reference
+- [context-filter-polyfill GitHub](https://github.com/davidenke/context-filter-polyfill) — v0.3.23, filter support matrix
+- [MDN: AudioContext.createMediaStreamDestination](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaStreamDestination) — audio mixing pattern
+- [MDN: CSS Font Loading API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API) — document.fonts.ready pattern
+- [emoji-mart GitHub](https://github.com/missive/emoji-mart) — framework-agnostic, web component core
+- [idb-keyval GitHub](https://github.com/jakearchibald/idb-keyval) — v6.2.2, 295 bytes brotli'd
+- [Zod v4 release notes](https://zod.dev/v4) — 14x faster, 57% smaller than v3
+- [Mediabunny supported formats](https://mediabunny.dev/guide/supported-formats-and-codecs) — audio codec support verified
+- [npm: canvg](https://www.npmjs.com/package/canvg) — v4.0.3, 1.29MB, eliminated
+- [npm: emoji-picker-react](https://www.npmjs.com/package/emoji-picker-react) — 34MB package, eliminated
+
+---
+
+*Stack research for: StoryGrid v1.2 Effects, Overlays & Persistence*
+*Researched: 2026-04-08*

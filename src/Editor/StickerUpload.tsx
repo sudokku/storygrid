@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 import { Image } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useOverlayStore } from '../store/overlayStore';
@@ -11,7 +11,7 @@ interface StickerUploadProps {
 export function StickerUpload({ onClose }: StickerUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 

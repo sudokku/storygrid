@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { type ComponentType, useState, useEffect } from 'react';
 import { useOverlayStore } from '../store/overlayStore';
 
 interface EmojiPickerPopoverProps {
@@ -13,7 +13,7 @@ interface EmojiPickerPopoverProps {
  */
 export function EmojiPickerPopover({ onClose }: EmojiPickerPopoverProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [PickerComponent, setPickerComponent] = useState<React.ComponentType<any> | null>(null);
+  const [PickerComponent, setPickerComponent] = useState<ComponentType<any> | null>(null);
   const [emojiData, setEmojiData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -58,9 +58,9 @@
 ### Per-Cell Audio Toggle (video export)
 
 - [x] **AUD-01**: Each video cell has an audio-enabled boolean field on its leaf node, defaulting to `true` for newly added videos
-- [ ] **AUD-02**: Each video cell shows a speaker icon (unmuted/muted) in the portal ActionBar; the icon is visible only for cells with `mediaType === 'video'`
-- [ ] **AUD-03**: Clicking the speaker icon toggles the cell's audio-enabled state and updates the icon to reflect the new state
-- [ ] **AUD-04**: The sidebar video cell panel also exposes the audio toggle (parity with ActionBar)
+- [x] **AUD-02**: Each video cell shows a speaker icon (unmuted/muted) in the portal ActionBar; the icon is visible only for cells with `mediaType === 'video'`
+- [x] **AUD-03**: Clicking the speaker icon toggles the cell's audio-enabled state and updates the icon to reflect the new state
+- [x] **AUD-04**: The sidebar video cell panel also exposes the audio toggle (parity with ActionBar)
 - [ ] **AUD-05**: MP4 video export mixes audio from all cells where audio is enabled via a Web Audio API graph (AudioContext → MediaElementAudioSourceNode per cell → MediaStreamAudioDestinationNode), combined with the canvas video track into a single MediaStream fed to MediaRecorder
 - [ ] **AUD-06**: If zero cells have audio enabled, the exported MP4 contains no audio track (not a silent track)
 - [ ] **AUD-07**: Audio in the exported MP4 is clipped to the total video export duration
@@ -136,9 +136,9 @@ Which phases cover which requirements.
 | EFF-09 | Phase 11 | Pending |
 | EFF-10 | Phase 11 | Pending |
 | AUD-01 | Phase 12 | Complete |
-| AUD-02 | Phase 12 | Pending |
-| AUD-03 | Phase 12 | Pending |
-| AUD-04 | Phase 12 | Pending |
+| AUD-02 | Phase 12 | Complete |
+| AUD-03 | Phase 12 | Complete |
+| AUD-04 | Phase 12 | Complete |
 | AUD-05 | Phase 12 | Pending |
 | AUD-06 | Phase 12 | Pending |
 | AUD-07 | Phase 12 | Pending |

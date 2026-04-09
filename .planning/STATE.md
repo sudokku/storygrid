@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-04-09T20:49:59.933Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-04-09T20:55:27.018Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 12 (per-cell-audio-toggle) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-09
 
@@ -88,6 +88,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 | Phase 10-restore-cell-controls-sizing-stacking P02 | 4min | 3 tasks | 3 files |
 | Phase 10-restore-cell-controls-sizing-stacking P01 | 4min | 1 tasks | 2 files |
 | Phase 12-per-cell-audio-toggle P01 | 8min | 2 tasks | 28 files |
+| Phase 12-per-cell-audio-toggle P02 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,8 @@ Recent decisions affecting current work:
 - [Phase 10-restore-cell-controls-sizing-stacking]: CELL-02 re-land uses inline clamp() CSS via React.CSSProperties; lucide icons switched from size prop to style prop since size only accepts numbers
 - [Phase 12-per-cell-audio-toggle]: toggleAudioEnabled uses findNode+updateLeaf+pushSnapshot composition; no-op guard before pushSnapshot prevents history pollution on bad nodeId
 - [Phase 12-per-cell-audio-toggle]: audioEnabled fixture migration applied to all 25 LeafNode files even though tsconfig.app.json excludes tests — matches Phase 11 D-28 precedent
+- [Phase 12-per-cell-audio-toggle]: Sidebar Playback subsection labeled 'Playback' (not 'Audio') per D-10 forward-looking naming; size 20 icon deliberately smaller than ActionBar 32
+- [Phase 12-per-cell-audio-toggle]: ActionBar and Sidebar audio toggles both read toggleAudioEnabled from the store directly — no local state, single undo entry, parity by construction
 
 ### Pending Todos
 
@@ -221,6 +224,6 @@ None active. Roadmap ready — run `/gsd:plan-phase 11` to start.
 
 ## Session Continuity
 
-Last session: 2026-04-09T20:49:59.929Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-04-09T20:55:27.014Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { current } from 'immer';
-import type { GridNode, SplitDirection, LeafNode } from '../types';
+import type { GridNode, SplitDirection, LeafNode, Overlay } from '../types';
 import type { EffectSettings, PresetName } from '../lib/effects';
 import { DEFAULT_EFFECTS, PRESET_VALUES } from '../lib/effects';
 import {
@@ -17,6 +17,7 @@ import {
   findNode,
 } from '../lib/tree';
 import { useEditorStore } from './editorStore';
+import { useOverlayStore } from './overlayStore';
 
 // ---------------------------------------------------------------------------
 // Video thumbnail capture helper (MEDIA-01 backend, D-09/D-10)
@@ -90,7 +91,7 @@ type GridStoreState = {
   mediaRegistry: Record<string, string>;
   mediaTypeMap: Record<string, 'image' | 'video'>;
   thumbnailMap: Record<string, string>;
-  history: Array<{ root: GridNode }>;
+  history: Array<{ root: GridNode; overlays: Overlay[] }>;
   historyIndex: number;
   // actions
   split: (nodeId: string, direction: SplitDirection) => void;
@@ -118,6 +119,7 @@ type GridStoreState = {
     edge: 'center' | 'top' | 'bottom' | 'left' | 'right',
   ) => void;
   cleanupStaleBlobMedia: () => void;
+  pushOverlaySnapshot: () => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -133,12 +135,13 @@ const HISTORY_CAP = 50;
  */
 function pushSnapshot(state: {
   root: GridNode;
-  history: Array<{ root: GridNode }>;
+  history: Array<{ root: GridNode; overlays: Overlay[] }>;
   historyIndex: number;
 }): void {
   // 1. Snapshot BEFORE mutation — unwrap Draft with current() first
   const plainRoot = current(state.root);
-  const snap = structuredClone({ root: plainRoot });
+  const overlays = useOverlayStore.getState().overlays;
+  const snap = structuredClone({ root: plainRoot, overlays });
   // 2. Clear redo stack
   state.history = state.history.slice(0, state.historyIndex + 1);
   // 3. Push snapshot
@@ -176,7 +179,7 @@ export const useGridStore = create<GridStoreState>()(
     mediaTypeMap: {},
     thumbnailMap: {},
     // Initial tree state stored as history[0] so undo can return to starting state
-    history: [{ root: structuredClone(initialTree) }],
+    history: [{ root: structuredClone(initialTree), overlays: [] }],
     historyIndex: 0,
 
     split: (nodeId, direction) =>
@@ -310,7 +313,7 @@ export const useGridStore = create<GridStoreState>()(
         state.mediaRegistry = {};
         state.mediaTypeMap = {};
         state.thumbnailMap = {};
-        state.history = [{ root: structuredClone(freshTree) }];
+        state.history = [{ root: structuredClone(freshTree), overlays: [] }];
         state.historyIndex = 0;
       }),
 
@@ -353,6 +356,8 @@ export const useGridStore = create<GridStoreState>()(
         // Use current() to unwrap Immer Draft proxy before structuredClone
         const plainSnap = current(state.history[state.historyIndex]);
         state.root = structuredClone(plainSnap.root);
+        // Restore overlays — ?? [] handles snapshots taken before Phase 13
+        useOverlayStore.getState().replaceAll(structuredClone(plainSnap.overlays ?? []));
       }),
 
     redo: () =>
@@ -362,6 +367,28 @@ export const useGridStore = create<GridStoreState>()(
         // Use current() to unwrap Immer Draft proxy before structuredClone
         const plainSnap = current(state.history[state.historyIndex]);
         state.root = structuredClone(plainSnap.root);
+        // Restore overlays — ?? [] handles snapshots taken before Phase 13
+        useOverlayStore.getState().replaceAll(structuredClone(plainSnap.overlays ?? []));
+      }),
+
+    // Called from overlayStore.addOverlay / deleteOverlay to integrate overlay
+    // mutations into the shared undo/redo history (D-05: one Ctrl+Z per add/delete).
+    pushOverlaySnapshot: () =>
+      set(state => {
+        // Capture current root (no tree mutation) + current overlays
+        const plainRoot = current(state.root);
+        const overlays = useOverlayStore.getState().overlays;
+        const snap = structuredClone({ root: plainRoot, overlays });
+        // Clear redo stack
+        state.history = state.history.slice(0, state.historyIndex + 1);
+        // Push snapshot
+        state.history.push(snap);
+        // Cap at HISTORY_CAP
+        if (state.history.length > HISTORY_CAP) {
+          state.history.shift();
+        }
+        // Update pointer
+        state.historyIndex = state.history.length - 1;
       }),
 
     applyTemplate: (templateRoot: GridNode) =>

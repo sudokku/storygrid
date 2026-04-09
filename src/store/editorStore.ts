@@ -33,6 +33,8 @@ type EditorState = {
   isPlaying: boolean;
   playheadTime: number;
   totalDuration: number;
+  // Phase 13 overlay selection (mutual exclusion with selectedNodeId)
+  selectedOverlayId: string | null;
   // Actions
   setSelectedNode: (id: string | null) => void;
   setZoom: (z: number) => void;
@@ -55,6 +57,8 @@ type EditorState = {
   setSheetSnapState: (v: 'collapsed' | 'half' | 'full') => void;
   // Phase 06 video setters
   setIsPlaying: (v: boolean) => void;
+  // Phase 13 overlay selection setter
+  setSelectedOverlayId: (id: string | null) => void;
   setPlayheadTime: (v: number) => void;
   setTotalDuration: (v: number) => void;
 };
@@ -87,8 +91,14 @@ export const useEditorStore = create<EditorState>()(set => ({
   isPlaying: false,
   playheadTime: 0,
   totalDuration: 0,
+  // Phase 13 overlay selection initial value
+  selectedOverlayId: null,
   // Existing setters
-  setSelectedNode: (id) => set({ selectedNodeId: id }),
+  setSelectedNode: (id) => set(state => ({
+    selectedNodeId: id,
+    // Mutual exclusion: selecting a node clears any active overlay selection
+    selectedOverlayId: id != null ? null : state.selectedOverlayId,
+  })),
   setZoom: (z) => set({ zoom: Math.min(1.5, Math.max(0.5, z)) }),
   setCanvasScale: (s) => set({ canvasScale: s }),
   toggleSafeZone: () => set((s) => ({ showSafeZone: !s.showSafeZone })),
@@ -111,4 +121,10 @@ export const useEditorStore = create<EditorState>()(set => ({
   setIsPlaying: (v) => set({ isPlaying: v }),
   setPlayheadTime: (v) => set({ playheadTime: v }),
   setTotalDuration: (v) => set({ totalDuration: v }),
+  // Phase 13 overlay selection setter
+  setSelectedOverlayId: (id) => set(state => ({
+    selectedOverlayId: id,
+    // Mutual exclusion: selecting an overlay clears any active node selection
+    selectedNodeId: id != null ? null : state.selectedNodeId,
+  })),
 }));

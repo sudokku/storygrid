@@ -34,6 +34,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const rootId = useGridStore(s => s.root.id);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
+  const setSelectedOverlayId = useEditorStore(s => s.setSelectedOverlayId);
   const { backgroundMode, backgroundColor, backgroundGradientFrom, backgroundGradientTo, backgroundGradientDir } =
     useEditorStore(useShallow(s => ({
       backgroundMode: s.backgroundMode,
@@ -72,8 +73,9 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     if (e.target === e.currentTarget) {
       setSelectedNode(null);
       setPanModeNodeId(null);
+      setSelectedOverlayId(null);
     }
-  }, [setSelectedNode, setPanModeNodeId]);
+  }, [setSelectedNode, setPanModeNodeId, setSelectedOverlayId]);
 
   return (
     <div

@@ -1,5 +1,5 @@
 import { getAllLeaves } from './tree';
-import type { GridNode } from '../types';
+import type { GridNode, LeafNode } from '../types';
 import { renderGridIntoContext, type CanvasSettings } from './export';
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,7 @@ export function computeLoopedTime(timeSeconds: number, duration: number): number
 //          renderGridIntoContext's videoElements parameter.
 // ---------------------------------------------------------------------------
 
-async function buildExportVideoElements(
+export async function buildExportVideoElements(
   root: GridNode,
   mediaRegistry: Record<string, string>,
   mediaTypeMap: Record<string, 'image' | 'video'>,
@@ -67,7 +67,13 @@ async function buildExportVideoElements(
     const blobUrl = mediaRegistry[mediaId];
     const video = document.createElement('video');
     video.preload = 'auto';
-    video.muted = true;
+    // Phase 12 (AUD-05): if ANY leaf using this mediaId has audioEnabled=true,
+    // unmute the dedicated export element. Shared mediaIds across multiple cells:
+    // the element is shared; if any user wants audio, we unmute.
+    const anyLeafWantsAudio = leaves.some(
+      (l) => l.type === 'leaf' && l.mediaId === mediaId && l.audioEnabled,
+    );
+    video.muted = !anyLeafWantsAudio;
     video.playsInline = true;
     video.loop = false; // Managed manually in export loop
     video.crossOrigin = 'anonymous';
@@ -121,6 +127,63 @@ function destroyExportVideoElements(
     video.load(); // Resets the element and releases resources
   }
   exportVideoElements.clear();
+}
+
+// ---------------------------------------------------------------------------
+// buildAudioGraph (Phase 12 — AUD-05, AUD-06)
+//
+// Wires audio-enabled video cells into a MediaStreamAudioDestinationNode so
+// their audio tracks can be mixed into the exported MediaStream.
+//
+// Behavior:
+//   - Collects UNIQUE mediaIds of leaves where audioEnabled=true and the media
+//     is of type 'video' and has a corresponding dedicated export video element.
+//   - Returns null when zero such cells exist (AUD-06 skip path — the exported
+//     MP4 will have NO audio track, not a silent one).
+//   - Creates exactly one MediaElementAudioSourceNode per unique mediaId
+//     (sharing across cells is handled by the de-duplication set).
+//   - Connects each source ONLY to the returned destination node; never to
+//     the AudioContext's real output destination (D-18 — we must not leak
+//     audio to the user's speakers during export).
+//
+// Preconditions:
+//   - videoEl.muted must be false for any audio-enabled element. This is
+//     guaranteed by buildExportVideoElements which reads the same audioEnabled
+//     flag.
+// ---------------------------------------------------------------------------
+
+export function buildAudioGraph(
+  audioCtx: AudioContext,
+  exportVideoElements: Map<string, HTMLVideoElement>,
+  leaves: LeafNode[],
+  mediaTypeMap: Record<string, 'image' | 'video'>,
+): MediaStreamAudioDestinationNode | null {
+  // Collect unique mediaIds for audio-enabled video leaves that have a
+  // corresponding dedicated export video element.
+  const audioMediaIds = new Set<string>();
+  for (const leaf of leaves) {
+    if (leaf.type !== 'leaf') continue;
+    if (!leaf.audioEnabled) continue;
+    if (!leaf.mediaId) continue;
+    if (mediaTypeMap[leaf.mediaId] !== 'video') continue;
+    if (!exportVideoElements.has(leaf.mediaId)) continue;
+    audioMediaIds.add(leaf.mediaId);
+  }
+
+  // AUD-06: skip graph entirely when zero cells are audio-enabled.
+  if (audioMediaIds.size === 0) return null;
+
+  const destination = audioCtx.createMediaStreamDestination();
+
+  for (const mediaId of audioMediaIds) {
+    const videoEl = exportVideoElements.get(mediaId);
+    if (!videoEl) continue;
+    // NOTE: videoEl.muted must be false — set in buildExportVideoElements.
+    const source = audioCtx.createMediaElementSource(videoEl);
+    source.connect(destination); // D-18: destination node only, NEVER the ctx output.
+  }
+
+  return destination;
 }
 
 // ---------------------------------------------------------------------------

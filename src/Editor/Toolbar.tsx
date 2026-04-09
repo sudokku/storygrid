@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
-import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Trash2, PlusCircle } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -10,6 +10,7 @@ import {
 } from '../components/ui/tooltip';
 import { ExportSplitButton } from './ExportSplitButton';
 import { TemplatesPopover } from '../components/TemplatesPopover';
+import { AddOverlayMenu } from './AddOverlayMenu';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { exportGrid, downloadDataUrl, hasVideoCell } from '../lib/export';
 import type { CanvasSettings } from '../lib/export';
@@ -31,6 +32,7 @@ export function Toolbar() {
   const setIsExporting = useEditorStore(s => s.setIsExporting);
 
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
 
   const handleZoomOut = useCallback(() => setZoom(zoom - 0.1), [setZoom, zoom]);
   const handleZoomIn = useCallback(() => setZoom(zoom + 0.1), [setZoom, zoom]);
@@ -143,6 +145,27 @@ export function Toolbar() {
           </Tooltip>
 
           <TemplatesPopover />
+
+          {/* Add overlay button + popover */}
+          <div className="relative">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    className={btnClass}
+                    onClick={() => setAddMenuOpen(v => !v)}
+                    aria-label="Add overlay"
+                    aria-haspopup="true"
+                    aria-expanded={addMenuOpen}
+                  />
+                }
+              >
+                <PlusCircle size={16} className="text-white" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Add overlay</TooltipContent>
+            </Tooltip>
+            <AddOverlayMenu open={addMenuOpen} onOpenChange={setAddMenuOpen} />
+          </div>
         </div>
 
         {/* Center: Zoom */}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Type, Smile } from 'lucide-react';
 import { useOverlayStore } from '../store/overlayStore';
 import { EmojiPickerPopover } from './EmojiPickerPopover';
@@ -19,6 +19,7 @@ interface AddOverlayMenuProps {
  */
 export function AddOverlayMenu({ open, onOpenChange }: AddOverlayMenuProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Close on outside click (matches TemplatesPopover pattern)
   useEffect(() => {
@@ -73,13 +74,20 @@ export function AddOverlayMenu({ open, onOpenChange }: AddOverlayMenuProps) {
         <span>Add Text</span>
       </button>
 
-      {/* Add Emoji — EmojiPickerPopover renders inline (lazy-loaded in Task 2) */}
-      <div className="flex items-center gap-3 w-full px-3 py-0.5">
+      {/* Add Emoji — button toggles lazy-loaded EmojiPickerPopover (D-19) */}
+      <button
+        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md hover:bg-[#2a2a2a] transition-colors text-left text-sm text-neutral-200"
+        onClick={() => setShowEmojiPicker(v => !v)}
+        data-testid="add-emoji-button"
+      >
         <Smile size={16} className="text-neutral-400 shrink-0" />
-        <div className="flex-1">
-          <EmojiPickerPopover onClose={() => onOpenChange(false)} />
+        <span>Add Emoji</span>
+      </button>
+      {showEmojiPicker && (
+        <div className="px-1 pb-1">
+          <EmojiPickerPopover onClose={() => { setShowEmojiPicker(false); onOpenChange(false); }} />
         </div>
-      </div>
+      )}
 
       {/* Upload Sticker */}
       <StickerUpload onClose={() => onOpenChange(false)} />

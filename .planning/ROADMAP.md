@@ -51,7 +51,11 @@
   3. User can click "Reset" and the cell returns to its original unfiltered appearance.
   4. Applying a preset then moving a slider fine-tunes within the preset (preset values load into sliders).
   5. Exporting a PNG or MP4 with effects applied produces output that visually matches the in-editor preview.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 11-01-PLAN.md — Foundation: effects module, LeafNode type, createLeaf, store actions
+- [ ] 11-02-PLAN.md — Render hook: drawLeafToCanvas ctx.filter + blur overdraw + LeafNode subscriber
+- [ ] 11-03-PLAN.md — Sidebar UI: EffectsPanel with presets, sliders, reset buttons
 **UI hint**: yes
 
 **Plan-phase research flag:** Before writing filter implementation tasks, run a Safari 15 `ctx.filter` smoke test to determine whether `context-filter-polyfill` is needed or whether effects should degrade gracefully on Safari without the polyfill.
@@ -140,7 +144,7 @@
 | 8. Canvas & Workspace UX | v1.1 | 3/3 | Complete | 2026-04-07 |
 | 9. Improve cell movement and swapping | v1.1 | 4/4 | Complete | 2026-04-08 |
 | 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete | 2026-04-08 |
-| 11. Effects & Filters | v1.2 | 0/? | Not started | - |
+| 11. Effects & Filters | v1.2 | 0/3 | Not started | - |
 | 12. Per-Cell Audio Toggle | v1.2 | 0/? | Not started | - |
 | 13. Text & Sticker Overlay Layer | v1.2 | 0/? | Not started | - |
 | 14. Project Persistence | v1.2 | 0/? | Not started | - |

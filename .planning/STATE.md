@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Effects, Overlays & Persistence
+milestone: v1.1
+milestone_name: UI Polish & Bug Fixes
 status: verifying
-stopped_at: Phase 13 context gathered
-last_updated: "2026-04-09T22:37:58.361Z"
-last_activity: 2026-04-09
+stopped_at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
+last_updated: "2026-04-08T01:34:36.176Z"
+last_activity: 2026-04-08
 progress:
-  total_phases: 4
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 9
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-09)
+See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Phase 12 — per-cell-audio-toggle
+**Current focus:** Phase 09 — improve-cell-movement-and-swapping
 
 ## Current Position
 
-Phase: 13
+Phase: 09
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-04-09
+Last activity: 2026-04-08
 
-Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
+Progress: [░░░░░░░░░░] 0% (0/2 phases)
 
 ## Performance Metrics
 
@@ -44,10 +44,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 11. Effects & Filters | TBD | - | - |
-| 12. Per-Cell Audio Toggle | TBD | - | - |
-| 13. Text & Sticker Overlay Layer | TBD | - | - |
-| 14. Project Persistence | TBD | - | - |
+| - | - | - | - |
 
 **Recent Trend:**
 
@@ -85,11 +82,6 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 | Phase 09-improve-cell-movement-and-swapping P02 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P04 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P03 | 8min | 2 tasks | 2 files |
-| Phase 10-restore-cell-controls-sizing-stacking P02 | 4min | 3 tasks | 3 files |
-| Phase 10-restore-cell-controls-sizing-stacking P01 | 4min | 1 tasks | 2 files |
-| Phase 12-per-cell-audio-toggle P01 | 8min | 2 tasks | 28 files |
-| Phase 12-per-cell-audio-toggle P02 | 5min | 2 tasks | 4 files |
-| Phase 12-per-cell-audio-toggle P03 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -182,16 +174,6 @@ Recent decisions affecting current work:
 - [Phase 09-improve-cell-movement-and-swapping]: ActionBar drag handle hasMedia gate relaxed (EC-06) — empty cells are movable; aria-label changed to 'Drag to move'
 - [Phase 09-improve-cell-movement-and-swapping]: LeafNode 5-zone drag detection uses getBoundingClientRect math with 20% threshold + 20px minimum band; overlays are pointer-events-none to avoid intercepting drag events
 - [Phase 09-improve-cell-movement-and-swapping]: jsdom DragEvent ignores MouseEventInit fields — test harness uses createEvent+defineProperty to inject clientX/Y
-- [Phase 10-restore-cell-controls-sizing-stacking]: CELL-01 invariant codified: LeafNode root must NOT include Tailwind isolate; REND-10 test rewritten to assert the opposite
-- [Phase 10-restore-cell-controls-sizing-stacking]: Sidebar single-file-replace path now branches on file.type mirroring autoFillCells (video -> blob URL + mediaType=video, image -> base64 + mediaType=image)
-- [Phase 10-restore-cell-controls-sizing-stacking]: CELL-02 re-land uses inline clamp() CSS via React.CSSProperties; lucide icons switched from size prop to style prop since size only accepts numbers
-- [Phase 12-per-cell-audio-toggle]: toggleAudioEnabled uses findNode+updateLeaf+pushSnapshot composition; no-op guard before pushSnapshot prevents history pollution on bad nodeId
-- [Phase 12-per-cell-audio-toggle]: audioEnabled fixture migration applied to all 25 LeafNode files even though tsconfig.app.json excludes tests — matches Phase 11 D-28 precedent
-- [Phase 12-per-cell-audio-toggle]: Sidebar Playback subsection labeled 'Playback' (not 'Audio') per D-10 forward-looking naming; size 20 icon deliberately smaller than ActionBar 32
-- [Phase 12-per-cell-audio-toggle]: ActionBar and Sidebar audio toggles both read toggleAudioEnabled from the store directly — no local state, single undo entry, parity by construction
-- [Phase 12-per-cell-audio-toggle]: buildAudioGraph returns null on zero audio-enabled cells (AUD-06 skip path — no silent MP4 track); sources connect to MediaStreamAudioDestinationNode only, never to audioCtx output (D-18)
-- [Phase 12-per-cell-audio-toggle]: AudioContext closed in three paths: onstop, onerror, setInterval renderFrame catch (D-19); AudioContext / graph errors fall back to canvas-only stream (D-20)
-- [Phase 12-per-cell-audio-toggle]: hasAudioEnabledVideoLeaf extracted as decision helper for unit-testable AUD-06 skip path without driving MediaRecorder e2e in jsdom
 
 ### Pending Todos
 
@@ -219,15 +201,16 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
-- v1.1 phases 7–10 added: UI Polish & Bug Fixes (2026-04-07 → 2026-04-08)
-- v1.2 phases 11–14 added: Effects, Overlays & Persistence (2026-04-09)
+- v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
+- Phase 9 added: Improve cell movement and swapping (2026-04-08)
 
 ### Blockers/Concerns
 
-None active. Roadmap ready — run `/gsd:plan-phase 11` to start.
+None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-09T22:37:58.356Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-text-sticker-overlay-layer/13-CONTEXT.md
+Last session: 2026-04-08T01:29:04.229Z
+Stopped at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
+Resume file: None
+| 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

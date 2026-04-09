@@ -109,6 +109,18 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ Reset effects / Reset cell buttons in the sidebar EffectsPanel (EFF-06) — v1.2
 - ✓ UAT confirmed by user — 2-video + 2-image story exported successfully with presets and sliders applied (2026-04-09)
 
+**Phase 12 — Per-Cell Audio Toggle** (v1.2)
+- ✓ Required `audioEnabled: boolean` field on LeafNode, defaulting to `true` in `createLeaf()` (AUD-01, AUD-09) — v1.2
+- ✓ `toggleAudioEnabled(nodeId)` store action with single-snapshot undo — v1.2
+- ✓ Audio toggle button in portal ActionBar, video-only via `mediaTypeMap[leaf.mediaId]`, `Volume2`/`VolumeX` icons with muted state styling (AUD-02, AUD-03) — v1.2
+- ✓ Sidebar `Playback` subsection above `EffectsPanel` with matching toggle, shared across desktop + mobile sheet via `SelectedCellPanel` (AUD-04) — v1.2
+- ✓ `buildExportVideoElements()` sets `video.muted` per-cell from `audioEnabled` (AUD-05) — v1.2
+- ✓ `buildAudioGraph()` wires audio-enabled video cells into `MediaStreamAudioDestinationNode`; `exportVideoGrid()` conditionally merges audio track into canvas MediaStream; AudioContext lifecycle closed in all paths (onstop, onerror, render-catch); no-audio fallback on any error (AUD-06, AUD-07) — v1.2
+- ✓ Zero-audio-enabled collage skips audio graph entirely → exported MP4 has NO audio track (not a silent one) (AUD-06) — v1.2
+- ✓ 28 new tests across store, ActionBar, Sidebar, and videoExport-audio; full suite 567 passed / 2 skipped — v1.2
+- ⏳ AUD-08 (persist `audioEnabled` in project file) deferred to Phase 14 Project Persistence — Phase 12 delivers only the data-model precondition
+- ⏳ Human-UAT pending: audio fidelity in exported MP4 + ffprobe no-audio-track confirmation (12-HUMAN-UAT.md)
+
 ### Active
 
 ## Current Milestone: v1.2 Effects, Overlays & Persistence
@@ -206,4 +218,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 — v1.2 Effects, Overlays & Persistence milestone started. Scope: per-cell effects (presets + sliders), global text/sticker overlay layer, project persistence (auto-save + named + .storygrid file), per-cell audio toggle on video export.*
+*Last updated: 2026-04-09 — Phase 12 Per-Cell Audio Toggle complete (pending human MP4 audio-fidelity UAT). AUD-01..AUD-07, AUD-09 satisfied; AUD-08 deferred to Phase 14. Next: Phase 13 Text & Sticker Overlay Layer.*

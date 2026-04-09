@@ -34,7 +34,7 @@
 
 ### 🚧 v1.2 Effects, Overlays & Persistence (Phases 11–14)
 
-- [ ] **Phase 11: Effects & Filters** — Per-cell visual effects (presets + sliders) in preview and export
+- [x] **Phase 11: Effects & Filters** — Per-cell visual effects (presets + sliders) in preview and export (completed 2026-04-09)
 - [ ] **Phase 12: Per-Cell Audio Toggle** — Audio on/off per video cell, mixed into MP4 export
 - [ ] **Phase 13: Text & Sticker Overlay Layer** — Free-position text, emoji, and image sticker overlays
 - [ ] **Phase 14: Project Persistence** — Auto-save, named projects, and `.storygrid` file export/import
@@ -55,7 +55,7 @@
 Plans:
 - [x] 11-01-PLAN.md — Foundation: effects module, LeafNode type, createLeaf, store actions
 - [x] 11-02-PLAN.md — Render hook: drawLeafToCanvas ctx.filter + blur overdraw + LeafNode subscriber
-- [ ] 11-03-PLAN.md — Sidebar UI: EffectsPanel with presets, sliders, reset buttons
+- [x] 11-03-PLAN.md — Sidebar UI: EffectsPanel with presets, sliders, reset buttons
 **UI hint**: yes
 
 **Plan-phase research flag:** Before writing filter implementation tasks, run a Safari 15 `ctx.filter` smoke test to determine whether `context-filter-polyfill` is needed or whether effects should degrade gracefully on Safari without the polyfill.
@@ -144,7 +144,7 @@ Plans:
 | 8. Canvas & Workspace UX | v1.1 | 3/3 | Complete | 2026-04-07 |
 | 9. Improve cell movement and swapping | v1.1 | 4/4 | Complete | 2026-04-08 |
 | 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete | 2026-04-08 |
-| 11. Effects & Filters | v1.2 | 2/3 | In Progress|  |
+| 11. Effects & Filters | v1.2 | 3/3 | Complete   | 2026-04-09 |
 | 12. Per-Cell Audio Toggle | v1.2 | 0/? | Not started | - |
 | 13. Text & Sticker Overlay Layer | v1.2 | 0/? | Not started | - |
 | 14. Project Persistence | v1.2 | 0/? | Not started | - |

@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics. Next: v1.2 Effects & Advanced (pending scope definition via `/gsd:new-milestone`).
+**Current State:** v1.2 Effects, Overlays & Persistence in progress (started 2026-04-09). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics.
 
 ## Core Value
 
@@ -103,14 +103,21 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 
 ### Active
 
-(No active requirements — v1.1 complete. Run `/gsd:new-milestone` to define v1.2 scope.)
+## Current Milestone: v1.2 Effects, Overlays & Persistence
 
-**Future Milestone (v1.2) — Effects & Advanced** (candidates, not yet scoped)
-- Per-cell CSS filters: brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity
-- Text overlays per cell: font family, size, color, alignment, position; rendered in export
-- Save/load projects: serialize tree + settings to JSON; import/export as `.storygrid.json`
+**Goal:** Expand StoryGrid from a layout/export tool into a full creative editor — add per-cell visual effects, a global overlay layer for text and stickers, project persistence, and per-cell audio toggle on video export.
+
+**Target features:**
+- **Effects & filters (per-cell)** — Preset filters (B&W, sepia, vivid, fade, warm, cool, etc.) + manual sliders (brightness, contrast, saturation, blur). Applied per leaf cell, non-destructive, rendered in the canvas preview loop and in exports.
+- **Text & stickers (global overlay layer)** — New overlay data model above the grid tree. Three overlay types: text (font/size/color/weight/position), emoji (picker → sticker), image stickers (user-uploaded PNG/SVG). Free-position, drag/resize/rotate/delete. Renders in both PNG and MP4 export.
+- **Project persistence (localStorage + file)** — Auto-save current project to localStorage on every change; named multi-project management (save/load/rename/delete); export/import `.storygrid` JSON file for sharing. Blob-URL media handling strategy TBD (likely base64 embed).
+- **Per-cell audio toggle on video export** — Each video cell has an audio on/off toggle with a speaker/muted icon (ActionBar + sidebar). On export, only cells with audio enabled contribute source audio to the MP4 mix. Defaults: new video → audio on. Simple and explicit — no background music, no mixing UI beyond the toggle.
+
+**Deferred to future milestones:**
+- Per-cell CSS filters beyond the agreed preset/slider set (hue-rotate, opacity, etc. — evaluate after v1.2 ships)
 - Aspect ratio presets: 9:16 (default), 1:1 (1080×1080), 4:5 (1080×1350)
 - Multi-slide stories: add/remove/reorder pages, batch export
+- D-16: cell swap touch on iOS/Android (dnd-kit TouchSensor refactor)
 
 ### Out of Scope
 
@@ -177,25 +184,18 @@ Current state (after v1.1):
 
 This document evolves at phase transitions and milestone boundaries.
 
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
 **After each milestone** (via `/gsd:complete-milestone`):
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
-## Next Milestone: v1.2 Effects & Advanced (pending scope definition)
-
-Scope has not yet been defined. Run `/gsd:new-milestone` to drive questioning → research → requirements → roadmap.
-
-Candidate themes inherited from the v1.1 Future Requirements section:
-- Per-cell CSS filters (brightness, contrast, saturation, blur, grayscale, sepia, hue-rotate, opacity)
-- Text overlays per cell with font/size/color/position controls; rendered in export
-- Save/load projects as `.storygrid.json`
-- Aspect ratio presets (9:16 default, 1:1 1080×1080, 4:5 1080×1350)
-- Multi-slide stories with add/remove/reorder pages and batch export
-
-Carry-forward from v1.0 known gaps:
-- D-16 (cell swap touch on iOS/Android) — still deferred, dnd-kit TouchSensor refactor required
-
 ---
-*Last updated: 2026-04-08 — v1.1 UI Polish & Bug Fixes milestone shipped (4 phases, 11 plans, 2 days). Portal-based ActionBar stabilized, cell MOVE semantics added, safe-zone/template/drop-zone UX polished. Next: v1.2 Effects & Advanced scope definition.*
+*Last updated: 2026-04-09 — v1.2 Effects, Overlays & Persistence milestone started. Scope: per-cell effects (presets + sliders), global text/sticker overlay layer, project persistence (auto-save + named + .storygrid file), per-cell audio toggle on video export.*

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: UI Polish & Bug Fixes
-status: verifying
-stopped_at: Completed 10-01-PLAN.md (ActionBar clamp sizing re-landed)
-last_updated: "2026-04-08T14:59:04.309Z"
-last_activity: 2026-04-08
+milestone: v1.2
+milestone_name: Effects, Overlays & Persistence
+status: defining_requirements
+stopped_at: Milestone started — defining requirements
+last_updated: "2026-04-09T00:00:00.000Z"
+last_activity: 2026-04-09
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Phase 10 — restore-cell-controls-sizing-stacking
+**Current focus:** v1.2 milestone — defining requirements
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-08
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-09 — Milestone v1.2 Effects, Overlays & Persistence started
 
-Progress: [░░░░░░░░░░] 0% (0/2 phases)
+Progress: [░░░░░░░░░░] 0% (milestone starting)
 
 ## Performance Metrics
 
@@ -211,11 +211,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None active. Phase 7 ready to plan.
+None active. Defining v1.2 requirements.
 
 ## Session Continuity
 
-Last session: 2026-04-08T13:49:30.935Z
-Stopped at: Completed 10-01-PLAN.md (ActionBar clamp sizing re-landed)
+Last session: 2026-04-09T00:00:00.000Z
+Stopped at: Milestone v1.2 started — defining requirements
 Resume file: None
-| 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

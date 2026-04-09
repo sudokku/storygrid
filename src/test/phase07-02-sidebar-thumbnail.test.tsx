@@ -89,7 +89,9 @@ describe('Phase 07-02 Sidebar SelectedCellPanel thumbnail rendering', () => {
 
     render(<SelectedCellPanel nodeId="leaf-2" />);
 
-    const img = document.querySelector('img');
+    // Scope query to the cell-thumbnail .aspect-video container — Phase 11
+    // EffectsPanel adds preset chip <img>s elsewhere in the panel.
+    const img = document.querySelector('.aspect-video img');
     expect(img).toBeTruthy();
     expect(img?.getAttribute('src')).toBe(imageUrl);
   });
@@ -106,7 +108,7 @@ describe('Phase 07-02 Sidebar SelectedCellPanel thumbnail rendering', () => {
 
     render(<SelectedCellPanel nodeId="leaf-3" />);
 
-    const img = document.querySelector('img');
+    const img = document.querySelector('.aspect-video img');
     expect(img).toBeTruthy();
     // Should show thumbnail, NOT the blob URL
     expect(img?.getAttribute('src')).toBe(thumbUrl);
@@ -124,8 +126,9 @@ describe('Phase 07-02 Sidebar SelectedCellPanel thumbnail rendering', () => {
 
     render(<SelectedCellPanel nodeId="leaf-3" />);
 
-    // No <img> should be rendered (thumbnail not available)
-    const img = document.querySelector('img');
+    // No <img> should be rendered inside the cell-thumbnail container
+    // (Phase 11 EffectsPanel chips render <img>s elsewhere in the panel).
+    const img = document.querySelector('.aspect-video img');
     expect(img).toBeNull();
 
     // The thumbnail area should be present (aspect-video container)
@@ -143,8 +146,9 @@ describe('Phase 07-02 Sidebar SelectedCellPanel thumbnail rendering', () => {
 
     render(<SelectedCellPanel nodeId="leaf-1" />);
 
-    // No <img> rendered
-    const img = document.querySelector('img');
+    // No <img> inside the cell-thumbnail container (Phase 11 EffectsPanel
+    // chips render <img>s elsewhere in the panel).
+    const img = document.querySelector('.aspect-video img');
     expect(img).toBeNull();
 
     // The thumbnail area (aspect-video container) should exist

@@ -6,6 +6,7 @@ import { findNode } from '../lib/tree';
 import { autoFillCells } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2 } from 'lucide-react';
+import { EffectsPanel } from './EffectsPanel';
 
 // ---------------------------------------------------------------------------
 // Cell dimension helper
@@ -312,6 +313,9 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           <ImageIcon size={24} className="text-neutral-600" />
         )}
       </div>
+
+      {/* Effects (Phase 11 — D-10: above existing pan/fit controls) */}
+      <EffectsPanel nodeId={nodeId} />
 
       {/* 2. Fit toggle */}
       <div className="space-y-1.5">

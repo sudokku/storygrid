@@ -205,6 +205,107 @@ describe('Sidebar', () => {
     });
   });
 
+  describe('playback section (12-02)', () => {
+    const videoLeaf: GridNode = {
+      type: 'leaf',
+      id: 'leaf-video',
+      mediaId: 'vid-1',
+      fit: 'cover',
+      objectPosition: 'center center',
+      backgroundColor: null,
+      audioEnabled: true,
+    };
+
+    it('Test 1: does NOT render when cell is empty (no mediaId)', () => {
+      useGridStore.setState({ root: singleLeaf, mediaTypeMap: {}, mediaRegistry: {} });
+      useEditorStore.setState({ selectedNodeId: 'leaf-1' });
+      render(<Sidebar />);
+      expect(screen.queryByTestId('playback-section')).not.toBeInTheDocument();
+    });
+
+    it('Test 2: does NOT render when mediaType is image', () => {
+      useGridStore.setState({
+        root: leafWithMedia,
+        mediaRegistry: { 'media-1': 'data:image/png;base64,x' },
+        mediaTypeMap: { 'media-1': 'image' },
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-2' });
+      render(<Sidebar />);
+      expect(screen.queryByTestId('playback-section')).not.toBeInTheDocument();
+    });
+
+    it('Test 3: DOES render when mediaType is video', () => {
+      useGridStore.setState({
+        root: videoLeaf,
+        mediaRegistry: { 'vid-1': 'blob:video' },
+        mediaTypeMap: { 'vid-1': 'video' },
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-video' });
+      render(<Sidebar />);
+      expect(screen.getByTestId('playback-section')).toBeInTheDocument();
+      expect(screen.getByText('Playback')).toBeInTheDocument();
+    });
+
+    it('Test 4: renders BEFORE EffectsPanel in DOM order', () => {
+      useGridStore.setState({
+        root: videoLeaf,
+        mediaRegistry: { 'vid-1': 'blob:video' },
+        mediaTypeMap: { 'vid-1': 'video' },
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-video' });
+      render(<Sidebar />);
+      const playback = screen.getByTestId('playback-section');
+      // EffectsPanel includes "Effects" label
+      const effectsHeading = screen.getByText('Effects');
+      // playback-section must come before effects heading in document order
+      const pos = playback.compareDocumentPosition(effectsHeading);
+      // DOCUMENT_POSITION_FOLLOWING = 4 — effectsHeading follows playback
+      expect(pos & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('Test 5: audioEnabled=true shows Volume2 icon with aria-label "Mute cell audio"', () => {
+      useGridStore.setState({
+        root: { ...videoLeaf, audioEnabled: true },
+        mediaRegistry: { 'vid-1': 'blob:video' },
+        mediaTypeMap: { 'vid-1': 'video' },
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-video' });
+      render(<Sidebar />);
+      const btn = screen.getByTestId('sidebar-audio-button');
+      expect(btn.getAttribute('aria-label')).toBe('Mute cell audio');
+      expect(btn.querySelector('svg')?.getAttribute('class') ?? '').toMatch(/volume-2/);
+    });
+
+    it('Test 6: audioEnabled=false shows VolumeX icon with text-red-500 and aria-label "Unmute cell audio"', () => {
+      useGridStore.setState({
+        root: { ...videoLeaf, audioEnabled: false },
+        mediaRegistry: { 'vid-1': 'blob:video' },
+        mediaTypeMap: { 'vid-1': 'video' },
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-video' });
+      render(<Sidebar />);
+      const btn = screen.getByTestId('sidebar-audio-button');
+      expect(btn.getAttribute('aria-label')).toBe('Unmute cell audio');
+      expect(btn.className).toContain('text-red-500');
+      const svg = btn.querySelector('svg');
+      expect(svg?.getAttribute('class') ?? '').toMatch(/volume-x|volume-off/);
+    });
+
+    it('Test 7: clicking the sidebar audio button calls toggleAudioEnabled(nodeId)', () => {
+      const toggleAudioEnabled = vi.fn();
+      useGridStore.setState({
+        root: videoLeaf,
+        mediaRegistry: { 'vid-1': 'blob:video' },
+        mediaTypeMap: { 'vid-1': 'video' },
+        toggleAudioEnabled,
+      });
+      useEditorStore.setState({ selectedNodeId: 'leaf-video' });
+      render(<Sidebar />);
+      fireEvent.click(screen.getByTestId('sidebar-audio-button'));
+      expect(toggleAudioEnabled).toHaveBeenCalledWith('leaf-video');
+    });
+  });
+
   describe('Cell dimensions', () => {
     it('shows correct dimensions for a leaf in a vertical container (50% height)', () => {
       useGridStore.setState({ root: twoLeafContainer });

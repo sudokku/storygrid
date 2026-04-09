@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { GridNode, ContainerNode, LeafNode, SplitDirection } from '../types';
+import { DEFAULT_EFFECTS } from './effects';
 
 // ---------------------------------------------------------------------------
 // Template type
@@ -80,7 +81,18 @@ export function getAllLeaves(root: GridNode): LeafNode[] {
  * Creates a new empty leaf node with a unique nanoid id.
  */
 export function createLeaf(): LeafNode {
-  return { type: 'leaf', id: nanoid(), mediaId: null, fit: 'cover', objectPosition: 'center center', backgroundColor: null, panX: 0, panY: 0, panScale: 1 };
+  return {
+    type: 'leaf',
+    id: nanoid(),
+    mediaId: null,
+    fit: 'cover',
+    objectPosition: 'center center',
+    backgroundColor: null,
+    panX: 0,
+    panY: 0,
+    panScale: 1,
+    effects: { ...DEFAULT_EFFECTS },
+  };
 }
 
 /**
@@ -255,6 +267,7 @@ export function swapLeafContent(root: GridNode, idA: string, idB: string): GridN
     panX: leafA.panX,
     panY: leafA.panY,
     panScale: leafA.panScale,
+    effects: { ...leafA.effects },
   };
   const contentB = {
     mediaId: leafB.mediaId,
@@ -263,6 +276,7 @@ export function swapLeafContent(root: GridNode, idA: string, idB: string): GridN
     panX: leafB.panX,
     panY: leafB.panY,
     panScale: leafB.panScale,
+    effects: { ...leafB.effects },
   };
 
   let result = updateLeaf(root, idA, contentB);
@@ -315,6 +329,7 @@ export function moveLeafToEdge(
     panY: sourceNode.panY,
     panScale: sourceNode.panScale,
     objectPosition: sourceNode.objectPosition,
+    effects: { ...sourceNode.effects },
   };
 
   const direction: SplitDirection =

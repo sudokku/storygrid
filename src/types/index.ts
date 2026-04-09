@@ -1,3 +1,5 @@
+import type { EffectSettings } from '../lib/effects';
+
 export type SplitDirection = 'horizontal' | 'vertical';
 
 export type MediaItem = {
@@ -14,6 +16,7 @@ export type LeafNode = {
   panX: number;    // percentage offset -100 to +100, default 0
   panY: number;    // percentage offset -100 to +100, default 0
   panScale: number; // 1.0-3.0, default 1
+  effects: EffectSettings;
 };
 
 export type ContainerNode = {

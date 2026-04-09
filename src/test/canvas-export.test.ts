@@ -5,6 +5,24 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { GridNode, LeafNode, ContainerNode } from '../types';
+import { DEFAULT_EFFECTS } from '../lib/effects';
+
+// Helper: factory for LeafNode literals in tests. Keeps test shape focused on
+// the fields under test while guaranteeing the required `effects` field is
+// present after Phase 11 extended LeafNode.
+function makeTestLeaf(overrides: Partial<LeafNode> & { id: string }): LeafNode {
+  return {
+    type: 'leaf',
+    mediaId: null,
+    fit: 'cover',
+    backgroundColor: null,
+    panX: 0,
+    panY: 0,
+    panScale: 1,
+    effects: { ...DEFAULT_EFFECTS },
+    ...overrides,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Canvas mock helpers
@@ -88,7 +106,7 @@ describe('renderGridToCanvas', () => {
 
   it('returns a canvas with 1080x1920 dimensions', async () => {
     const { renderGridToCanvas } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     const canvas = await renderGridToCanvas(leaf, {});
     expect(canvas.width).toBe(1080);
     expect(canvas.height).toBe(1920);
@@ -96,7 +114,7 @@ describe('renderGridToCanvas', () => {
 
   it('accepts custom width and height', async () => {
     const { renderGridToCanvas } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     const canvas = await renderGridToCanvas(leaf, {}, 540, 960);
     expect(canvas.width).toBe(540);
     expect(canvas.height).toBe(960);
@@ -106,7 +124,7 @@ describe('renderGridToCanvas', () => {
     const ctx = makeCtx();
     installCanvasMock(ctx);
     const { renderGridToCanvas } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     await renderGridToCanvas(leaf, {});
     // Should have fillRect call for white background
     expect(ctx.fillRect).toHaveBeenCalled();
@@ -116,7 +134,7 @@ describe('renderGridToCanvas', () => {
     const ctx = makeCtx();
     installCanvasMock(ctx);
     const { renderGridToCanvas } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     await renderGridToCanvas(leaf, {});
     // fillRect should be called to paint cell
     expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 1080, 1920);
@@ -126,7 +144,7 @@ describe('renderGridToCanvas', () => {
     const ctx = makeCtx();
     installCanvasMock(ctx);
     const { renderGridToCanvas } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: '#ff0000' };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1', backgroundColor: '#ff0000' });
     await renderGridToCanvas(leaf, {});
     // The leaf cell should be painted red
     const fillRectCalls = ctx.fillRect.mock.calls;
@@ -141,8 +159,8 @@ describe('renderGridToCanvas', () => {
     const ctx = makeCtx();
     installCanvasMock(ctx);
     const { renderGridToCanvas } = await import('../lib/export');
-    const left: LeafNode = { type: 'leaf', id: 'left', mediaId: null, fit: 'cover', backgroundColor: '#ff0000' };
-    const right: LeafNode = { type: 'leaf', id: 'right', mediaId: null, fit: 'cover', backgroundColor: '#00ff00' };
+    const left: LeafNode = makeTestLeaf({ id: 'left', backgroundColor: '#ff0000' });
+    const right: LeafNode = makeTestLeaf({ id: 'right', backgroundColor: '#00ff00' });
     const container: ContainerNode = {
       type: 'container',
       id: 'c1',
@@ -168,8 +186,8 @@ describe('renderGridToCanvas', () => {
     const ctx = makeCtx();
     installCanvasMock(ctx);
     const { renderGridToCanvas } = await import('../lib/export');
-    const top: LeafNode = { type: 'leaf', id: 'top', mediaId: null, fit: 'cover', backgroundColor: '#ff0000' };
-    const bottom: LeafNode = { type: 'leaf', id: 'bottom', mediaId: null, fit: 'cover', backgroundColor: '#00ff00' };
+    const top: LeafNode = makeTestLeaf({ id: 'top', backgroundColor: '#ff0000' });
+    const bottom: LeafNode = makeTestLeaf({ id: 'bottom', backgroundColor: '#00ff00' });
     const container: ContainerNode = {
       type: 'container',
       id: 'c1',
@@ -196,9 +214,9 @@ describe('renderGridToCanvas', () => {
     const { renderGridToCanvas } = await import('../lib/export');
     // Outer vertical: top=1/2, bottom=1/2
     // Inner (bottom) horizontal: left=1/2, right=1/2
-    const topLeaf: LeafNode = { type: 'leaf', id: 'top', mediaId: null, fit: 'cover', backgroundColor: '#ff0000' };
-    const bottomLeft: LeafNode = { type: 'leaf', id: 'bl', mediaId: null, fit: 'cover', backgroundColor: '#00ff00' };
-    const bottomRight: LeafNode = { type: 'leaf', id: 'br', mediaId: null, fit: 'cover', backgroundColor: '#0000ff' };
+    const topLeaf: LeafNode = makeTestLeaf({ id: 'top', backgroundColor: '#ff0000' });
+    const bottomLeft: LeafNode = makeTestLeaf({ id: 'bl', backgroundColor: '#00ff00' });
+    const bottomRight: LeafNode = makeTestLeaf({ id: 'br', backgroundColor: '#0000ff' });
     const innerContainer: ContainerNode = {
       type: 'container',
       id: 'inner',
@@ -239,14 +257,14 @@ describe('exportGrid', () => {
 
   it('returns a data URL string starting with "data:image/png"', async () => {
     const { exportGrid } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     const result = await exportGrid(leaf, {}, 'png', 0.9, vi.fn());
     expect(result).toMatch(/^data:image\/png/);
   });
 
   it('returns a data URL string starting with "data:image/jpeg" when format is jpeg', async () => {
     const { exportGrid } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     const result = await exportGrid(leaf, {}, 'jpeg', 0.8, vi.fn());
     expect(result).toMatch(/^data:image\/jpeg/);
   });
@@ -255,7 +273,7 @@ describe('exportGrid', () => {
     const { exportGrid } = await import('../lib/export');
     const stages: string[] = [];
     const onStage = (s: string) => { stages.push(s); };
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     await exportGrid(leaf, {}, 'png', 0.9, onStage as (s: 'preparing' | 'exporting') => void);
     expect(stages).toEqual(['preparing', 'exporting']);
   });
@@ -263,7 +281,7 @@ describe('exportGrid', () => {
   it('calls toDataURL with "image/jpeg" and quality when format is jpeg', async () => {
     const { ctx: _ctx, toDataURLMock } = installCanvasMock();
     const { exportGrid } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     await exportGrid(leaf, {}, 'jpeg', 0.85, vi.fn());
     expect(toDataURLMock).toHaveBeenCalledWith('image/jpeg', 0.85);
   });
@@ -271,7 +289,7 @@ describe('exportGrid', () => {
   it('calls toDataURL with "image/png" when format is png', async () => {
     const { ctx: _ctx, toDataURLMock } = installCanvasMock();
     const { exportGrid } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     await exportGrid(leaf, {}, 'png', 0.9, vi.fn());
     expect(toDataURLMock).toHaveBeenCalledWith('image/png');
   });
@@ -284,19 +302,19 @@ describe('exportGrid', () => {
 describe('hasVideoCell', () => {
   it('returns false when all media entries are image type', async () => {
     const { hasVideoCell } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'img1', fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1', mediaId: 'img1' });
     expect(hasVideoCell(leaf, { img1: 'image' })).toBe(false);
   });
 
   it('returns true when any media entry has type "video"', async () => {
     const { hasVideoCell } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: 'vid1', fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1', mediaId: 'vid1' });
     expect(hasVideoCell(leaf, { vid1: 'video' })).toBe(true);
   });
 
   it('returns false when tree has no media at all', async () => {
     const { hasVideoCell } = await import('../lib/export');
-    const leaf: LeafNode = { type: 'leaf', id: 'l1', mediaId: null, fit: 'cover', backgroundColor: null };
+    const leaf: LeafNode = makeTestLeaf({ id: 'l1' });
     expect(hasVideoCell(leaf, {})).toBe(false);
   });
 });

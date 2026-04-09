@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
-status: executing
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-04-09T20:55:27.018Z"
+status: verifying
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-04-09T20:57:06.303Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 Phase: 12 (per-cell-audio-toggle) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-09
 
 Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
@@ -89,6 +89,7 @@ Progress: [░░░░░░░░░░] 0% (0/4 phases complete)
 | Phase 10-restore-cell-controls-sizing-stacking P01 | 4min | 1 tasks | 2 files |
 | Phase 12-per-cell-audio-toggle P01 | 8min | 2 tasks | 28 files |
 | Phase 12-per-cell-audio-toggle P02 | 5min | 2 tasks | 4 files |
+| Phase 12-per-cell-audio-toggle P03 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -188,6 +189,9 @@ Recent decisions affecting current work:
 - [Phase 12-per-cell-audio-toggle]: audioEnabled fixture migration applied to all 25 LeafNode files even though tsconfig.app.json excludes tests — matches Phase 11 D-28 precedent
 - [Phase 12-per-cell-audio-toggle]: Sidebar Playback subsection labeled 'Playback' (not 'Audio') per D-10 forward-looking naming; size 20 icon deliberately smaller than ActionBar 32
 - [Phase 12-per-cell-audio-toggle]: ActionBar and Sidebar audio toggles both read toggleAudioEnabled from the store directly — no local state, single undo entry, parity by construction
+- [Phase 12-per-cell-audio-toggle]: buildAudioGraph returns null on zero audio-enabled cells (AUD-06 skip path — no silent MP4 track); sources connect to MediaStreamAudioDestinationNode only, never to audioCtx output (D-18)
+- [Phase 12-per-cell-audio-toggle]: AudioContext closed in three paths: onstop, onerror, setInterval renderFrame catch (D-19); AudioContext / graph errors fall back to canvas-only stream (D-20)
+- [Phase 12-per-cell-audio-toggle]: hasAudioEnabledVideoLeaf extracted as decision helper for unit-testable AUD-06 skip path without driving MediaRecorder e2e in jsdom
 
 ### Pending Todos
 
@@ -224,6 +228,6 @@ None active. Roadmap ready — run `/gsd:plan-phase 11` to start.
 
 ## Session Continuity
 
-Last session: 2026-04-09T20:55:27.014Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-04-09T20:57:06.296Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None

@@ -35,7 +35,7 @@
 ### 🚧 v1.2 Effects, Overlays & Persistence (Phases 11–14)
 
 - [x] **Phase 11: Effects & Filters** — Per-cell visual effects (presets + sliders) in preview and export (completed 2026-04-09)
-- [ ] **Phase 12: Per-Cell Audio Toggle** — Audio on/off per video cell, mixed into MP4 export
+- [x] **Phase 12: Per-Cell Audio Toggle** — Audio on/off per video cell, mixed into MP4 export (completed 2026-04-09)
 - [ ] **Phase 13: Text & Sticker Overlay Layer** — Free-position text, emoji, and image sticker overlays
 - [ ] **Phase 14: Project Persistence** — Auto-save, named projects, and `.storygrid` file export/import
 
@@ -81,7 +81,7 @@ Plans:
 Plans:
 - [x] 12-01-PLAN.md — Data model, toggleAudioEnabled store action, and test fixture migration (AUD-01, AUD-08, AUD-09)
 - [x] 12-02-PLAN.md — UI: ActionBar speaker icon + Sidebar Playback subsection (AUD-02, AUD-03, AUD-04)
-- [ ] 12-03-PLAN.md — Export pipeline Web Audio graph + AudioContext lifecycle (AUD-05, AUD-06, AUD-07)
+- [x] 12-03-PLAN.md — Export pipeline Web Audio graph + AudioContext lifecycle (AUD-05, AUD-06, AUD-07)
 
 **Key pitfalls:**
 - This is a pipeline rewrite, not a flag: `video.muted = true` on export video elements blocks `createMediaElementAudioSourceNode()`; must set `muted = false` on audio-enabled cells before wiring the Web Audio graph (the Export button click satisfies the user-gesture requirement for AudioContext).
@@ -149,6 +149,6 @@ Plans:
 | 9. Improve cell movement and swapping | v1.1 | 4/4 | Complete | 2026-04-08 |
 | 10. Restore Cell Controls Sizing & Stacking Fix | v1.1 | 2/2 | Complete | 2026-04-08 |
 | 11. Effects & Filters | v1.2 | 3/3 | Complete    | 2026-04-09 |
-| 12. Per-Cell Audio Toggle | v1.2 | 2/3 | In Progress|  |
+| 12. Per-Cell Audio Toggle | v1.2 | 3/3 | Complete   | 2026-04-09 |
 | 13. Text & Sticker Overlay Layer | v1.2 | 0/? | Not started | - |
 | 14. Project Persistence | v1.2 | 0/? | Not started | - |

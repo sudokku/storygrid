@@ -61,9 +61,9 @@
 - [x] **AUD-02**: Each video cell shows a speaker icon (unmuted/muted) in the portal ActionBar; the icon is visible only for cells with `mediaType === 'video'`
 - [x] **AUD-03**: Clicking the speaker icon toggles the cell's audio-enabled state and updates the icon to reflect the new state
 - [x] **AUD-04**: The sidebar video cell panel also exposes the audio toggle (parity with ActionBar)
-- [ ] **AUD-05**: MP4 video export mixes audio from all cells where audio is enabled via a Web Audio API graph (AudioContext → MediaElementAudioSourceNode per cell → MediaStreamAudioDestinationNode), combined with the canvas video track into a single MediaStream fed to MediaRecorder
-- [ ] **AUD-06**: If zero cells have audio enabled, the exported MP4 contains no audio track (not a silent track)
-- [ ] **AUD-07**: Audio in the exported MP4 is clipped to the total video export duration
+- [x] **AUD-05**: MP4 video export mixes audio from all cells where audio is enabled via a Web Audio API graph (AudioContext → MediaElementAudioSourceNode per cell → MediaStreamAudioDestinationNode), combined with the canvas video track into a single MediaStream fed to MediaRecorder
+- [x] **AUD-06**: If zero cells have audio enabled, the exported MP4 contains no audio track (not a silent track)
+- [x] **AUD-07**: Audio in the exported MP4 is clipped to the total video export duration
 - [ ] **AUD-08**: Audio toggle state is persisted in saved projects and `.storygrid` files
 - [x] **AUD-09**: Audio export is Chrome/Firefox only — matches the existing video export browser support boundary (Safari excluded)
 
@@ -139,9 +139,9 @@ Which phases cover which requirements.
 | AUD-02 | Phase 12 | Complete |
 | AUD-03 | Phase 12 | Complete |
 | AUD-04 | Phase 12 | Complete |
-| AUD-05 | Phase 12 | Pending |
-| AUD-06 | Phase 12 | Pending |
-| AUD-07 | Phase 12 | Pending |
+| AUD-05 | Phase 12 | Complete |
+| AUD-06 | Phase 12 | Complete |
+| AUD-07 | Phase 12 | Complete |
 | AUD-08 | Phase 12 | Pending |
 | AUD-09 | Phase 12 | Complete |
 | OVL-01 | Phase 13 | Pending |

@@ -9,6 +9,7 @@ interface InlineTextEditorProps {
 
 export function InlineTextEditor({ overlay, onCommit, onCancel }: InlineTextEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const committedRef = useRef(false);
 
   // Focus and place cursor at end on mount
   useEffect(() => {
@@ -27,6 +28,7 @@ export function InlineTextEditor({ overlay, onCommit, onCancel }: InlineTextEdit
   useEffect(() => {
     const onDocPointerDown = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
+        committedRef.current = true;
         onCommit(ref.current.textContent ?? '');
       }
     };
@@ -45,7 +47,7 @@ export function InlineTextEditor({ overlay, onCommit, onCancel }: InlineTextEdit
           onCancel();
         }
       }}
-      onBlur={() => onCommit(ref.current?.textContent ?? '')}
+      onBlur={() => { if (!committedRef.current) onCommit(ref.current?.textContent ?? ''); }}
       style={{
         position: 'absolute',
         left: 0,

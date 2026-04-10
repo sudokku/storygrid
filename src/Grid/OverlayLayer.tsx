@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOverlayStore } from '../store/overlayStore';
 import { useEditorStore } from '../store/editorStore';
 import { OverlayHandles } from '../Editor/OverlayHandles';

@@ -34,7 +34,7 @@ type OverlayStoreState = {
 // ---------------------------------------------------------------------------
 
 export const useOverlayStore = create<OverlayStoreState>()(
-  immer((set, get) => ({
+  immer((set) => ({
     overlays: [],
     stickerRegistry: {},
 

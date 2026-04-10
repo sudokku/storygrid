@@ -541,7 +541,7 @@ export async function exportVideoGrid(
         if (prev - loopedTime > video.duration * 0.5) {
           // Wrapped around — seek back to the start of the loop.
           // Fix C: fastSeek targets the nearest keyframe, reducing seek stall duration.
-          if ('fastSeek' in video) {
+          if (typeof (video as { fastSeek?: unknown }).fastSeek === 'function') {
             (video as HTMLVideoElement & { fastSeek(time: number): void }).fastSeek(loopedTime);
           } else {
             video.currentTime = loopedTime;
@@ -551,7 +551,7 @@ export async function exportVideoGrid(
         } else if (video.ended || video.paused) {
           // Video ended naturally or was paused — restart.
           // Fix C: fastSeek targets the nearest keyframe, reducing seek stall duration.
-          if ('fastSeek' in video) {
+          if (typeof (video as { fastSeek?: unknown }).fastSeek === 'function') {
             (video as HTMLVideoElement & { fastSeek(time: number): void }).fastSeek(loopedTime);
           } else {
             video.currentTime = loopedTime;

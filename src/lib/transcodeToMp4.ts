@@ -93,7 +93,7 @@ export async function transcodeWebmToMp4(
     const outputData = await ffmpeg.readFile('output.mp4');
 
     // Convert Uint8Array to Blob.
-    return new Blob([outputData as Uint8Array], { type: 'video/mp4' });
+    return new Blob([outputData as unknown as BlobPart], { type: 'video/mp4' });
   } finally {
     // Clean up virtual filesystem files.
     await ffmpeg.deleteFile('input.webm').catch(() => {});

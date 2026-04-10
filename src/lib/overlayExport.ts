@@ -1,4 +1,4 @@
-import type { Overlay, TextOverlay } from '../types';
+import type { Overlay } from '../types';
 
 // ---------------------------------------------------------------------------
 // loadImage — creates HTMLImageElement from a data URI or URL
@@ -11,17 +11,6 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject;
     img.src = src;
   });
-}
-
-// ---------------------------------------------------------------------------
-// estimateHeight — approximate rendered height for an overlay
-//
-// Used to convert center-Y to top-left drawY for ctx.fillText.
-// ---------------------------------------------------------------------------
-
-function estimateHeight(overlay: Overlay): number {
-  if (overlay.type === 'text') return (overlay as TextOverlay).fontSize * 1.2;
-  return overlay.width; // emoji and sticker: square-ish aspect
 }
 
 // ---------------------------------------------------------------------------

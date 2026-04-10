@@ -10,6 +10,16 @@ import { useOverlayStore } from '../store/overlayStore';
 
 export type ExportFormat = 'png' | 'jpeg';
 
+/**
+ * DrawableSource — union of all types accepted by getSourceDimensions.
+ * Extends the native CanvasImageSource to include VideoFrame and OffscreenCanvas
+ * for the WebCodecs / Mediabunny decode pipeline (Phase 15).
+ *
+ * HTMLVideoElement IS a CanvasImageSource, so existing callers passing
+ * HTMLVideoElement continue to compile without changes.
+ */
+export type DrawableSource = HTMLImageElement | HTMLVideoElement | ImageBitmap | VideoFrame | OffscreenCanvas;
+
 type Rect = { x: number; y: number; w: number; h: number };
 type ObjPos = { x: number; y: number };
 
@@ -112,10 +122,19 @@ function roundedRect(
 // ---------------------------------------------------------------------------
 
 export function getSourceDimensions(
-  src: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  src: DrawableSource,
 ): { w: number; h: number } {
   if (src instanceof HTMLVideoElement) {
     return { w: src.videoWidth, h: src.videoHeight };
+  }
+  // VideoFrame (WebCodecs) — from VideoSample.toCanvasImageSource() in Phase 15 pipeline.
+  // Guard against environments where VideoFrame is not defined (e.g. Vitest/jsdom).
+  if (typeof VideoFrame !== 'undefined' && src instanceof VideoFrame) {
+    return { w: src.displayWidth, h: src.displayHeight };
+  }
+  // OffscreenCanvas — from VideoSample.toCanvasImageSource() in Phase 15 pipeline.
+  if (typeof OffscreenCanvas !== 'undefined' && src instanceof OffscreenCanvas) {
+    return { w: src.width, h: src.height };
   }
   // ImageBitmap may not be defined in non-browser environments (e.g. Vitest/jsdom).
   // Guard against ReferenceError before using instanceof.
@@ -131,7 +150,7 @@ export function getSourceDimensions(
 
 export function drawCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  img: CanvasImageSource,
   rect: Rect,
   objPos: ObjPos,
 ): void {
@@ -158,7 +177,7 @@ export function drawCoverImage(
 
 export function drawContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  img: CanvasImageSource,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -198,7 +217,7 @@ export function drawContainImage(
 
 export function drawPannedCoverImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  img: CanvasImageSource,
   rect: Rect,
   objPos: ObjPos,
   panX: number,
@@ -251,7 +270,7 @@ export function drawPannedCoverImage(
 
 export function drawPannedContainImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  img: CanvasImageSource,
   rect: Rect,
   objPos: ObjPos,
   bgColor: string,
@@ -306,7 +325,7 @@ export function drawPannedContainImage(
 
 export function drawLeafToCanvas(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement | HTMLVideoElement | ImageBitmap,
+  img: CanvasImageSource,
   rect: Rect,
   leaf: Pick<LeafNode, 'fit' | 'objectPosition' | 'panX' | 'panY' | 'panScale' | 'backgroundColor' | 'effects'>,
 ): void {
@@ -373,7 +392,7 @@ async function renderNode(
   mediaRegistry: Record<string, string>,
   imageCache: Map<string, HTMLImageElement>,
   settings: CanvasSettings,
-  videoElements?: Map<string, HTMLVideoElement>,
+  videoFrameMap?: Map<string, CanvasImageSource>,
 ): Promise<void> {
   if (node.type === 'leaf') {
     const leaf = node as LeafNode;
@@ -386,10 +405,10 @@ async function renderNode(
       ctx.clip();
     }
 
-    if (leaf.mediaId && videoElements?.has(leaf.mediaId)) {
-      // Video path: draw from live video element at its current playback position.
-      const video = videoElements.get(leaf.mediaId)!;
-      drawLeafToCanvas(ctx, video, rect, leaf);
+    if (leaf.mediaId && videoFrameMap?.has(leaf.mediaId)) {
+      // Video path: draw from CanvasImageSource (VideoFrame, OffscreenCanvas, or HTMLVideoElement).
+      const source = videoFrameMap.get(leaf.mediaId)!;
+      drawLeafToCanvas(ctx, source, rect, leaf);
     } else if (!dataUri) {
       ctx.fillStyle = leaf.backgroundColor ?? '#ffffff';
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
@@ -430,7 +449,7 @@ async function renderNode(
 
       await renderNode(
         ctx, node.children[i], childRect, mediaRegistry, imageCache, settings,
-        videoElements,
+        videoFrameMap,
       );
     }
   }
@@ -450,7 +469,7 @@ export async function renderGridIntoContext(
   width: number,
   height: number,
   settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
-  videoElements?: Map<string, HTMLVideoElement>,
+  videoFrameMap?: Map<string, CanvasImageSource>,
   imageCache?: Map<string, HTMLImageElement>,
 ): Promise<void> {
   if (settings.backgroundMode === 'gradient') {
@@ -472,7 +491,7 @@ export async function renderGridIntoContext(
   const cache = imageCache ?? new Map<string, HTMLImageElement>();
   await renderNode(
     ctx, root, { x: 0, y: 0, w: width, h: height }, mediaRegistry, cache, settings,
-    videoElements,
+    videoFrameMap,
   );
 }
 
@@ -486,7 +505,7 @@ export async function renderGridToCanvas(
   width = 1080,
   height = 1920,
   settings: CanvasSettings = DEFAULT_CANVAS_SETTINGS,
-  videoElements?: Map<string, HTMLVideoElement>,
+  videoFrameMap?: Map<string, CanvasImageSource>,
 ): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -495,7 +514,7 @@ export async function renderGridToCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
-  await renderGridIntoContext(ctx, root, mediaRegistry, width, height, settings, videoElements);
+  await renderGridIntoContext(ctx, root, mediaRegistry, width, height, settings, videoFrameMap);
 
   // D-22: draw overlay pass AFTER all cells are rendered (OVL-16)
   const { overlays, stickerRegistry } = useOverlayStore.getState();

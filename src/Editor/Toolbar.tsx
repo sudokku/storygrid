@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
-import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Trash2, PlusCircle } from 'lucide-react';
+import { Undo2, Redo2, Minus, Plus, Eye, EyeOff, Layers, Trash2, PlusCircle } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -244,11 +244,7 @@ export function Toolbar() {
                 />
               }
             >
-              {showOverlays ? (
-                <Eye size={16} className="text-white" />
-              ) : (
-                <EyeOff size={16} className="text-white" />
-              )}
+              <Layers size={16} className={showOverlays ? 'text-white' : 'text-neutral-500'} />
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
               {showOverlays ? 'Hide overlays' : 'Show overlays'}

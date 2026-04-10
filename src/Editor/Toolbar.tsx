@@ -28,6 +28,8 @@ export function Toolbar() {
   const setZoom = useEditorStore(s => s.setZoom);
   const showSafeZone = useEditorStore(s => s.showSafeZone);
   const toggleSafeZone = useEditorStore(s => s.toggleSafeZone);
+  const showOverlays = useEditorStore(s => s.showOverlays);
+  const toggleOverlayVisibility = useEditorStore(s => s.toggleOverlayVisibility);
   const isExporting = useEditorStore(s => s.isExporting);
   const setIsExporting = useEditorStore(s => s.setIsExporting);
 
@@ -228,6 +230,28 @@ export function Toolbar() {
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
               {showSafeZone ? 'Hide safe zone' : 'Show safe zone'}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  className={btnClass}
+                  onClick={toggleOverlayVisibility}
+                  aria-label={showOverlays ? 'Hide overlays' : 'Show overlays'}
+                  aria-pressed={showOverlays}
+                />
+              }
+            >
+              {showOverlays ? (
+                <Eye size={16} className="text-white" />
+              ) : (
+                <EyeOff size={16} className="text-white" />
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              {showOverlays ? 'Hide overlays' : 'Show overlays'}
             </TooltipContent>
           </Tooltip>
 

@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: completed
-stopped_at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
-last_updated: "2026-04-10T15:18:31.352Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-04-10T15:40:16.705Z"
 last_activity: "2026-04-10 - Completed quick task 260410-obm: Replace MediaRecorder MP4 variants with WebM-only + ffmpeg.wasm transcode to QuickTime-compatible MP4"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
   total_plans: 11
   completed_plans: 11
@@ -208,6 +208,7 @@ None yet.
 - Phase 05.1 inserted after Phase 5: Mobile-First UI (URGENT) — primary users create on phones; must ship before Video support
 - v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
 - Phase 9 added: Improve cell movement and swapping (2026-04-08)
+- Phase 14 added: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
 
 ### Blockers/Concerns
 
@@ -215,7 +216,7 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:29:04.229Z
-Stopped at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
-Resume file: None
+Last session: 2026-04-10T15:40:16.701Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-migrate-video-export-from-mediarecorder-ffmpeg-wasm-to-media/14-CONTEXT.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |

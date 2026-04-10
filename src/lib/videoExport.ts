@@ -380,7 +380,13 @@ export async function exportVideoGrid(
   // Mediabunny Output setup.
   const target = new BufferTarget();
   const output = new Output({ format: new Mp4OutputFormat(), target });
-  const videoSource = new CanvasSource(stableCanvas, { codec: videoCodec, bitrate: QUALITY_HIGH });
+  const videoSource = new CanvasSource(stableCanvas, {
+    codec: videoCodec,
+    bitrate: QUALITY_HIGH,
+    hardwareAcceleration: 'prefer-hardware',
+    latencyMode: 'realtime',
+    bitrateMode: 'variable',
+  });
   output.addVideoTrack(videoSource);
 
   // D-01, D-03: Audio setup — optional, non-fatal.

@@ -6,7 +6,11 @@ import {
   AudioBufferSource,
   QUALITY_HIGH,
   canEncodeAudio,
+  BlobSource,
+  Input,
+  VideoSampleSink,
 } from 'mediabunny';
+import type { VideoSample } from 'mediabunny';
 import { registerAacEncoder } from '@mediabunny/aac-encoder';
 import { getAllLeaves } from './tree';
 import type { GridNode, LeafNode } from '../types';
@@ -17,7 +21,7 @@ import { useOverlayStore } from '../store/overlayStore';
 // ---------------------------------------------------------------------------
 // computeLoopedTime — pure helper for modulo-based video looping
 //
-// During export, videos are seeked frame-by-frame. For cells whose video is
+// During export, videos are decoded frame-by-frame. For cells whose video is
 // shorter than the total export duration, this helper computes the looped
 // position (matching `loop=true` behavior).
 //
@@ -31,114 +35,6 @@ export function computeLoopedTime(timeSeconds: number, duration: number): number
     return 0;
   }
   return timeSeconds % duration;
-}
-
-// ---------------------------------------------------------------------------
-// buildExportVideoElements
-//
-// Creates DEDICATED HTMLVideoElement instances for export only.
-// These elements:
-//   - Are created fresh at export start, NOT connected to the DOM
-//   - Load from the same blob URLs already in mediaRegistry (still valid)
-//   - Are never exposed to the user or the preview UI
-//   - Are played and controlled exclusively by the export loop
-//   - Are destroyed via destroyExportVideoElements after export completes
-//
-// WHY NOT reuse videoElementRegistry (live UI elements):
-//   User actions (seek, pause, play) in the preview UI would interfere with
-//   the export playback, corrupting the exported video. Dedicated elements
-//   are completely isolated from the UI.
-//
-// Returns: Map<mediaId, HTMLVideoElement> — same shape expected by
-//          renderGridIntoContext's videoElements parameter.
-// ---------------------------------------------------------------------------
-
-export async function buildExportVideoElements(
-  root: GridNode,
-  mediaRegistry: Record<string, string>,
-  mediaTypeMap: Record<string, 'image' | 'video'>,
-): Promise<Map<string, HTMLVideoElement>> {
-  const result = new Map<string, HTMLVideoElement>();
-  const leaves = getAllLeaves(root);
-
-  // Collect unique mediaIds that are videos.
-  const videoMediaIds = new Set<string>();
-  for (const leaf of leaves) {
-    if (
-      leaf.mediaId &&
-      mediaTypeMap[leaf.mediaId] === 'video' &&
-      mediaRegistry[leaf.mediaId]
-    ) {
-      videoMediaIds.add(leaf.mediaId);
-    }
-  }
-
-  // Create a dedicated HTMLVideoElement for each unique video mediaId.
-  const loadPromises: Promise<void>[] = [];
-  for (const mediaId of videoMediaIds) {
-    const blobUrl = mediaRegistry[mediaId];
-    const video = document.createElement('video');
-    video.preload = 'auto';
-    // Phase 12 (AUD-05): if ANY leaf using this mediaId has audioEnabled=true,
-    // unmute the dedicated export element. Shared mediaIds across multiple cells:
-    // the element is shared; if any user wants audio, we unmute.
-    const anyLeafWantsAudio = leaves.some(
-      (l) => l.type === 'leaf' && l.mediaId === mediaId && l.audioEnabled,
-    );
-    video.muted = !anyLeafWantsAudio;
-    video.playsInline = true;
-    video.loop = false; // Managed manually in export loop
-    video.crossOrigin = 'anonymous';
-    video.src = blobUrl;
-
-    result.set(mediaId, video);
-
-    // Wait until the video has at least one decodable frame ready (readyState >= 2,
-    // HAVE_CURRENT_DATA). This ensures the first drawImage call in the render loop
-    // paints real pixels, not a blank frame.
-    //
-    // 'canplay' fires at readyState >= 3 (HAVE_FUTURE_DATA) on most browsers,
-    // but 'loadeddata' fires at readyState >= 2 (HAVE_CURRENT_DATA) and is
-    // sufficient for a single drawImage. We listen for whichever arrives first.
-    loadPromises.push(
-      new Promise<void>((resolve) => {
-        if (video.readyState >= 2) {
-          // HAVE_CURRENT_DATA (or better) — first frame already available.
-          resolve();
-          return;
-        }
-        const done = () => resolve();
-        video.addEventListener('loadeddata', done, { once: true });
-        video.addEventListener('canplay', done, { once: true });
-        video.addEventListener('error', done, { once: true }); // Non-fatal
-      }),
-    );
-    // Trigger loading by calling load() — necessary when the element is not in
-    // the DOM (no auto-preload happens for detached elements in some browsers).
-    video.load();
-  }
-
-  await Promise.all(loadPromises);
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// destroyExportVideoElements
-//
-// Cleans up dedicated export video elements after export completes or fails.
-// Sets src='' to release the media resource. Does NOT revoke the blob URL —
-// the blob URL belongs to mediaRegistry and must remain valid for the editor.
-// ---------------------------------------------------------------------------
-
-function destroyExportVideoElements(
-  exportVideoElements: Map<string, HTMLVideoElement>,
-): void {
-  for (const video of exportVideoElements.values()) {
-    video.pause();
-    video.src = '';
-    video.load(); // Resets the element and releases resources
-  }
-  exportVideoElements.clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -191,38 +87,185 @@ function collectAudioEnabledMediaIds(
 }
 
 // ---------------------------------------------------------------------------
-// seekAllVideosTo (D-13)
+// collectUniqueVideoMediaIds
 //
-// Seeks all export video elements to the given timestamp (in seconds).
-// Uses computeLoopedTime to handle videos shorter than totalDuration.
-// Each seek uses the 'seeked' event with a 500ms timeout fallback.
-// Early-exits if already at the target time (diff < 0.01s).
+// Returns a Set of unique mediaIds that are video type and have valid
+// blob URLs in mediaRegistry. Used by decodeAllVideoSamples.
 // ---------------------------------------------------------------------------
 
-async function seekAllVideosTo(
-  timeSeconds: number,
-  exportVideoElements: Map<string, HTMLVideoElement>,
-): Promise<void> {
-  const seekPromises: Promise<void>[] = [];
-  for (const video of exportVideoElements.values()) {
-    const loopedTime = computeLoopedTime(timeSeconds, video.duration);
-    seekPromises.push(
-      new Promise<void>((resolve) => {
-        // Early exit if already at target (guards frame 0, prevents no-fire on same time)
-        if (Math.abs(video.currentTime - loopedTime) < 0.01) {
-          resolve();
-          return;
-        }
-        const timeout = setTimeout(resolve, 500); // D-13: 500ms fallback
-        video.addEventListener('seeked', () => {
-          clearTimeout(timeout);
-          resolve();
-        }, { once: true });
-        video.currentTime = loopedTime;
-      }),
-    );
+function collectUniqueVideoMediaIds(
+  root: GridNode,
+  mediaRegistry: Record<string, string>,
+  mediaTypeMap: Record<string, 'image' | 'video'>,
+): Set<string> {
+  const result = new Set<string>();
+  const leaves = getAllLeaves(root);
+  for (const leaf of leaves) {
+    if (leaf.mediaId && mediaTypeMap[leaf.mediaId] === 'video' && mediaRegistry[leaf.mediaId]) {
+      result.add(leaf.mediaId);
+    }
   }
-  await Promise.all(seekPromises);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// decodeVideoToSamples (D-01, D-02, Pitfall 3)
+//
+// Decodes all frames from a video blob URL using Mediabunny VideoSampleSink.
+// Pipeline: fetch blob URL → BlobSource → Input → getPrimaryVideoTrack →
+//           VideoSampleSink → iterate samples() async generator → sort by timestamp.
+//
+// Returns a sorted VideoSample[] array (sorted by timestamp ascending).
+// VideoSample.timestamp is in SECONDS [VERIFIED: mediabunny.d.ts line 3023].
+//
+// D-07: Propagates errors as hard failures — no fallback to seeking.
+// ---------------------------------------------------------------------------
+
+export async function decodeVideoToSamples(blobUrl: string): Promise<VideoSample[]> {
+  const response = await fetch(blobUrl);
+  const blob = await response.blob();
+  const source = new BlobSource(blob);
+  const input = new Input({ source });
+
+  try {
+    const track = await input.getPrimaryVideoTrack();
+    if (!track) return [];
+
+    const sink = new VideoSampleSink(track);
+    const samples: VideoSample[] = [];
+
+    for await (const sample of sink.samples()) {
+      samples.push(sample);
+    }
+
+    // Sort by presentation timestamp — decode order != presentation order for H.264 B-frames (D-08)
+    // VideoSample.timestamp is in SECONDS [VERIFIED: mediabunny.d.ts line 3023]
+    samples.sort((a, b) => a.timestamp - b.timestamp);
+    return samples;
+  } finally {
+    // Dispose input AFTER generator exhausts — cancels pending reads, closes decoders
+    // [VERIFIED: mediabunny.d.ts line 1518]. Safe to call; extracted samples remain valid.
+    input.dispose();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// decodeAllVideoSamples (D-04, D-05, D-13)
+//
+// Decodes all unique video mediaIds sequentially (one at a time to limit
+// peak GPU memory). Reports progress via onProgress('decoding', percent).
+//
+// Returns a Map<mediaId, { samples, duration }> where duration is computed
+// from the last sample's timestamp + duration field.
+// ---------------------------------------------------------------------------
+
+async function decodeAllVideoSamples(
+  root: GridNode,
+  mediaRegistry: Record<string, string>,
+  mediaTypeMap: Record<string, 'image' | 'video'>,
+  onProgress: (stage: 'preparing' | 'decoding' | 'encoding', percent?: number) => void,
+): Promise<Map<string, { samples: VideoSample[]; duration: number }>> {
+  const result = new Map<string, { samples: VideoSample[]; duration: number }>();
+  const videoMediaIds = collectUniqueVideoMediaIds(root, mediaRegistry, mediaTypeMap);
+  let decoded = 0;
+
+  // D-04: Sequential decode — one video at a time to limit peak GPU memory
+  for (const mediaId of videoMediaIds) {
+    const blobUrl = mediaRegistry[mediaId];
+    const samples = await decodeVideoToSamples(blobUrl);
+
+    // Compute duration from last sample (last sample timestamp + its duration)
+    const duration = samples.length > 0
+      ? samples[samples.length - 1].timestamp + samples[samples.length - 1].duration
+      : 0;
+
+    result.set(mediaId, { samples, duration });
+    decoded++;
+    onProgress('decoding', Math.round((decoded / videoMediaIds.size) * 100));
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// findSampleForTime (D-08, D-09)
+//
+// Given a sorted VideoSample[] and a target export time (in seconds),
+// finds the sample whose timestamp is <= loopedTime (nearest floor).
+//
+// computeLoopedTime works in seconds; VideoSample.timestamp is in seconds.
+// NO unit conversion needed [VERIFIED: mediabunny.d.ts line 3023].
+// ---------------------------------------------------------------------------
+
+export function findSampleForTime(
+  samples: VideoSample[],
+  exportTimeSeconds: number,
+  videoDurationSeconds: number,
+): VideoSample | null {
+  if (samples.length === 0) return null;
+
+  // computeLoopedTime works in seconds; VideoSample.timestamp is in seconds
+  // NO unit conversion needed [VERIFIED: mediabunny.d.ts line 3023]
+  const loopedTime = computeLoopedTime(exportTimeSeconds, videoDurationSeconds);
+
+  // Find last sample with timestamp <= loopedTime (sorted ascending)
+  let best = samples[0];
+  for (const s of samples) {
+    if (s.timestamp <= loopedTime) {
+      best = s;
+    } else {
+      break;
+    }
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------------------
+// buildFrameMapForTime
+//
+// Builds a Map<mediaId, CanvasImageSource> for a specific export frame time.
+// Calls toCanvasImageSource() inline — the result MUST be consumed immediately.
+//
+// CRITICAL per Pitfall 2: toCanvasImageSource() result must be used IMMEDIATELY.
+// Any VideoFrame created internally will automatically be closed in the next microtask.
+// The caller (renderGridIntoContext) uses this map synchronously within the same
+// frame iteration — no await between map build and drawImage.
+// ---------------------------------------------------------------------------
+
+function buildFrameMapForTime(
+  decodedVideos: Map<string, { samples: VideoSample[]; duration: number }>,
+  timeSeconds: number,
+): Map<string, CanvasImageSource> {
+  const frameMap = new Map<string, CanvasImageSource>();
+  for (const [mediaId, { samples, duration }] of decodedVideos) {
+    const sample = findSampleForTime(samples, timeSeconds, duration);
+    if (sample) {
+      // CRITICAL per Pitfall 2: toCanvasImageSource() result must be used IMMEDIATELY.
+      // The returned VideoFrame is auto-closed in the next microtask.
+      // We call it here and the caller (renderGridIntoContext) uses it synchronously
+      // within the same synchronous execution — no await between map build and drawImage.
+      frameMap.set(mediaId, sample.toCanvasImageSource());
+    }
+  }
+  return frameMap;
+}
+
+// ---------------------------------------------------------------------------
+// disposeAllSamples (D-06)
+//
+// Closes all VideoSample frames to release GPU memory after the encode loop.
+// Replaces destroyExportVideoElements from the seeking pipeline.
+// ---------------------------------------------------------------------------
+
+function disposeAllSamples(
+  decodedVideos: Map<string, { samples: VideoSample[]; duration: number }>,
+): void {
+  for (const { samples } of decodedVideos.values()) {
+    for (const s of samples) {
+      s.close();
+    }
+  }
+  decodedVideos.clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -312,16 +355,18 @@ const FPS = 30;
 // ARCHITECTURE (WebCodecs + Mediabunny direct MP4 encoding):
 //
 //   1. VideoEncoder guard — hard-fail on unsupported browsers (D-06).
-//   2. Build dedicated export video elements (isolated from UI).
-//   3. Create stable 1080×1920 canvas (D-11).
-//   4. Codec selection: VP9 on Firefox, AVC elsewhere (D-12).
-//   5. Create Mediabunny Output with CanvasSource (video) and optionally
+//   2. Create stable 1080×1920 canvas (D-11).
+//   3. Codec selection: VP9 on Firefox, AVC elsewhere (D-12).
+//   4. Create Mediabunny Output with CanvasSource (video) and optionally
 //      AudioBufferSource (audio). Audio track added only when:
 //        a. At least one leaf has audioEnabled=true AND is a video cell.
 //        b. canEncodeAudio('aac') succeeds (natively or via polyfill).
-//   6. output.start() — MUST be after all addTrack calls (Pitfall 5).
-//   7. Frame-by-frame encoding loop:
-//        - seek all export videos to current frame timestamp (D-13)
+//   5. output.start() — MUST be after all addTrack calls (Pitfall 5).
+//   6. Phase A — decode all videos via VideoSampleSink:
+//        - decodeAllVideoSamples: fetch → BlobSource → Input → VideoSampleSink
+//        - onProgress('decoding', percent) per video decoded
+//   7. Phase B — frame-by-frame encoding loop (zero seeking):
+//        - buildFrameMapForTime — lookup sorted VideoSample[] by timestamp
 //        - renderGridIntoContext — draw cells onto stable canvas
 //        - drawOverlaysToCanvas — draw text/sticker overlays
 //        - videoSource.add(timestamp, frameDuration) — encode frame
@@ -347,7 +392,7 @@ export async function exportVideoGrid(
   mediaTypeMap: Record<string, 'image' | 'video'>,
   settings: CanvasSettings,
   totalDuration: number,
-  onProgress: (stage: 'preparing' | 'encoding', percent?: number) => void,
+  onProgress: (stage: 'preparing' | 'decoding' | 'encoding', percent?: number) => void,
   onWarning?: (message: string) => void,
 ): Promise<Blob> {
   // D-06: VideoEncoder guard — hard block on unsupported browsers.
@@ -360,16 +405,12 @@ export async function exportVideoGrid(
   // Signal UI: export is starting.
   onProgress('preparing');
 
-  // Build dedicated export video elements (isolated from UI).
-  const exportVideoElements = await buildExportVideoElements(root, mediaRegistry, mediaTypeMap);
-
   // D-11: Stable 1080×1920 canvas for rendering — CanvasSource captures from it.
   const stableCanvas = document.createElement('canvas');
   stableCanvas.width = 1080;
   stableCanvas.height = 1920;
   const stableCtx = stableCanvas.getContext('2d');
   if (!stableCtx) {
-    destroyExportVideoElements(exportVideoElements);
     throw new Error('Canvas 2D context not available');
   }
 
@@ -413,9 +454,15 @@ export async function exportVideoGrid(
     }
   }
 
+  // Declare decodedVideos before try so finally can access it.
+  let decodedVideos: Map<string, { samples: VideoSample[]; duration: number }> = new Map();
+
   try {
     // Pitfall 5: output.start() MUST be after all addTrack calls.
     await output.start();
+
+    // Phase A — decode all videos via VideoSampleSink (D-04, D-05, D-13)
+    decodedVideos = await decodeAllVideoSamples(root, mediaRegistry, mediaTypeMap, onProgress);
 
     // Read overlay state once — overlay positions/styles are static over the video duration.
     const overlayState = useOverlayStore.getState();
@@ -430,16 +477,16 @@ export async function exportVideoGrid(
     // Image cache for grid rendering.
     const imageCache = new Map<string, HTMLImageElement>();
 
-    // Frame encoding loop.
+    // Phase B — frame encoding loop (zero seeking).
     const totalFrames = Math.ceil(totalDuration * FPS);
     for (let i = 0; i < totalFrames; i++) {
-      // D-13: Seek all export videos to current frame timestamp (looped internally).
-      await seekAllVideosTo(i / FPS, exportVideoElements);
+      // Build frame map from decoded samples — no seeking required.
+      const frameMap = buildFrameMapForTime(decodedVideos, i / FPS);
 
       // Render grid cells onto stable canvas.
       await renderGridIntoContext(
         stableCtx, root, mediaRegistry, 1080, 1920, settings,
-        exportVideoElements, imageCache,
+        frameMap, imageCache,
       );
 
       // Draw text/sticker overlays on top of cells.
@@ -477,7 +524,7 @@ export async function exportVideoGrid(
 
     return new Blob([target.buffer as ArrayBuffer], { type: 'video/mp4' });
   } finally {
-    // Always clean up export video elements, even on error.
-    destroyExportVideoElements(exportVideoElements);
+    // Always dispose all decoded video samples, even on error (D-06).
+    disposeAllSamples(decodedVideos);
   }
 }

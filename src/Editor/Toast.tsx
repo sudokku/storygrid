@@ -1,10 +1,10 @@
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type ToastState = 'preparing' | 'exporting' | 'error' | 'encoding' | 'transcoding' | null;
+export type ToastState = 'preparing' | 'exporting' | 'error' | 'encoding' | 'audio-warning' | null;
 
 interface ToastProps {
   state: ToastState;
@@ -50,11 +50,23 @@ export function Toast({ state, encodingPercent, onRetry, onDismiss }: ToastProps
     );
   }
 
-  if (state === 'transcoding') {
+  if (state === 'audio-warning') {
     return (
-      <div className={containerClass} role="status">
-        <Loader2 size={14} className="animate-spin text-neutral-400" />
-        <span>Transcoding {encodingPercent ?? 0}%...</span>
+      <div
+        className="fixed bottom-4 right-4 z-50 flex items-start gap-2 px-3 py-2 rounded-md text-sm font-medium shadow-lg bg-amber-950 border border-amber-700/50 min-w-[200px] max-w-[320px] transition-all duration-200"
+        role="alert"
+      >
+        <AlertTriangle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+        <span className="text-amber-200 text-xs leading-snug">
+          Audio not supported in this browser — exported video only
+        </span>
+        <button
+          onClick={onDismiss}
+          className="text-xs underline text-amber-400 ml-auto shrink-0"
+          aria-label="Dismiss warning"
+        >
+          OK
+        </button>
       </div>
     );
   }

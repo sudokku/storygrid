@@ -18,6 +18,8 @@ export function ExportSplitButton() {
   const [encodingPercent, setEncodingPercent] = useState(0);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // D-03: track audio warning to show after successful download
+  const audioWarningRef = useRef<string | null>(null);
 
   const isExporting = useEditorStore(s => s.isExporting);
   const exportFormat = useEditorStore(s => s.exportFormat);
@@ -85,6 +87,7 @@ export function ExportSplitButton() {
 
     setIsExporting(true);
     setPopoverOpen(false);
+    audioWarningRef.current = null;
 
     try {
       const canvasSettings: CanvasSettings = {
@@ -109,17 +112,20 @@ export function ExportSplitButton() {
           (stage, percent) => {
             if (stage === 'preparing') {
               setToastState('preparing');
-            } else if (stage === 'transcoding') {
-              setToastState('transcoding');
-              if (percent !== undefined) setEncodingPercent(percent);
             } else {
               setToastState('encoding');
               if (percent !== undefined) setEncodingPercent(percent);
             }
           },
+          // onWarning: called when audio encoding is unavailable (D-03)
+          (message) => {
+            console.warn(message);
+            // Store for post-export display (D-03)
+            audioWarningRef.current = message;
+          },
         );
         setToastState(null);
-        // Download blob — extension matches actual container (mp4 or webm).
+        // Download blob — extension matches actual container (mp4).
         const ext = 'mp4';
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -129,6 +135,10 @@ export function ExportSplitButton() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        // D-03: show audio-warning toast after successful download
+        if (audioWarningRef.current) {
+          setToastState('audio-warning');
+        }
       } else {
         // Image export path — unchanged
         const dataUrl = await exportGrid(

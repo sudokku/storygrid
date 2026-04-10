@@ -112,6 +112,21 @@ describe('Toast', () => {
     );
     expect(screen.getByText(/Encoding 42%\.\.\./)).toBeInTheDocument();
   });
+
+  it('renders audio-warning state with alert role and warning message', async () => {
+    const { Toast } = await import('../Editor/Toast');
+    render(<Toast state="audio-warning" onRetry={vi.fn()} onDismiss={vi.fn()} />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Audio not supported in this browser/)).toBeInTheDocument();
+  });
+
+  it('audio-warning state renders dismiss button that calls onDismiss', async () => {
+    const { Toast } = await import('../Editor/Toast');
+    const onDismiss = vi.fn();
+    render(<Toast state="audio-warning" onRetry={vi.fn()} onDismiss={onDismiss} />);
+    fireEvent.click(screen.getByRole('button', { name: /dismiss warning/i }));
+    expect(onDismiss).toHaveBeenCalledOnce();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -274,51 +289,51 @@ describe('ExportSplitButton', () => {
 });
 
 // ---------------------------------------------------------------------------
-// exportVideoGrid — MediaRecorder availability guard
+// exportVideoGrid — VideoEncoder (WebCodecs) availability guard
 // ---------------------------------------------------------------------------
 
 describe('exportVideoGrid', () => {
-  it('throws when MediaRecorder does not support required mimeTypes', async () => {
+  it('throws when VideoEncoder (WebCodecs) is not available', async () => {
     const { exportVideoGrid } = await import('../lib/videoExport');
 
-    // jsdom does not implement MediaRecorder.isTypeSupported — mock it to
-    // return false for all mimeTypes to simulate an unsupported browser.
-    const originalIsTypeSupported = (globalThis as Record<string, unknown>).MediaRecorder as
-      | { isTypeSupported?: (mt: string) => boolean }
-      | undefined;
-    const mockMediaRecorder = { isTypeSupported: () => false };
-    (globalThis as Record<string, unknown>).MediaRecorder = mockMediaRecorder;
+    // Save the original VideoEncoder (likely undefined in jsdom already)
+    const originalVideoEncoder = (globalThis as Record<string, unknown>).VideoEncoder;
 
-    const leaf: LeafNode = {
-      type: 'leaf',
-      id: 'root',
-      mediaId: null,
-      fit: 'cover',
-      objectPosition: 'center center',
-      backgroundColor: null,
-      audioEnabled: true,
-    };
+    try {
+      // Explicitly remove VideoEncoder to simulate an unsupported browser
+      delete (globalThis as Record<string, unknown>).VideoEncoder;
 
-    await expect(
-      exportVideoGrid(
-        leaf,
-        {},
-        {},
-        {
-          gap: 0,
-          borderRadius: 0,
-          backgroundMode: 'solid',
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#000000',
-          backgroundGradientDir: 'to-bottom',
-        },
-        5,
-        vi.fn(),
-      ),
-    ).rejects.toThrow('Video export requires a browser that supports MediaRecorder');
+      const leaf: LeafNode = {
+        type: 'leaf',
+        id: 'root',
+        mediaId: null,
+        fit: 'cover',
+        objectPosition: 'center center',
+        backgroundColor: null,
+        audioEnabled: true,
+      };
 
-    // Restore
-    (globalThis as Record<string, unknown>).MediaRecorder = originalIsTypeSupported;
+      await expect(
+        exportVideoGrid(
+          leaf,
+          {},
+          {},
+          {
+            gap: 0,
+            borderRadius: 0,
+            backgroundMode: 'solid',
+            backgroundColor: '#ffffff',
+            backgroundGradientFrom: '#ffffff',
+            backgroundGradientTo: '#000000',
+            backgroundGradientDir: 'to-bottom',
+          },
+          5,
+          vi.fn(),
+        ),
+      ).rejects.toThrow('WebCodecs');
+    } finally {
+      // Restore original value
+      (globalThis as Record<string, unknown>).VideoEncoder = originalVideoEncoder;
+    }
   });
 });

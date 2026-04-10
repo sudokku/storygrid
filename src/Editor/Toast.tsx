@@ -4,7 +4,7 @@ import { Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 // Types
 // ---------------------------------------------------------------------------
 
-export type ToastState = 'preparing' | 'exporting' | 'error' | 'encoding' | 'audio-warning' | null;
+export type ToastState = 'preparing' | 'decoding' | 'exporting' | 'error' | 'encoding' | 'audio-warning' | null;
 
 interface ToastProps {
   state: ToastState;
@@ -28,6 +28,15 @@ export function Toast({ state, encodingPercent, onRetry, onDismiss }: ToastProps
       <div className={containerClass} role="status">
         <Loader2 size={14} className="animate-spin text-neutral-400" />
         <span>Preparing...</span>
+      </div>
+    );
+  }
+
+  if (state === 'decoding') {
+    return (
+      <div className={containerClass} role="status">
+        <Loader2 size={14} className="animate-spin text-neutral-400" />
+        <span>Decoding {encodingPercent ?? 0}%...</span>
       </div>
     );
   }

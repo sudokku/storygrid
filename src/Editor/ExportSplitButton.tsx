@@ -112,6 +112,9 @@ export function ExportSplitButton() {
           (stage, percent) => {
             if (stage === 'preparing') {
               setToastState('preparing');
+            } else if (stage === 'decoding') {
+              setToastState('decoding');
+              if (percent !== undefined) setEncodingPercent(percent);
             } else {
               setToastState('encoding');
               if (percent !== undefined) setEncodingPercent(percent);

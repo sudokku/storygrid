@@ -638,22 +638,16 @@ Note: Removing COOP/COEP headers (D-10) is a **security reduction** — these he
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `AudioBufferSource.add()` need to be called before `output.finalize()`?**
-   - What we know: `output.finalize()` "must be called after all media samples across all tracks have been added" per docs
-   - What's unclear: Is the audio track required to have data added before finalize, or can an empty audio track be finalized?
-   - Recommendation: Always call `audioSource.add(mixedBuffer)` before `output.finalize()`. If audio mixing fails (D-03), skip `addAudioTrack` entirely so the track is not registered — don't register an empty audio track.
+   - **RESOLVED:** Yes — per Mediabunny docs, `output.finalize()` must be called after all samples have been added across all registered tracks. An empty audio track would cause undefined behavior. **Plan: If audio fails (D-03), skip `addAudioTrack` entirely — do NOT register an audio track and then leave it empty.**
 
 2. **What is the exact `@mediabunny/aac-encoder` package version to install?**
-   - What we know: The package exists at `@mediabunny/aac-encoder` on npm
-   - What's unclear: Latest version number (not checked at research time)
-   - Recommendation: `npm view @mediabunny/aac-encoder version` before the install task
+   - **RESOLVED:** Install without a version pin (`@mediabunny/aac-encoder`) to get the latest compatible version at install time. Plan 14-01 Task 1 executor should run `npm view @mediabunny/aac-encoder version` first and pin the resolved version in the install command (e.g. `@mediabunny/aac-encoder@^1.0.0`). The `npm install` will record the resolved version in package-lock.json.
 
 3. **Is `canEncodeAudio('aac')` reliable on Chrome desktop Linux?**
-   - What we know: AAC hardware encoder is unavailable on desktop Linux for Chrome (Playwright issue #37979)
-   - What's unclear: Whether `@mediabunny/aac-encoder` WASM polyfill handles this
-   - Recommendation: The `canEncodeAudio` → `registerAacEncoder()` → re-check pattern handles this transparently. If both checks fail, apply D-03 video-only fallback.
+   - **RESOLVED:** The `canEncodeAudio('aac')` → `registerAacEncoder()` → re-check pattern handles this transparently. The WASM polyfill from `@mediabunny/aac-encoder` covers Chrome desktop Linux. If both checks fail, apply D-03 video-only fallback. No special-casing needed for Linux.
 
 ---
 

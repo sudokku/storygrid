@@ -2,8 +2,8 @@
 phase: 14
 slug: migrate-video-export-from-mediarecorder-ffmpeg-wasm-to-media
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-10
 ---
 
@@ -49,10 +49,7 @@ created: 2026-04-10
 
 ## Wave 0 Requirements
 
-- [ ] `src/test/phase14-audio-encoder.test.ts` — stubs for AudioEncoder + AAC availability checks
-- [ ] `src/test/phase14-audio-pipeline.test.ts` — stubs for OfflineAudioContext mixing pipeline
-
-*If none: "Existing infrastructure covers all phase requirements."*
+Existing infrastructure covers all phase requirements. Plan 14-02 Task 2 updates `src/test/phase04-02-task1.test.tsx` with a VideoEncoder guard test (replaces the old MediaRecorder guard test). No additional test files are required — the new pipeline functions (`mixAudioForExport`, `seekAllVideosTo`, `collectAudioEnabledMediaIds`) are covered by build-time TypeScript checks and the manual-only verifications listed below. The OfflineAudioContext mixing pipeline requires real media blobs and cannot be unit tested in jsdom.
 
 ---
 

@@ -9,8 +9,14 @@ import {
   BlobSource,
   Input,
   VideoSampleSink,
+  ALL_FORMATS,
 } from 'mediabunny';
-import type { VideoSample } from 'mediabunny';
+// DecodedFrame — ImageBitmap obtained during decode phase (not VideoSample).
+// Converting VideoSamples to ImageBitmaps immediately during decode releases
+// VTDecoder (macOS hardware decoder) frame buffer memory as soon as each
+// sample is consumed, rather than holding thousands of hardware decoder
+// buffers in memory until the entire encode loop finishes.
+export type DecodedFrame = { timestamp: number; duration: number; bitmap: ImageBitmap };
 import { registerAacEncoder } from '@mediabunny/aac-encoder';
 import { getAllLeaves } from './tree';
 import type { GridNode, LeafNode } from '../types';
@@ -121,30 +127,37 @@ function collectUniqueVideoMediaIds(
 // D-07: Propagates errors as hard failures — no fallback to seeking.
 // ---------------------------------------------------------------------------
 
-export async function decodeVideoToSamples(blobUrl: string): Promise<VideoSample[]> {
+export async function decodeVideoToSamples(blobUrl: string): Promise<DecodedFrame[]> {
   const response = await fetch(blobUrl);
   const blob = await response.blob();
   const source = new BlobSource(blob);
-  const input = new Input({ source });
+  const input = new Input({ source, formats: ALL_FORMATS });
 
   try {
     const track = await input.getPrimaryVideoTrack();
     if (!track) return [];
 
     const sink = new VideoSampleSink(track);
-    const samples: VideoSample[] = [];
+    const frames: DecodedFrame[] = [];
 
     for await (const sample of sink.samples()) {
-      samples.push(sample);
+      // Read timestamp/duration before closing the sample.
+      const { timestamp, duration } = sample;
+      // toVideoFrame() returns a caller-owned VideoFrame clone (no auto-close microtask).
+      const videoFrame = sample.toVideoFrame();
+      // Rasterize to ImageBitmap — does not auto-close, survives async gaps.
+      const bitmap = await createImageBitmap(videoFrame);
+      videoFrame.close(); // free the cloned VideoFrame immediately
+      sample.close();     // release VTDecoder / hardware decoder frame buffer NOW
+      frames.push({ timestamp, duration, bitmap });
     }
 
     // Sort by presentation timestamp — decode order != presentation order for H.264 B-frames (D-08)
-    // VideoSample.timestamp is in SECONDS [VERIFIED: mediabunny.d.ts line 3023]
-    samples.sort((a, b) => a.timestamp - b.timestamp);
-    return samples;
+    frames.sort((a, b) => a.timestamp - b.timestamp);
+    return frames;
   } finally {
     // Dispose input AFTER generator exhausts — cancels pending reads, closes decoders
-    // [VERIFIED: mediabunny.d.ts line 1518]. Safe to call; extracted samples remain valid.
+    // [VERIFIED: mediabunny.d.ts line 1518].
     input.dispose();
   }
 }
@@ -164,8 +177,8 @@ async function decodeAllVideoSamples(
   mediaRegistry: Record<string, string>,
   mediaTypeMap: Record<string, 'image' | 'video'>,
   onProgress: (stage: 'preparing' | 'decoding' | 'encoding', percent?: number) => void,
-): Promise<Map<string, { samples: VideoSample[]; duration: number }>> {
-  const result = new Map<string, { samples: VideoSample[]; duration: number }>();
+): Promise<Map<string, { samples: DecodedFrame[]; duration: number }>> {
+  const result = new Map<string, { samples: DecodedFrame[]; duration: number }>();
   const videoMediaIds = collectUniqueVideoMediaIds(root, mediaRegistry, mediaTypeMap);
   let decoded = 0;
 
@@ -198,10 +211,10 @@ async function decodeAllVideoSamples(
 // ---------------------------------------------------------------------------
 
 export function findSampleForTime(
-  samples: VideoSample[],
+  samples: DecodedFrame[],
   exportTimeSeconds: number,
   videoDurationSeconds: number,
-): VideoSample | null {
+): DecodedFrame | null {
   if (samples.length === 0) return null;
 
   // computeLoopedTime works in seconds; VideoSample.timestamp is in seconds
@@ -223,28 +236,43 @@ export function findSampleForTime(
 // ---------------------------------------------------------------------------
 // buildFrameMapForTime
 //
-// Builds a Map<mediaId, CanvasImageSource> for a specific export frame time.
-// Calls toCanvasImageSource() inline — the result MUST be consumed immediately.
+// Builds a Map<mediaId, ImageBitmap> for a specific export frame time.
 //
-// CRITICAL per Pitfall 2: toCanvasImageSource() result must be used IMMEDIATELY.
-// Any VideoFrame created internally will automatically be closed in the next microtask.
-// The caller (renderGridIntoContext) uses this map synchronously within the same
-// frame iteration — no await between map build and drawImage.
+// CR-01 / CR-03 FIX: toCanvasImageSource() is NOT used here.
+//
+// When VideoSample._data is a Uint8Array, toCanvasImageSource() creates a
+// temporary VideoFrame and queues queueMicrotask(() => videoFrame.close()).
+// The subsequent `await createImageBitmap(videoFrame)` yields to the microtask
+// queue before the browser reads the frame pixels, so the microtask fires and
+// closes the VideoFrame first — producing InvalidStateError.
+//
+// Fix: use toVideoFrame() instead. It always returns a brand-new cloned
+// VideoFrame that the caller owns. No auto-close microtask is ever scheduled.
+// The cloned VideoFrame is passed to createImageBitmap() and then explicitly
+// closed immediately after to free GPU memory.
+//
+// The resulting ImageBitmap does NOT auto-close and safely survives async gaps
+// (e.g. renderGridIntoContext awaiting image loads for non-video cells).
+//
+// Callers are responsible for closing each ImageBitmap after rendering to
+// release GPU memory (call bitmap.close() after renderGridIntoContext returns).
 // ---------------------------------------------------------------------------
 
+// buildFrameMapForTime — synchronous frame lookup (no async rasterization needed).
+//
+// ImageBitmaps were already created during the decode phase (decodeVideoToSamples).
+// This function just looks up the right pre-rasterized bitmap for each video at
+// the given time. The returned bitmaps are owned by decodedVideos and must NOT
+// be closed by callers — disposeAllSamples closes them all at the end.
 function buildFrameMapForTime(
-  decodedVideos: Map<string, { samples: VideoSample[]; duration: number }>,
+  decodedVideos: Map<string, { samples: DecodedFrame[]; duration: number }>,
   timeSeconds: number,
 ): Map<string, CanvasImageSource> {
   const frameMap = new Map<string, CanvasImageSource>();
   for (const [mediaId, { samples, duration }] of decodedVideos) {
-    const sample = findSampleForTime(samples, timeSeconds, duration);
-    if (sample) {
-      // CRITICAL per Pitfall 2: toCanvasImageSource() result must be used IMMEDIATELY.
-      // The returned VideoFrame is auto-closed in the next microtask.
-      // We call it here and the caller (renderGridIntoContext) uses it synchronously
-      // within the same synchronous execution — no await between map build and drawImage.
-      frameMap.set(mediaId, sample.toCanvasImageSource());
+    const frame = findSampleForTime(samples, timeSeconds, duration);
+    if (frame) {
+      frameMap.set(mediaId, frame.bitmap);
     }
   }
   return frameMap;
@@ -258,11 +286,11 @@ function buildFrameMapForTime(
 // ---------------------------------------------------------------------------
 
 function disposeAllSamples(
-  decodedVideos: Map<string, { samples: VideoSample[]; duration: number }>,
+  decodedVideos: Map<string, { samples: DecodedFrame[]; duration: number }>,
 ): void {
   for (const { samples } of decodedVideos.values()) {
-    for (const s of samples) {
-      s.close();
+    for (const f of samples) {
+      f.bitmap.close();
     }
   }
   decodedVideos.clear();
@@ -455,7 +483,7 @@ export async function exportVideoGrid(
   }
 
   // Declare decodedVideos before try so finally can access it.
-  let decodedVideos: Map<string, { samples: VideoSample[]; duration: number }> = new Map();
+  let decodedVideos: Map<string, { samples: DecodedFrame[]; duration: number }> = new Map();
 
   try {
     // Pitfall 5: output.start() MUST be after all addTrack calls.
@@ -480,7 +508,7 @@ export async function exportVideoGrid(
     // Phase B — frame encoding loop (zero seeking).
     const totalFrames = Math.ceil(totalDuration * FPS);
     for (let i = 0; i < totalFrames; i++) {
-      // Build frame map from decoded samples — no seeking required.
+      // Synchronous lookup — bitmaps were rasterized during Phase A.
       const frameMap = buildFrameMapForTime(decodedVideos, i / FPS);
 
       // Render grid cells onto stable canvas.
@@ -501,7 +529,12 @@ export async function exportVideoGrid(
       // Encode this frame via CanvasSource. Timestamps in SECONDS.
       await videoSource.add(i / FPS, 1 / FPS);
 
-      onProgress('encoding', Math.round((i / totalFrames) * 100));
+      // WR-01 FIX: use (i+1) so progress reaches 100% on the last frame.
+      onProgress('encoding', Math.round(((i + 1) / totalFrames) * 100));
+
+      // Yield to the browser event loop every 10 frames so other tabs and
+      // UI remain responsive during long exports.
+      if ((i + 1) % 10 === 0) await new Promise<void>(r => setTimeout(r, 0));
     }
 
     // D-01, D-02: Audio mixing — runs AFTER video loop.

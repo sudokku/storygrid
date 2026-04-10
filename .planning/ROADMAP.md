@@ -74,8 +74,8 @@
 **Goal:** Replace two-stage video export (MediaRecorder WebM + ffmpeg.wasm transcode) with Mediabunny direct MP4 encoding via WebCodecs CanvasSource + AudioBufferSource, maintaining full audio parity
 **Requirements**: AUD-05, AUD-06, AUD-07
 **Depends on:** Phase 13
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md — Remove ffmpeg deps, reinstall mediabunny + aac-encoder, delete transcodeToMp4, remove COOP/COEP headers
-- [ ] 14-02-PLAN.md — Rewrite videoExport.ts with Mediabunny pipeline + update Toast/ExportSplitButton/tests (AUD-05, AUD-06, AUD-07)
+- [x] 14-01-PLAN.md — Remove ffmpeg deps, reinstall mediabunny + aac-encoder, delete transcodeToMp4, remove COOP/COEP headers
+- [x] 14-02-PLAN.md — Rewrite videoExport.ts with Mediabunny pipeline + update Toast/ExportSplitButton/tests (AUD-05, AUD-06, AUD-07)

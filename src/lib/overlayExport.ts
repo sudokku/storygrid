@@ -48,11 +48,14 @@ export async function drawOverlaysToCanvas(
   overlays: Overlay[],
   stickerRegistry: Record<string, string>,
   imageCache: Map<string, HTMLImageElement>,
+  fontsAlreadyReady?: boolean,
 ): Promise<void> {
   if (overlays.length === 0) return;
 
-  // D-18: ensure Google Fonts are loaded before any fillText call
-  if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+  // D-18: ensure Google Fonts are loaded before any fillText call.
+  // Fix B: skip await when fontsAlreadyReady=true (hoisted by exportVideoGrid once
+  // before the render loop — avoids the per-frame fonts.ready cost during video export).
+  if (!fontsAlreadyReady && typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
     await document.fonts.ready;
   }
 

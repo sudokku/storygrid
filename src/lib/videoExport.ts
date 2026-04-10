@@ -308,8 +308,11 @@ export async function exportVideoGrid(
     throw new Error('Canvas 2D context not available');
   }
 
-  // Capture stream from canvas at target FPS.
-  const stream = (stableCanvas as unknown as { captureStream(fps: number): MediaStream }).captureStream(FPS);
+  // Fix D: captureStream(0) — manual requestFrame() controls exactly when frames are
+  // committed to the stream, preventing MediaRecorder from capturing mid-render state.
+  const stream = (stableCanvas as unknown as { captureStream(fps: number): MediaStream }).captureStream(0);
+  // Extract the video track for manual requestFrame() calls after each completed render.
+  const videoTrack = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
 
   // -------------------------------------------------------------------------
   // Phase 12: Web Audio graph for per-cell audio (AUD-05, AUD-06)
@@ -417,13 +420,23 @@ export async function exportVideoGrid(
   // T-13-07: overlayImageCache scoped to this export run; prevents per-frame sticker reloads.
   const overlayImageCache = new Map<string, HTMLImageElement>();
 
+  // Fix B: await fonts once before the render loop — not on every frame.
+  // This satisfies D-18 (Google Fonts loaded) without the per-frame overhead of
+  // drawOverlaysToCanvas awaiting document.fonts.ready on each tick.
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+
   // Pre-warm imageCache and render first frame to give the canvas valid content.
   await renderGridIntoContext(
     stableCtx, root, mediaRegistry, 1080, 1920, settings,
     exportVideoElements, imageCache,
   );
-  // Draw overlays on pre-flight frame (D-22: overlay pass after all cells)
-  await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
+  // Draw overlays on pre-flight frame (D-22: overlay pass after all cells).
+  // fontsAlreadyReady=true: fonts were awaited above, skip per-call await.
+  await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
+  // Fix D: commit pre-flight frame to the stream before recorder.start().
+  videoTrack?.requestFrame();
 
   // The canvas now has a real first frame. Start recording from this point.
   return new Promise<Blob>((resolve, reject) => {
@@ -483,8 +496,11 @@ export async function exportVideoGrid(
           stableCtx, root, mediaRegistry, 1080, 1920, settings,
           exportVideoElements, imageCache,
         );
-        // D-22: overlay pass after cell draw on final frame
-        await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
+        // D-22: overlay pass after cell draw on final frame.
+        // fontsAlreadyReady=true: fonts were awaited once before the loop.
+        await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
+        // Fix D: commit final frame to the stream before stopping recorder.
+        videoTrack?.requestFrame();
 
         recorder.stop();
         onProgress('encoding', 100);
@@ -505,12 +521,22 @@ export async function exportVideoGrid(
         // Threshold: half a frame.
         if (prev - loopedTime > video.duration * 0.5) {
           // Wrapped around — seek back to the start of the loop.
-          video.currentTime = loopedTime;
+          // Fix C: fastSeek targets the nearest keyframe, reducing seek stall duration.
+          if ('fastSeek' in video) {
+            (video as HTMLVideoElement & { fastSeek(time: number): void }).fastSeek(loopedTime);
+          } else {
+            video.currentTime = loopedTime;
+          }
           // Re-play after seek.
           video.play().catch(() => {});
         } else if (video.ended || video.paused) {
           // Video ended naturally or was paused — restart.
-          video.currentTime = loopedTime;
+          // Fix C: fastSeek targets the nearest keyframe, reducing seek stall duration.
+          if ('fastSeek' in video) {
+            (video as HTMLVideoElement & { fastSeek(time: number): void }).fastSeek(loopedTime);
+          } else {
+            video.currentTime = loopedTime;
+          }
           video.play().catch(() => {});
         }
 
@@ -524,24 +550,36 @@ export async function exportVideoGrid(
         stableCtx, root, mediaRegistry, 1080, 1920, settings,
         exportVideoElements, imageCache,
       );
-      // D-22/D-23: overlay pass after cell draw on every frame
-      await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache);
+      // D-22/D-23: overlay pass after cell draw on every frame.
+      // fontsAlreadyReady=true: fonts were awaited once before the loop.
+      await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
+      // Fix D: commit fully-rendered frame to the stream.
+      videoTrack?.requestFrame();
 
       const percent = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
       onProgress('encoding', percent);
     };
 
+    // Fix A: isRendering guard prevents concurrent async renderFrame calls.
+    // If the previous frame render is still in progress when the next tick fires,
+    // the tick is skipped — preventing overlapping canvas writes that corrupt frames.
+    let isRendering = false;
+
     // Use setInterval for subsequent frames. Each tick renders one frame.
     // setInterval is appropriate here: we don't need frame-perfect timing
     // (MediaRecorder captures from the live stream at its own cadence).
     intervalId = setInterval(() => {
-      renderFrame().catch(err => {
-        if (intervalId !== null) clearInterval(intervalId);
-        destroyExportVideoElements(exportVideoElements);
-        try { audioCtx?.close(); } catch { /* noop */ } // D-19: close on render error
-        recorder.stop();
-        reject(err);
-      });
+      if (isRendering) return;
+      isRendering = true;
+      renderFrame()
+        .catch(err => {
+          if (intervalId !== null) clearInterval(intervalId);
+          destroyExportVideoElements(exportVideoElements);
+          try { audioCtx?.close(); } catch { /* noop */ } // D-19: close on render error
+          recorder.stop();
+          reject(err);
+        })
+        .finally(() => { isRendering = false; });
     }, FRAME_DURATION_MS);
   });
 }

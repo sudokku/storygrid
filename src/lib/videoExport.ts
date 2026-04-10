@@ -386,6 +386,9 @@ export async function exportVideoGrid(
     hardwareAcceleration: 'prefer-hardware',
     latencyMode: 'realtime',
     bitrateMode: 'variable',
+    onEncoderConfig: (config) => {
+      console.log('[videoExport] VideoEncoder config:', JSON.stringify(config, null, 2));
+    },
   });
   output.addVideoTrack(videoSource);
 
@@ -432,15 +435,20 @@ export async function exportVideoGrid(
 
     // Frame encoding loop.
     const totalFrames = Math.ceil(totalDuration * FPS);
+    const _dbg = { seek: 0, render: 0, overlays: 0, encode: 0 };
+    const _dbgStart = performance.now();
     for (let i = 0; i < totalFrames; i++) {
       // D-13: Seek all export videos to current frame timestamp (looped internally).
+      const _t0 = performance.now();
       await seekAllVideosTo(i / FPS, exportVideoElements);
+      const _t1 = performance.now();
 
       // Render grid cells onto stable canvas.
       await renderGridIntoContext(
         stableCtx, root, mediaRegistry, 1080, 1920, settings,
         exportVideoElements, imageCache,
       );
+      const _t2 = performance.now();
 
       // Draw text/sticker overlays on top of cells.
       await drawOverlaysToCanvas(
@@ -450,12 +458,26 @@ export async function exportVideoGrid(
         overlayImageCache,
         true, // fontsAlreadyReady — awaited above
       );
+      const _t3 = performance.now();
 
       // Encode this frame via CanvasSource. Timestamps in SECONDS.
       await videoSource.add(i / FPS, 1 / FPS);
+      const _t4 = performance.now();
+
+      _dbg.seek += _t1 - _t0;
+      _dbg.render += _t2 - _t1;
+      _dbg.overlays += _t3 - _t2;
+      _dbg.encode += _t4 - _t3;
+
+      if (i === 0 || i === 4 || (i + 1) % 30 === 0) {
+        console.log(`[videoExport] frame ${i + 1}/${totalFrames} — seek:${(_t1-_t0).toFixed(0)}ms render:${(_t2-_t1).toFixed(0)}ms overlays:${(_t3-_t2).toFixed(0)}ms encode:${(_t4-_t3).toFixed(0)}ms`);
+      }
 
       onProgress('encoding', Math.round((i / totalFrames) * 100));
     }
+    const _dbgTotal = performance.now() - _dbgStart;
+    console.log(`[videoExport] loop done — ${totalFrames} frames in ${(_dbgTotal/1000).toFixed(1)}s (${(_dbgTotal/totalFrames).toFixed(0)}ms/frame avg)`);
+    console.log(`[videoExport] breakdown — seek:${(_dbg.seek/1000).toFixed(2)}s  render:${(_dbg.render/1000).toFixed(2)}s  overlays:${(_dbg.overlays/1000).toFixed(2)}s  encode:${(_dbg.encode/1000).toFixed(2)}s`);
 
     // D-01, D-02: Audio mixing — runs AFTER video loop.
     // OfflineAudioContext rendering is fast (offline, not real-time).

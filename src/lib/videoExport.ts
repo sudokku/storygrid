@@ -246,8 +246,9 @@ const FRAME_DURATION_MS = 1000 / FPS;
 //   - captureStream available: Chrome 51+, Firefox 43+.
 //
 // OUTPUT FORMAT (in preference order):
-//   1. video/mp4;codecs=avc1.42E01E  — Chrome 130+ supports H.264 MP4 directly
-//      via MediaRecorder. Most compatible format for mobile (including iOS).
+//   1. video/mp4;codecs=avc3.42E01E  — Chrome 130+ supports H.264 MP4 directly
+//      via MediaRecorder. avc3 embeds SPS/PPS in-band per fragment, suppressing
+//      the Chrome codec-description-change warning. Same H.264 CBP L3.0 output.
 //   2. video/webm;codecs=vp9         — Chrome 51+, Firefox 43+ fallback.
 //   3. video/webm;codecs=vp8         — Older browser fallback.
 //   4. video/webm                    — Generic WebM fallback.
@@ -271,7 +272,7 @@ export async function exportVideoGrid(
 ): Promise<Blob> {
   // Detect supported mimeType — MP4 preferred for mobile (iOS) compatibility.
   const mimeTypes = [
-    'video/mp4;codecs=avc1.42E01E', // H.264 MP4 — Chrome 130+
+    'video/mp4;codecs=avc3.42E01E', // H.264 MP4 — Chrome 130+ (avc3: in-band SPS/PPS, suppresses codec-description-change warning)
     'video/mp4',                     // Generic MP4
     'video/webm;codecs=vp9',
     'video/webm;codecs=vp8',

@@ -3,7 +3,7 @@ import type { GridNode, LeafNode } from '../types';
 import { renderGridIntoContext, type CanvasSettings } from './export';
 import { drawOverlaysToCanvas } from './overlayExport';
 import { useOverlayStore } from '../store/overlayStore';
-import { transcodeWebmToMp4 } from './transcodeToMp4';
+// transcodeWebmToMp4 removed — ffmpeg.wasm pipeline replaced by Mediabunny in Plan 14-02
 
 // ---------------------------------------------------------------------------
 // computeLoopedTime — pure helper for modulo-based video looping

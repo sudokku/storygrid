@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: completed
-stopped_at: Phase 15 context gathered
-last_updated: "2026-04-10T22:22:26.690Z"
-last_activity: 2026-04-10
+stopped_at: Phase 15 complete — VideoSampleSink decode pipeline shipped
+last_updated: "2026-04-11T00:00:00.000Z"
+last_activity: 2026-04-11
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
+  completed_phases: 5
+  total_plans: 15
+  completed_plans: 15
   percent: 100
 ---
 
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.2 Effects, Overlays & Persistence — Phase 14 (Project Persistence) is next
-**Current focus:** Phase 14 — project-persistence (not yet planned)
+**Current milestone:** v1.2 Effects, Overlays & Persistence — Phase 15 complete
+**Current focus:** Phase 15 — replace-htmlvideoelement-seeking-with-webcodecs-videodecoder (complete)
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
-Status: Phases 11–13 complete — Phase 14 (Project Persistence) not yet planned
-Last activity: 2026-04-10
+Phase: 15
+Plan: 02 (complete)
+Status: Phase 15 complete — all milestone phases done
+Last activity: 2026-04-11
 
-Progress: [███████░░░] 75% (3/4 phases)
+Progress: [██████████] 100% (5/5 phases)
 
 ## Performance Metrics
 

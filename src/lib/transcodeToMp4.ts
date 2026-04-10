@@ -3,25 +3,19 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 
-// Singleton ffmpeg instance — cached after first load.
+// Singleton ffmpeg instance — cached after first load to avoid re-downloading the WASM core.
 let ffmpegInstance: FFmpeg | null = null;
 
 /**
  * Get or create the singleton FFmpeg instance.
  * Loads @ffmpeg/core from unpkg CDN (single-threaded, no COOP/COEP required).
  */
-async function getFFmpeg(
-  onLog?: (message: string) => void,
-): Promise<FFmpeg> {
-  if (ffmpegInstance && ffmpegInstance.loaded) {
+async function getFFmpeg(): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
     return ffmpegInstance;
   }
 
   const ffmpeg = new FFmpeg();
-
-  if (onLog) {
-    ffmpeg.on('log', ({ message }) => onLog(message));
-  }
 
   await ffmpeg.load({
     coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js',
@@ -97,7 +91,7 @@ export async function transcodeWebmToMp4(
     const outputData = await ffmpeg.readFile('output.mp4');
 
     // Convert Uint8Array to Blob.
-    return new Blob([outputData as unknown as ArrayBuffer], { type: 'video/mp4' });
+    return new Blob([outputData as Uint8Array], { type: 'video/mp4' });
   } finally {
     // Clean up virtual filesystem files.
     await ffmpeg.deleteFile('input.webm').catch(() => {});

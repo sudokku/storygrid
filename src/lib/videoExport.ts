@@ -521,7 +521,8 @@ export async function exportVideoGrid(
         commitFrame(videoTrack);
 
         recorder.stop();
-        onProgress('encoding', 100);
+        // Do not emit 'encoding 100%' here — onstop fires async immediately after
+        // and emits 'transcoding 0%', which avoids a confusing flash in the UI.
         return;
       }
 

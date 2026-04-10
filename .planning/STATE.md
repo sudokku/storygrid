@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: UI Polish & Bug Fixes
-status: verifying
-stopped_at: Completed 09-03-PLAN.md (LeafNode 5-zone detection)
-last_updated: "2026-04-08T01:34:36.176Z"
-last_activity: 2026-04-08
+milestone: v1.2
+milestone_name: Effects, Overlays & Persistence
+status: executing
+stopped_at: Completed Phase 13 (Text & Sticker Overlay Layer) — Phase 14 Persistence not yet started
+last_updated: "2026-04-10T00:00:00.000Z"
+last_activity: 2026-04-10
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 0
+  total_plans: 11
+  completed_plans: 11
+  percent: 75
 ---
 
 # Project State
@@ -21,16 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current focus:** Phase 09 — improve-cell-movement-and-swapping
+**Current milestone:** v1.2 Effects, Overlays & Persistence — Phase 14 (Project Persistence) is next
+**Current focus:** Phase 14 — project-persistence (not yet planned)
 
 ## Current Position
 
-Phase: 09
+Phase: 14
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Phases 11–13 complete — Phase 14 (Project Persistence) not yet planned
 Last activity: 2026-04-10 - Completed quick task 260410-7sa: Fix video export stuttering/freeze when clips have audio enabled — prefer quality over speed
 
-Progress: [░░░░░░░░░░] 0% (0/2 phases)
+Progress: [███████░░░] 75% (3/4 phases)
 
 ## Performance Metrics
 

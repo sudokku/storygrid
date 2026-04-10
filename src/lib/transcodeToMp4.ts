@@ -92,10 +92,12 @@ export async function transcodeWebmToMp4(
     ]);
 
     // Read output MP4 from virtual filesystem.
+    // readFile returns FileData (Uint8Array | string); cast via unknown to satisfy
+    // strict ArrayBuffer typing in Blob constructor.
     const outputData = await ffmpeg.readFile('output.mp4');
 
     // Convert Uint8Array to Blob.
-    return new Blob([outputData as Uint8Array], { type: 'video/mp4' });
+    return new Blob([outputData as unknown as ArrayBuffer], { type: 'video/mp4' });
   } finally {
     // Clean up virtual filesystem files.
     await ffmpeg.deleteFile('input.webm').catch(() => {});

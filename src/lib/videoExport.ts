@@ -3,6 +3,7 @@ import type { GridNode, LeafNode } from '../types';
 import { renderGridIntoContext, type CanvasSettings } from './export';
 import { drawOverlaysToCanvas } from './overlayExport';
 import { useOverlayStore } from '../store/overlayStore';
+import { transcodeWebmToMp4 } from './transcodeToMp4';
 
 // ---------------------------------------------------------------------------
 // computeLoopedTime — pure helper for modulo-based video looping
@@ -222,36 +223,37 @@ const FRAME_DURATION_MS = 1000 / FPS;
 // ---------------------------------------------------------------------------
 // exportVideoGrid — MediaRecorder-based video export
 //
-// ARCHITECTURE (MediaRecorder + captureStream):
+// ARCHITECTURE (MediaRecorder + captureStream + ffmpeg.wasm transcode):
 //
 //   1. Create dedicated export video elements (NOT the live UI elements).
 //   2. Create stable 1080×1920 canvas.
 //   3. `canvas.captureStream(FPS)` → live MediaStream.
-//   4. `new MediaRecorder(stream, { mimeType })` — tries MP4 (Chrome 130+)
-//      first, then VP9 WebM, then VP8 WebM.
+//   4. `new MediaRecorder(stream, { mimeType })` — tries VP9 WebM first,
+//      then VP8 WebM, then generic WebM.
 //   5. Rewind all export video elements to time 0, play all simultaneously.
 //   6. setInterval every FRAME_DURATION_MS: render current frame to canvas,
 //      report progress. For cells with shorter videos, computeLoopedTime maps
 //      elapsed time into the video's duration range.
 //   7. After totalDuration ms: stop interval, stop all videos, stop recorder.
-//   8. recorder ondataavailable → Blob → return to caller.
+//   8. recorder ondataavailable → WebM Blob chunks accumulate.
+//   8.5. recorder.onstop → WebM Blob → transcodeWebmToMp4 (ffmpeg.wasm)
+//        → MP4 Blob with -movflags +faststart → return to caller.
 //   9. Destroy dedicated export video elements.
 //
 // WHY THIS IS CORRECT:
 //   - Dedicated elements — completely isolated from the UI.
 //   - Videos play at 1× natural speed — zero seek cost.
 //   - Memory: O(1) — no frame accumulation, only current canvas pixels.
-//   - Total export time ≈ totalDuration (+ <1s muxing).
+//   - Total export time ≈ totalDuration (+ transcode time).
 //   - No WebCodecs backpressure — MediaRecorder handles encoding internally.
 //   - captureStream available: Chrome 51+, Firefox 43+.
 //
-// OUTPUT FORMAT (in preference order):
-//   1. video/mp4;codecs=avc3.42E01E  — Chrome 130+ supports H.264 MP4 directly
-//      via MediaRecorder. avc3 embeds SPS/PPS in-band per fragment, suppressing
-//      the Chrome codec-description-change warning. Same H.264 CBP L3.0 output.
-//   2. video/webm;codecs=vp9         — Chrome 51+, Firefox 43+ fallback.
-//   3. video/webm;codecs=vp8         — Older browser fallback.
-//   4. video/webm                    — Generic WebM fallback.
+// OUTPUT FORMAT:
+//   MediaRecorder always produces WebM (vp9, vp8, or generic webm).
+//   The WebM blob is then transcoded by ffmpeg.wasm (libx264, -movflags
+//   +faststart) to produce a QuickTime-compatible H.264 MP4 with the moov
+//   atom at the front. This is the only format that opens in macOS QuickTime
+//   Player without errors.
 //
 // LOOPING:
 //   - `computeLoopedTime(elapsedSeconds, video.duration)` handles shorter
@@ -268,12 +270,10 @@ export async function exportVideoGrid(
   mediaTypeMap: Record<string, 'image' | 'video'>,
   settings: CanvasSettings,
   totalDuration: number,
-  onProgress: (stage: 'preparing' | 'encoding', percent?: number) => void,
+  onProgress: (stage: 'preparing' | 'encoding' | 'transcoding', percent?: number) => void,
 ): Promise<Blob> {
-  // Detect supported mimeType — MP4 preferred for mobile (iOS) compatibility.
+  // Detect supported WebM mimeType — WebM only; transcode to MP4 via ffmpeg.wasm after recording.
   const mimeTypes = [
-    'video/mp4;codecs=avc3.42E01E', // H.264 MP4 — Chrome 130+ (avc3: in-band SPS/PPS, suppresses codec-description-change warning)
-    'video/mp4',                     // Generic MP4
     'video/webm;codecs=vp9',
     'video/webm;codecs=vp8',
     'video/webm',
@@ -287,7 +287,7 @@ export async function exportVideoGrid(
   }
   if (!selectedMimeType) {
     throw new Error(
-      'Video export requires a browser that supports MediaRecorder with WebM or MP4. ' +
+      'Video export requires a browser that supports MediaRecorder with WebM. ' +
       'Use Chrome 51+ or Firefox 43+.',
     );
   }
@@ -463,8 +463,19 @@ export async function exportVideoGrid(
     recorder.onstop = () => {
       destroyExportVideoElements(exportVideoElements);
       try { audioCtx?.close(); } catch { /* noop */ } // D-19: close in success path
-      const blob = new Blob(chunks, { type: selectedMimeType });
-      resolve(blob);
+      const webmBlob = new Blob(chunks, { type: selectedMimeType });
+      // Transcode WebM to QuickTime-compatible MP4 via ffmpeg.wasm.
+      onProgress('transcoding', 0);
+      transcodeWebmToMp4(webmBlob, (percent) => {
+        onProgress('transcoding', percent);
+      })
+        .then((mp4Blob) => {
+          onProgress('transcoding', 100);
+          resolve(mp4Blob);
+        })
+        .catch((err) => {
+          reject(new Error(`Transcode failed: ${err instanceof Error ? err.message : String(err)}`));
+        });
     };
 
     recorder.onerror = (e: Event) => {

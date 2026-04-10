@@ -109,6 +109,9 @@ export function ExportSplitButton() {
           (stage, percent) => {
             if (stage === 'preparing') {
               setToastState('preparing');
+            } else if (stage === 'transcoding') {
+              setToastState('transcoding');
+              if (percent !== undefined) setEncodingPercent(percent);
             } else {
               setToastState('encoding');
               if (percent !== undefined) setEncodingPercent(percent);
@@ -117,7 +120,7 @@ export function ExportSplitButton() {
         );
         setToastState(null);
         // Download blob — extension matches actual container (mp4 or webm).
-        const ext = blob.type.startsWith('video/mp4') ? 'mp4' : 'webm';
+        const ext = 'mp4';
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `storygrid-${Date.now()}.${ext}`;
@@ -215,7 +218,7 @@ export function ExportSplitButton() {
               <>
                 {/* Video mode — no format/quality controls */}
                 <div className="text-xs text-neutral-400 py-2">
-                  Exports as MP4 (H.264) or WebM (VP9)
+                  Exports as MP4 (H.264)
                 </div>
 
                 {/* Download button */}

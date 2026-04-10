@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: completed
-stopped_at: Phase 14 context gathered
-last_updated: "2026-04-10T19:16:52.440Z"
+stopped_at: Phase 15 context gathered
+last_updated: "2026-04-10T22:22:26.690Z"
 last_activity: 2026-04-10
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
   total_plans: 13
   completed_plans: 13
@@ -209,6 +209,7 @@ None yet.
 - v1.1 phases 7–8 added: UI Polish & Bug Fixes (2026-04-07)
 - Phase 9 added: Improve cell movement and swapping (2026-04-08)
 - Phase 14 added: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
+- Phase 15 added: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
 
 ### Blockers/Concerns
 
@@ -216,7 +217,8 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-10T15:40:16.701Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-migrate-video-export-from-mediarecorder-ffmpeg-wasm-to-media/14-CONTEXT.md
+Last session: 2026-04-10T22:22:26.686Z
+Stopped at: Phase 15 context gathered
+Resume file: .planning/phases/15-replace-htmlvideoelement-seeking-with-webcodecs-videodecoder/15-CONTEXT.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
+| 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

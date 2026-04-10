@@ -68,3 +68,14 @@
   - [x] 13-03-PLAN.md — Text overlay editing + styling controls (OVL-01..OVL-07)
   - [x] 13-04-PLAN.md — Emoji picker + custom image sticker upload (OVL-08, OVL-09)
   - [x] 13-05-PLAN.md — Export integration — PNG and MP4 (OVL-16)
+
+### Phase 14: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
+
+**Goal:** Replace two-stage video export (MediaRecorder WebM + ffmpeg.wasm transcode) with Mediabunny direct MP4 encoding via WebCodecs CanvasSource + AudioBufferSource, maintaining full audio parity
+**Requirements**: AUD-05, AUD-06, AUD-07
+**Depends on:** Phase 13
+**Plans:** 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — Remove ffmpeg deps, reinstall mediabunny + aac-encoder, delete transcodeToMp4, remove COOP/COEP headers
+- [ ] 14-02-PLAN.md — Rewrite videoExport.ts with Mediabunny pipeline + update Toast/ExportSplitButton/tests (AUD-05, AUD-06, AUD-07)

@@ -12,6 +12,7 @@ export function OverlayLayer() {
   const selectedOverlayId = useEditorStore(state => state.selectedOverlayId);
   const setSelectedOverlayId = useEditorStore(state => state.setSelectedOverlayId);
   const canvasScale = useEditorStore(state => state.canvasScale);
+  const showOverlays = useEditorStore(state => state.showOverlays);
   const updateOverlay = useOverlayStore(state => state.updateOverlay);
   const [editingOverlayId, setEditingOverlayId] = useState<string | null>(null);
 
@@ -41,11 +42,13 @@ export function OverlayLayer() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOverlayId, deleteOverlay, setSelectedOverlayId]);
 
+  if (!showOverlays) return null;
+
   const sorted = [...overlays].sort((a, b) => a.zIndex - b.zIndex);
 
   return (
     <div
-      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}
     >
       {sorted.map((overlay: Overlay) => {
         const isSelected = overlay.id === selectedOverlayId;

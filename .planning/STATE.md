@@ -197,6 +197,7 @@ None yet.
 | 260405-ffx | ffmpeg.wasm video export performance research | 2026-04-05 | research-only | [260405-ffx-ffmpeg-wasm-video-export-performance-research](./quick/260405-ffx-ffmpeg-wasm-video-export-performance-research/) |
 | 260407-vth | Template picker silent apply with media migration (prune surplus, preserve kept) | 2026-04-07 | 41cc818 | [260407-vth-template-picker-silent-apply-with-media-](./quick/260407-vth-template-picker-silent-apply-with-media-/) |
 | 260408-258 | Hide workspace drop ring/pill when dropping a file into a leaf cell | 2026-04-08 | ed15031 | [260408-258-hide-workspace-drop-ring-pill-when-dropp](./quick/260408-258-hide-workspace-drop-ring-pill-when-dropp/) |
+| 260410-61j | Fix overlay z-index so cell hover never overlaps sticker/text/emoji layer; add toggle button to show/hide all overlays | 2026-04-10 | d38e485 | [260410-61j-fix-overlay-z-index-so-cell-hover-never-](./quick/260410-61j-fix-overlay-z-index-so-cell-hover-never-/) |
 
 ### Roadmap Evolution
 

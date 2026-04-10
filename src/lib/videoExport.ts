@@ -312,7 +312,13 @@ export async function exportVideoGrid(
   // committed to the stream, preventing MediaRecorder from capturing mid-render state.
   const stream = (stableCanvas as unknown as { captureStream(fps: number): MediaStream }).captureStream(0);
   // Extract the video track for manual requestFrame() calls after each completed render.
+  // CanvasCaptureMediaStreamTrack.requestFrame() is Chrome-only; absent on Firefox.
+  // commitFrame() guards with typeof before calling to avoid a TypeError on Firefox.
   const videoTrack = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+  const commitFrame = (track: MediaStreamTrack): void => {
+    const cct = track as CanvasCaptureMediaStreamTrack;
+    if (typeof cct.requestFrame === 'function') cct.requestFrame();
+  };
 
   // -------------------------------------------------------------------------
   // Phase 12: Web Audio graph for per-cell audio (AUD-05, AUD-06)
@@ -436,7 +442,7 @@ export async function exportVideoGrid(
   // fontsAlreadyReady=true: fonts were awaited above, skip per-call await.
   await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
   // Fix D: commit pre-flight frame to the stream before recorder.start().
-  videoTrack?.requestFrame();
+  commitFrame(videoTrack);
 
   // The canvas now has a real first frame. Start recording from this point.
   return new Promise<Blob>((resolve, reject) => {
@@ -500,7 +506,7 @@ export async function exportVideoGrid(
         // fontsAlreadyReady=true: fonts were awaited once before the loop.
         await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
         // Fix D: commit final frame to the stream before stopping recorder.
-        videoTrack?.requestFrame();
+        commitFrame(videoTrack);
 
         recorder.stop();
         onProgress('encoding', 100);
@@ -554,7 +560,7 @@ export async function exportVideoGrid(
       // fontsAlreadyReady=true: fonts were awaited once before the loop.
       await drawOverlaysToCanvas(stableCtx, overlayState.overlays, overlayState.stickerRegistry, overlayImageCache, true);
       // Fix D: commit fully-rendered frame to the stream.
-      videoTrack?.requestFrame();
+      commitFrame(videoTrack);
 
       const percent = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
       onProgress('encoding', percent);

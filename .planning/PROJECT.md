@@ -121,6 +121,14 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ⏳ AUD-08 (persist `audioEnabled` in project file) deferred to Phase 14 Project Persistence — Phase 12 delivers only the data-model precondition
 - ⏳ Human-UAT pending: audio fidelity in exported MP4 + ffprobe no-audio-track confirmation (12-HUMAN-UAT.md)
 
+**Phase 14 — Migrate video export to Mediabunny** (v1.2)
+- ✓ `@ffmpeg/ffmpeg` and `@ffmpeg/util` removed; `mediabunny@^1.40.1` and `@mediabunny/aac-encoder@^1.40.1` installed (AUD-05, AUD-06, AUD-07) — v1.2
+- ✓ `src/lib/transcodeToMp4.ts` deleted; `vercel.json` and `public/_headers` deleted (no COOP/COEP headers) — v1.2
+- ✓ `videoExport.ts` rewritten: Mediabunny `CanvasSource`+`AudioBufferSource` pipeline, OfflineAudioContext audio mixing, VP9/AVC codec selection, D-03 non-fatal audio fallback via `onWarning` callback, VideoEncoder guard — v1.2
+- ✓ `Toast.tsx` updated with `audio-warning` state (amber); `ExportSplitButton.tsx` wires `onWarning` callback — v1.2
+- ✓ 628 tests pass / 2 skipped; zero COOP/COEP dependency — v1.2
+- ⏳ Human-UAT pending: MP4 audio mix playback, no-audio-track confirmation, D-03 warning toast, Firefox VP9 codec (14-HUMAN-UAT.md)
+
 ### Active
 
 ## Current Milestone: v1.2 Effects, Overlays & Persistence
@@ -199,6 +207,7 @@ Current state (after v1.1):
 | 5-zone LeafNode drop overlay | MOVE (edge insertion) and SWAP (center drop) are distinct semantic gestures; single-undo atomicity via `moveCell` action | ✓ Good — clean separation of n-ary tree mutations (Phase 9) |
 | New `SafeZoneOverlay` component | Replaces toggle-only button with visible striped/dimmed unsafe-area indicator | ✓ Good — dramatically clearer UX for story composition (Phase 8) |
 | MediaRecorder video export (continued) | No 25MB WASM, no COOP/COEP, faster startup | ✓ Good — validated across v1.1 with no regressions |
+| Mediabunny direct MP4 encoding (Phase 14) | Two-stage MediaRecorder+ffmpeg.wasm replaced by Mediabunny WebCodecs pipeline — direct MP4 via CanvasSource+AudioBufferSource, OfflineAudioContext audio mix, no WASM, no COOP/COEP | ✓ Good — simpler pipeline, maintains full audio parity (AUD-05, AUD-06, AUD-07) |
 
 ## Evolution
 
@@ -218,4 +227,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 — Phase 12 Per-Cell Audio Toggle complete (pending human MP4 audio-fidelity UAT). AUD-01..AUD-07, AUD-09 satisfied; AUD-08 deferred to Phase 14. Next: Phase 13 Text & Sticker Overlay Layer.*
+*Last updated: 2026-04-10 — Phase 14 Mediabunny migration complete (pending human MP4 audio/codec UAT). AUD-05, AUD-06, AUD-07 re-validated via Mediabunny pipeline. Phase 14 is the last phase in milestone v1.2.*

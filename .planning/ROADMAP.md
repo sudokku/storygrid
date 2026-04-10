@@ -79,3 +79,14 @@
 Plans:
 - [x] 14-01-PLAN.md — Remove ffmpeg deps, reinstall mediabunny + aac-encoder, delete transcodeToMp4, remove COOP/COEP headers
 - [x] 14-02-PLAN.md — Rewrite videoExport.ts with Mediabunny pipeline + update Toast/ExportSplitButton/tests (AUD-05, AUD-06, AUD-07)
+
+### Phase 15: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
+
+**Goal:** Replace seekAllVideosTo bottleneck (99.4% of export time) with Mediabunny VideoSampleSink decode pipeline — decode all video frames upfront, draw from sorted in-memory arrays during encode loop
+**Requirements**: VDEC-01..VDEC-07
+**Depends on:** Phase 14
+**Plans:** 2 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Extend export.ts for CanvasImageSource types + test stubs (VDEC-01, VDEC-02, VDEC-03)
+- [ ] 15-02-PLAN.md — Decode pipeline in videoExport.ts + Toast/ExportSplitButton 'decoding' stage (VDEC-04, VDEC-05, VDEC-06, VDEC-07)

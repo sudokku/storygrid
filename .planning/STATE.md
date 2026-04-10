@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 Phase: 14
 Plan: Not started
 Status: Phases 11–13 complete — Phase 14 (Project Persistence) not yet planned
-Last activity: 2026-04-10 - Completed quick task 260410-7sa: Fix video export stuttering/freeze when clips have audio enabled — prefer quality over speed
+Last activity: 2026-04-10 - Completed quick task 260410-aay: Fix avc1 codec description change warning during video recording — switch to avc3 or handle resolution change edge case
 
 Progress: [███████░░░] 75% (3/4 phases)
 
@@ -200,6 +200,7 @@ None yet.
 | 260408-258 | Hide workspace drop ring/pill when dropping a file into a leaf cell | 2026-04-08 | ed15031 | [260408-258-hide-workspace-drop-ring-pill-when-dropp](./quick/260408-258-hide-workspace-drop-ring-pill-when-dropp/) |
 | 260410-61j | Fix overlay z-index so cell hover never overlaps sticker/text/emoji layer; add toggle button to show/hide all overlays | 2026-04-10 | d38e485 | [260410-61j-fix-overlay-z-index-so-cell-hover-never-](./quick/260410-61j-fix-overlay-z-index-so-cell-hover-never-/) |
 | 260410-7sa | Fix video export stuttering/freeze when clips have audio enabled — prefer quality over speed | 2026-04-10 | 1e90ebd | Verified | [260410-7sa-fix-video-export-stuttering-freeze-when-](./quick/260410-7sa-fix-video-export-stuttering-freeze-when-/) |
+| 260410-aay | Fix avc1 codec description change warning during video recording — switch to avc3 or handle resolution change edge case | 2026-04-10 | b4b029a | [260410-aay-fix-avc1-codec-description-change-warnin](./quick/260410-aay-fix-avc1-codec-description-change-warnin/) |
 
 ### Roadmap Evolution
 

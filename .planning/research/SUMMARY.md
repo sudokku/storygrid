@@ -1,238 +1,173 @@
-# Research Summary — StoryGrid
+# Project Research Summary
 
-**Project:** StoryGrid
-**Domain:** Client-side Instagram Story photo/video collage editor (browser-only, zero backend)
-**Researched:** 2026-03-31
-**Confidence:** HIGH (stack pre-decided; architecture patterns verified against official docs; feature landscape cross-referenced against 10+ competing tools)
-
----
+**Project:** StoryGrid v1.3 — Filters, Video Tools & Playback
+**Domain:** Browser-based Instagram Story collage editor — incremental feature milestone
+**Researched:** 2026-04-11
+**Confidence:** HIGH
 
 ## Executive Summary
 
-StoryGrid is a recursive split-tree collage editor targeting the 1080×1920px Instagram Story format. The product differentiator is freeform Figma-style cell splitting — no competitor in the consumer Story space offers this. The recommended build approach is a dual-render DOM architecture: a `transform: scale()` preview canvas for editing alongside a hidden full-resolution 1080×1920px div that `html-to-image` captures at export time. State is managed by Zustand + Immer with separate stores for grid tree (undo-tracked) and editor UI (not undo-tracked). The recursive component tree mirrors the data tree, with every node memoized for surgical re-renders.
+StoryGrid v1.3 is a well-scoped incremental milestone adding seven features to an existing, working codebase: Instagram-style named presets, boomerang per-cell, video trimming per-cell, live audio preview, playback UI redesign, auto-mute detection for no-audio videos, and breadth-first multi-file drop. The critical research finding is that **zero new npm dependencies are required** — every feature is achievable with browser APIs already present in the target browser matrix (Chrome 90+, Firefox 90+, Safari 15+) and the Mediabunny pipeline already integrated in v1.2. This dramatically reduces integration risk compared to a typical new-feature milestone.
 
-The single most important architectural constraint is media handling: all user-uploaded images must be converted to base64 data URIs at upload time, not stored as blob URLs. This one decision prevents three distinct production failures simultaneously — blank exports on first call, CORS canvas tainting, and Safari-specific blank PNG bugs. The second most important constraint is keeping the media registry (data URIs) out of the undo history array; without this separation, a 50-step undo history with 8 cells of imagery consumes ~200MB of JS heap.
+The recommended approach is to build in strict dependency order starting with the data model (four new `LeafNode` fields) before any feature work begins, then tackle the four low-complexity, high-value P1 features first (presets, auto-mute, breadth-first drop, playback UI), then the two MEDIUM-complexity P2 features (live audio, trimming). Boomerang is re-classified as P3/v1.4 due to its HIGH implementation complexity, non-trivial GPU memory management, and tight coupling with the trimming feature that precedes it.
 
-The project brief's phase structure is sound but has one material gap: per-cell pan/zoom (currently in Phase 7) should be promoted to Phase 5. Competitor research confirms that drag-to-reposition within a cell is a table-stakes expectation — without it, photos with off-center subjects will look broken to users the moment they upload their first image. The brief is otherwise well-prioritized. Video (Phase 6) and advanced effects (Phase 7) are correctly deferred.
-
----
+The primary risks are: (1) boomerang's frame-buffer memory pressure on long clips requiring a hard clip-length guard; (2) `AudioContext` autoplay policy violations that silence live audio on first play unless the context is created strictly inside the play-button click handler; (3) Mediabunny timestamp monotonicity — export frame timestamps must always increase even when boomerang source positions reverse; and (4) CSS filter order non-commutativity breaking preset rendering if any code constructs filter strings outside `effectsToFilterString()`. Each has a clear prevention strategy documented in PITFALLS.md.
 
 ## Key Findings
 
-### Stack (Key Decisions)
+### Recommended Stack
 
-The full stack is pre-decided in PROJECT.md. Research confirms all choices are correct and identifies specific version pins and constraints that must be respected.
+No new packages are introduced in v1.3. The existing stack (Vite 8 + React 18 + TypeScript 5.8 + Zustand 5 + Immer 10 + Tailwind CSS v3.4 + Mediabunny) handles all seven features. The browser APIs newly exercised are: `CanvasRenderingContext2D.filter` for additional CSS functions (`sepia()`, `grayscale()`, `hue-rotate()`) already supported in all target browsers; `AudioContext.createMediaElementSource()` for live audio preview; and `HTMLMediaElement.audioTracks` / `mozHasAudio` / `AudioContext.decodeAudioData()` for audio track detection.
 
-**Core technologies:**
-- **Vite ^8.0.2** — build tool; Rolldown-powered, handles WASM loading correctly for Phase 6; use `@vitejs/plugin-react` v6 (Oxc-based, not Babel)
-- **React ^18.3.1** — pin to 18, do not allow upgrade to 19; dnd-kit and html-to-image have unverified React 19 peer dependency support
-- **TypeScript ~5.8.0** — minor-pinned to avoid mid-project type-check behavior changes
-- **Zustand ^5.0.12** — pin to 5.0.12+ specifically; 5.0.9 has a middleware TypeScript regression
-- **Immer ^10.1.x** — must be installed as a direct dependency even though the middleware lives inside the zustand package
-- **Tailwind CSS ^3.4.x** — pin to v3; v4 requires Safari 16.4+ (project targets 15+) and uses a breaking CSS-first config model
-- **html-to-image ^1.11.13** — only viable DOM-to-image library for this use case; `html2canvas` cannot handle `object-fit: cover` or `CSS transform`; `modern-screenshot` is a viable fallback if html-to-image produces rendering artifacts
-- **@dnd-kit/core ^6.3.1** — stable; the new `@dnd-kit/react` adapter is alpha/beta, do not use
-- **nanoid ^5.1.7** — ESM-only at v5; requires Vitest (not CJS Jest)
-- **@ffmpeg/ffmpeg ^0.12.15** — Phase 6 only; lazy-load, never bundle the WASM core; load `@ffmpeg/core` from jsDelivr CDN at runtime
+**Core technologies in play:**
+- `CanvasRenderingContext2D.filter` — CSS filter extension for sepia, grayscale, hue-rotate — supported in Chrome 90+, Firefox 90+, Safari 15+; HIGH confidence
+- `AudioContext` + `MediaElementAudioSourceNode` — live audio preview routing; one shared context, one node per video element; already partially used in export path
+- `Mediabunny VideoSampleSink.samples(startSecs, endSecs)` — bounded frame iteration for trim and boomerang export; MEDIUM confidence (API shape confirmed, TypeScript types unverified)
+- `createImageBitmap()` + rAF frame buffer — boomerang preview; already imported in `videoExport.ts`
+- `playbackRate = -1` — explicitly NOT viable; not supported in Chrome or Firefox (Chromium #46939, Firefox #1468019); frame-buffer reversal is the only cross-browser approach
 
-**What not to use:** Tailwind v4, React 19, html2canvas, dom-to-image, `@dnd-kit/react` (alpha), `@ffmpeg/core-mt` (needs deeper SharedArrayBuffer support), CRA/webpack.
+**What NOT to add:** Any LUT library, `HTMLMediaElement.audioTracks` as primary audio detection (behind flags in Chrome/Firefox), `playbackRate = -1` for boomerang, separate `AudioContext` per cell, `MediaRecorder` for boomerang recording.
 
-See `.planning/research/STACK.md` for full version pinning JSON and detailed rationale.
+### Expected Features
 
----
+**Must have — P1 (table stakes, low complexity):**
+- **Instagram-style named presets** — users know Clarendon, Juno, Lark by name; generic labels read as unfinished; only preset definitions change, not the pipeline
+- **Auto-mute detection + locked toggle** — grayed-out non-interactive VolumeX is standard UX; clickable mute on a no-audio video is confusing
+- **Breadth-first multi-file drop** — dropping 4 files should produce a 2x2 grid, not an L-shape; pure algorithm change in `autoFillCells()`
+- **Playback UI visual redesign** — polish only; no new controls; Tailwind class changes in `PlaybackTimeline.tsx`
 
-### Features (What Users Expect)
+**Should have — P2 (differentiators, medium complexity):**
+- **Live audio preview** — hear actual per-cell audio mix during playback; `MediaElementAudioSourceNode` per unmuted cell; AudioContext lifecycle must be managed carefully
+- **Video trimming per-cell** — clip best 3s of 30s clip without leaving editor; `trimStart`/`trimEnd` on `LeafNode`; sidebar drag-handle UI; export integration via Mediabunny bounded frame iteration
 
-**Table stakes — must be in MVP (Phases 0–5):**
-- Fixed 9:16 canvas (1080×1920) with safe zone guides (on by default)
-- Click-to-upload and drag-to-drop images onto cells
-- Fit vs. fill toggle per cell (`object-fit: cover / contain`)
-- Global gap/spacing slider and border radius slider
-- Preset layout templates as the entry point for new users
-- Undo/redo (Ctrl+Z is a reflex action; tested by Instagram themselves)
-- Background color for canvas (visible through gaps)
-- Export to PNG at full 1080×1920 resolution
-- Export progress indicator (exports take 1–4s; users click again without it)
-- **Pan/zoom within cell — promoted from Phase 7** (see Roadmap Adjustments below)
+**Defer to v1.4 — P3 (high complexity, memory-intensive):**
+- **Boomerang per-cell** — depends on trimming being stable; frame-buffer memory pressure on long clips; GPU memory management non-trivial
+- Per-cell volume slider, waveform visualization, boomerang with live camera capture
 
-**Differentiators — the reasons to choose StoryGrid over competitors:**
-- Recursive arbitrary-depth splitting (no competitor consumer tool offers this)
-- Resizable dividers via drag (exact proportion control)
-- Zero accounts, zero watermarks, no paywall — make this prominent in any landing copy
-- Keyboard shortcuts for all actions (professional tools have this; Story web tools do not)
-- Save/load as portable JSON (no web-based Story tool currently offers this)
+**The six recommended Instagram presets** (sourced from picturepan2/instagram.css): Clarendon, Juno, Lark, Nashville, Lo-fi, Inkwell. PITFALLS.md notes CSS filters cannot replicate LUT-based tone curves — name presets with their own identity rather than Instagram trademarks to avoid user comparison disappointment.
 
-**Should add to Phase 5 — low complexity, high user value:**
-- Swap images between cells by dragging (PicCollage, BeFunky, Fotor all have this; @dnd-kit infrastructure is already in place; not in current brief)
+### Architecture Approach
 
-**Defer without regret:**
-- Video cells + export (Phase 6) — correct deferral; high browser compatibility surface
-- Per-cell CSS filters (Phase 7) — nice-to-have post-MVP
-- Multi-slide stories (Phase 7) — correct deferral; most users are single-frame
+All v1.3 changes integrate into the existing architecture without structural changes. The single-draw-path invariant (`drawLeafToCanvas()` in `src/lib/export.ts`) is preserved — new filter functions flow through `effectsToFilterString()` as before. The `videoElementRegistry` (module-level `Map`, not Zustand) is the shared integration point for both the new live audio hook and the trim/boomerang rAF changes. A new `audioNodeRegistry` and lazy `liveAudioContext` singleton extend the same module-level registry pattern already established in `src/lib/videoRegistry.ts`.
 
-**Anti-features — do not build:**
-- AI layout suggestions, sticker/emoji overlays, direct Instagram publish API, cloud storage, real-time collaboration, AI background removal, animated GIF export
+**Major components touched:**
+1. **`src/types/index.ts` + `src/lib/tree.ts`** — data model foundation; four new `LeafNode` fields (`boomerang`, `trimStart`, `trimEnd`, `hasAudioTrack`) with defaults in `createLeaf()`; two new tree helpers (`getAllLeavesBFS`, `getNodeDepth`)
+2. **`src/lib/effects.ts` + `src/Editor/EffectsPanel.tsx`** — preset redesign; `PresetName` union type renamed; `PRESET_VALUES` updated; `effectsToFilterString()` extended for `sepia()`, `hue-rotate()`, `grayscale()`
+3. **`src/lib/videoExport.ts`** — `makeTimestampGen` extended for trim offset and boomerang triangle-wave; new `computeBoomerangTime()` pure helper; two timestamp concepts kept separate (`sourceTimestamp` vs. `exportTimestamp`)
+4. **`src/hooks/usePlaybackAudio.ts`** — new hook mounted once from `EditorShell`; creates `AudioContext` on first play gesture; wires `MediaElementAudioSourceNode` per unmuted video cell; tears down on pause
+5. **`src/lib/detectAudioTrack.ts`** — new module; async detection via `loadedmetadata`; combined `mozHasAudio || audioTracks.length` check; safe fallback `resolve(true)` on ambiguous result
+6. **`src/lib/media.ts`** — `autoFillCells()` rewritten to BFS traversal + depth-based alternating H/V splits
 
-**JSON schema note:** The tree data shape for Phase 1 must be designed with Phase 7 save/load in mind from day one. `File` objects and blob URLs cannot be serialized to JSON — the `mediaId` → `dataUri` registry pattern handles this correctly.
+**Known v1.3 limitation:** `buildVideoStreams` creates one Mediabunny decoder `Input` per unique `mediaId`. Boomerang and trim for a `mediaId` shared across two cells apply uniformly. Per-cell trim for shared mediaIds is deferred to a future milestone.
 
-See `.planning/research/FEATURES.md` for full feature table with complexity and brief-alignment status.
+### Critical Pitfalls
 
----
+1. **CSS filter order non-commutativity** — `brightness(1.2) saturate(1.5)` differs visually from `saturate(1.5) brightness(1.2)`. All filter strings must flow through `effectsToFilterString()` in `effects.ts`; never construct filter strings inline. Lock contract tests before tuning preset values. *Phase: preset redesign.*
 
-### Architecture (How to Build It)
+2. **Boomerang export timestamp monotonicity** — MP4 `exportTimestamp` (`i / FPS`) must always increase monotonically even when boomerang `sourceTimestamp` reverses. Conflating these two concepts causes Mediabunny to receive non-monotonic PTS values and produce corrupt output. Document them separately; add an assertion in the export loop. *Phase: boomerang export.*
 
-The component hierarchy mirrors the data tree. Two `<GridNode root>` instances share the same Zustand store: one inside a `transform: scale()` preview wrapper for editing, one in a `position: absolute; left: -9999px` export surface at native 1080×1920px resolution. This dual-render approach avoids the complexity of a manual canvas drawing fallback while producing pixel-perfect exports.
+3. **`AudioContext` autoplay suspension** — a context created outside a user gesture starts in `suspended` state and produces silence. Create the `AudioContext` synchronously inside the play button click handler; call `ctx.resume()` on every play press (Safari requires this unconditionally). Never create in `useEffect` or module initializer. *Phase: live audio preview.*
 
-**Major components:**
-1. **GridNode** — thin type dispatcher; renders `ContainerNode` or `LeafNode` based on node type; must be `React.memo`
-2. **ContainerNode** — `display: flex` with weighted `flex` sizing via `sizes: number[]` array; renders `Divider` between siblings; must be `React.memo` with shallow `childrenIds` comparison
-3. **LeafNode** — media display (`object-fit`), empty state, hover actions; must be `React.memo` comparing `mediaUrl + isSelected + fitMode`
-4. **Divider** — pointer events drag handler; buffers delta in `useRef`, dispatches `resizeSiblings` on `pointerup` (or rAF-throttled); uses `setPointerCapture` for capture on fast drags
-5. **CanvasWrapper** — applies `transform: scale()` fitted to viewport; `will-change: transform` promotes to compositing layer
-6. **ExportSurface** — always mounted, `visibility: hidden`; targeted by `html-to-image.toPng()`; must never inherit the preview's scale transform
-7. **gridStore** — Zustand + Immer; owns tree + undo/redo history; snapshots use `structuredClone`, capped at 50 entries; stores `mediaId` references, not data URIs
-8. **editorStore** — Zustand; owns `selectedNodeId`, `zoom`, `showSafeZone`, `tool`, `isExporting`; no undo history
+4. **Rapid play/pause creates orphaned `MediaElementAudioSourceNode`s** — this is a singleton per `HTMLVideoElement`; connecting the same element twice throws `InvalidStateError`. Create nodes once per element, gate on/off via `gainNode.gain` or `video.muted`, never by connect/disconnect cycling. *Phase: live audio preview.*
 
-**Key patterns:**
-- Every node subscribes to its own slice only (`useGridStore(s => findNode(s.root, nodeId))`), never the whole tree
-- All mutations via Zustand actions directly from event handlers; no drilled callbacks (prevents stale closure corruption)
-- Pure tree functions (`splitNodePure`, `removeNodePure`, etc.) are side-effect free and return new values; Zustand action handler applies to Immer draft
-- Node keys always by ID, never array index
+5. **Snapshot field compatibility + Immer draft order** — history snapshots predate new fields; restored snapshots have `undefined` for new fields. Use `leaf.boomerang ?? false` everywhere. Follow strict action order: `current(state.root)` -> guard -> `pushSnapshot` -> mutate. *Phase: every phase adding new fields or store actions.*
 
-See `.planning/research/ARCHITECTURE.md` for full component code patterns, memoization strategy, and build order dependencies.
+## Implications for Roadmap
 
----
+Based on dependency order from ARCHITECTURE.md and complexity tiers from FEATURES.md:
 
-### Critical Pitfalls (Must-Read Before Building)
+### Phase 1: Data Model Foundation
+**Rationale:** Every other v1.3 feature depends on new `LeafNode` fields; build this first to unblock all subsequent phases and establish snapshot compatibility patterns.
+**Delivers:** Four new `LeafNode` fields with defaults in `createLeaf()`; two new tree helpers (`getAllLeavesBFS`, `getNodeDepth`); new store actions (`toggleBoomerang`, `setTrimPoints`, audio track detection action); `computeBoomerangTime()` pure helper unit-tested; snapshot compatibility verified.
+**Addresses:** Snapshot compatibility pitfall (Pitfall 11); Immer draft ordering pitfall (Pitfall 12).
 
-1. **html-to-image blank PNG on first call** — The library races resource fetching against SVG serialization. Images stored as blob URLs are particularly vulnerable. Prevention: convert all images to base64 data URIs at upload time; call `toPng()` twice and discard the first result; cache `getFontEmbedCSS()` at app load. Applies: Phase 3 (upload) and Phase 4 (export).
+### Phase 2: Instagram-Style Named Presets
+**Rationale:** Self-contained; highest user-visible impact per effort unit; no cross-feature dependencies; unblocks visual validation of the effects pipeline.
+**Delivers:** Six named presets replacing the six generic ones; `effectsToFilterString()` extended for `sepia()`, `hue-rotate()`, `grayscale()`; contract tests updated.
+**Uses:** `CanvasRenderingContext2D.filter` (already in pipeline); `picturepan2/instagram.css` filter values.
+**Avoids:** CSS filter order non-commutativity (Pitfall 1) — lock test contracts before tuning values; CSS-only vs. LUT fidelity gap (Pitfall 2) — use non-trademark preset names.
 
-2. **Media stored in undo history snapshots = 200MB heap** — Every history snapshot is a `structuredClone` of the full tree. If base64 image data is in the tree, each 8-cell canvas with ~500KB images per cell produces ~4MB snapshots, hitting ~200MB at 50 steps. Prevention: store only a `mediaId` string in tree nodes; keep `mediaRegistry: Record<id, dataUri>` in a separate store slice excluded from undo history. Design this in Phase 1 — retrofitting is painful. Applies: Phase 1 (store design).
+### Phase 3: Auto-Mute Detection
+**Rationale:** Low complexity; depends only on Phase 1 data model; prevents a confusing UX state for video-heavy users; unblocks live audio preview which relies on `audioEnabled` state being trustworthy.
+**Delivers:** `detectAudioTrack.ts` module; async detection on upload via `loadedmetadata`; locked VolumeX toggle (`opacity-40`, `cursor-not-allowed`, `pointer-events: none`) when `hasAudioTrack === false`.
+**Avoids:** Audio track detection timing pitfall (Pitfall 9) — must run inside `loadedmetadata`, not synchronously after `createObjectURL`.
 
-3. **Video elements always render blank in html-to-image** — The SVG serialization path cannot capture `<video>` frames. Prevention: never call `toPng()` on a container with live `<video>` children; Phase 6 video export must use the ffmpeg.wasm `xstack` path exclusively; branch the export function on whether any cells contain video. Applies: Phase 4 (confirm image-only) and Phase 6 (ffmpeg-only).
+### Phase 4: Breadth-First Multi-File Drop
+**Rationale:** Self-contained pure algorithm change after Phase 1; high UX impact on first-use flow for users dropping multiple files.
+**Delivers:** `getAllLeavesBFS()` and `getNodeDepth()` in `tree.ts`; `autoFillCells()` rewritten to BFS traversal; alternating H/V splits by depth; BFS targets only `mediaId === null` leaves — no restructuring of filled cells.
+**Avoids:** BFS drop + existing tree nesting pitfall (Pitfall 10) — only split empty leaves, never occupied ones.
 
-4. **ffmpeg.wasm COOP/COEP headers break third-party resources in MVP** — `SharedArrayBuffer` requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp/credentialless`. COEP blocks any sub-resource (Google Fonts, external CDN images, analytics) that does not serve `CORP` headers. Prevention: do NOT add COOP/COEP headers until Phase 6; use `credentialless` mode (not `require-corp`) when enabling; self-host all fonts before Phase 6; lazy-load the 25MB WASM behind user interaction. Applies: Phase 6 only.
+### Phase 5: Playback UI Visual Redesign
+**Rationale:** Pure CSS/layout change with no deps; deliver alongside other P1 features so all four ship together; no new controls reduces scope creep risk.
+**Delivers:** Redesigned `PlaybackTimeline.tsx` — semi-transparent dark overlay, 2–3px scrubber track, 10–14px thumb with scale-on-drag, monospace time counter, 40–44px play/pause button.
+**Uses:** Tailwind CSS v3.4 only; no new libraries.
 
-5. **Safari `overflow: hidden` + `border-radius` breaks with CSS transforms** — Safari does not clip children when a transform is on a descendant, causing cell images to overflow their borders visually. Prevention: add `isolation: isolate` to every LeafNode container that combines `overflow: hidden` with `border-radius`. Also: the export div must use `position: absolute; left: -9999px` (not `transform: translateX`) and must never inherit the preview's `scale()` transform. Applies: Phase 2 (rendering) and Phase 4 (export surface).
+### Phase 6: Live Audio Preview
+**Rationale:** P2 MEDIUM complexity; depends on auto-mute detection (Phase 3) being correct so `audioEnabled` state is reliable; ships before trimming since both features interact with playback state.
+**Delivers:** `usePlaybackAudio.ts` hook mounted once from `EditorShell`; shared `AudioContext` singleton created on play gesture; per-cell `MediaElementAudioSourceNode` wired to `ctx.destination`; audio torn down on pause.
+**Avoids:** AudioContext autoplay suspension (Pitfall 7); orphaned AudioNode proliferation (Pitfall 8).
 
-6. **@dnd-kit DndContext re-renders entire tree on every pointer move** — `DndContext` context value change triggers re-renders on all consumers regardless of `React.memo`. Prevention: dividers use raw pointer events only (completely bypasses dnd-kit); `DndContext` scope is kept as narrow as possible (wrapping only active drop zones, not the full canvas). Applies: Phase 2 and Phase 3.
+### Phase 7: Video Trimming Per-Cell
+**Rationale:** P2 MEDIUM-HIGH complexity; depends on Phase 1 data model and Phase 6 rAF loop patterns being stable (both touch `LeafNode.tsx`); highest user value for video-heavy workflows.
+**Delivers:** Sidebar trim panel with dual drag handles; `trimStart`/`trimEnd` on `LeafNode`; `recomputeTotalDuration()` trim-aware; export integration via `makeTimestampGen` offset; `effectiveDuration` correctly drives master timeline max.
+**Avoids:** Trim total duration mismatch (Pitfall 6); trim GOP alignment latency (Pitfall 5) — accepted cost, no pre-seek workaround.
 
-See `.planning/research/PITFALLS.md` for full pitfall list including moderate and minor issues.
+### Phase Ordering Rationale
 
----
-
-## Roadmap Adjustments Recommended
-
-### Adjustment 1: Promote pan/zoom from Phase 7 to Phase 5
-
-**Brief:** Phase 7 includes "Cell zoom & pan: drag to reposition, scroll to scale within cell."
-**Finding:** Every grid collage tool reviewed (TurboCollage, BeFunky, Canva, PhotoJoiner) treats drag-to-reposition as table stakes. Without it, uploaded portrait photos in landscape cells — or vice versa — will have the subject cropped to a corner. Users encounter this on their first upload.
-
-**Recommendation:** Move core pan/zoom (drag to update `object-position`, scroll to adjust scale) to Phase 5 or treat as a late Phase 3 addition. The full UX convention is: click a selected cell again to enter pan mode; drag to reposition; Escape or click outside to exit.
-
----
-
-### Adjustment 2: Add cell-swap-by-drag to Phase 5
-
-**Brief:** Not mentioned.
-**Finding:** BeFunky, PicCollage, Fotor, and others support dragging a filled image from one cell to another to swap. Users discover it by trying it. The @dnd-kit infrastructure is already in place.
-
-**Recommendation:** Add "swap cells by dragging" as a Phase 5 addition. Low implementation effort given existing DnD infrastructure; high user value.
-
----
-
-### Adjustment 3: Design mediaId registry in Phase 1, not Phase 7
-
-**Brief:** Save/load is Phase 7. No mention of registry pattern in Phase 1.
-**Finding:** The undo history memory explosion (Pitfall 8) and JSON serialization requirement for save/load (Pitfall 7 note) both demand that `MediaItem` in the tree stores a `mediaId` string, not a data URI. The actual URI lives in a separate registry outside undo history.
-
-**Recommendation:** Introduce the `mediaId` / `mediaRegistry` split in Phase 1 type definitions and store design, even though save/load ships in Phase 7. The tree JSON schema must be clean from the first commit.
-
----
-
-### Phase Structure Assessment
-
-The original 8-phase structure (0–7) is well-ordered with one exception (pan/zoom placement). Dependencies research confirms the ordering:
-
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 0 — Scaffolding | Correct | Standard patterns; no research needed |
-| Phase 1 — Grid Tree Engine | Correct + needs amendment | Add mediaId/registry split to type design |
-| Phase 2 — Grid Rendering | Correct | Add `isolation: isolate` Safari fix, Divider pointer capture |
-| Phase 3 — Media Upload | Correct | Must convert to data URI at upload; never store blob URLs |
-| Phase 4 — Export Engine | Correct | Double-call toPng; pre-convert images; export surface isolation |
-| Phase 5 — Polish & UX | Correct + additions | Add pan/zoom (from Phase 7) + cell swap (new) |
-| Phase 6 — Video Support | Correct | Enable COOP/COEP here only; ffmpeg lazy-load |
-| Phase 7 — Effects & Advanced | Correct | Pan/zoom removed (moved to Phase 5) |
-
----
+- Phase 1 (data model) must precede all others due to field dependencies.
+- Phases 2–5 are largely independent after Phase 1 and could be parallelized; sequencing them by value/risk for single-developer execution.
+- Phase 6 (live audio) precedes Phase 7 (trimming) because both modify `LeafNode.tsx`'s rAF loop and playback teardown; having the audio hook stable first simplifies trimming integration.
+- Boomerang excluded from this roadmap (deferred to v1.4) — depends on Phase 7 trimming being stable; adds significant GPU memory management complexity; `makeTimestampGen` being modified by Phase 7 creates unnecessary merge conflict risk if boomerang is attempted simultaneously.
 
 ### Research Flags
 
-**Phases needing deeper research during planning:**
+Phases requiring verification during execution:
+- **Phase 6 (Live Audio):** `MediaElementAudioSourceNode` single-connection constraint needs explicit cross-browser testing on Safari 15; Safari's `ctx.resume()` behavior on every play press — verify in-browser before shipping.
+- **Phase 7 (Trimming):** Mediabunny `VideoSampleSink.samples(startSecs, endSecs)` parameter types are MEDIUM confidence. Read actual Mediabunny `.d.ts` files before writing export integration.
 
-- **Phase 6 (Video Support):** Complex integration — SharedArrayBuffer + COOP/COEP header configuration for Vercel/Netlify, ffmpeg.wasm `xstack` filter usage, playback sync across multiple `<video>` elements. Warrants `/gsd:research-phase` before building.
-- **Phase 7 (Save/Load):** The `persist` middleware behavior changed in Zustand v5 (initial state no longer stored at creation). localStorage quota with base64 registry needs validation. Warrants investigation during Phase 7 planning.
-
-**Phases with standard patterns (skip research-phase):**
-
-- **Phase 0 (Scaffolding):** Vite + React + TypeScript + Tailwind setup is fully documented; no surprises.
-- **Phase 1 (Grid Tree Engine):** Pure TypeScript tree types and Zustand + Immer store — well-documented, no novel patterns.
-- **Phase 2 (Grid Rendering):** Recursive React component tree with `React.memo` — established pattern; architecture file provides code-level guidance.
-- **Phase 3 (Media Upload):** File API, `FileReader.readAsDataURL`, native drag events — standard browser APIs.
-- **Phase 4 (Export Engine):** html-to-image integration patterns thoroughly documented in PITFALLS.md and ARCHITECTURE.md.
-- **Phase 5 (Polish & UX):** CSS variables, slider controls, template presets — no research needed.
-
----
+Phases with standard, well-documented patterns (no additional research needed):
+- **Phase 2 (Presets):** CSS filter values sourced from authoritative open-source library; browser support HIGH from MDN.
+- **Phase 3 (Auto-mute):** `loadedmetadata` async pattern already established in codebase (`captureVideoThumbnail`).
+- **Phase 4 (BFS drop):** Pure tree algorithm; no browser API uncertainty; unit-testable as a pure function.
+- **Phase 5 (Playback UI):** Tailwind-only; no API surface changes.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All choices verified against official docs; version pins confirmed against changelogs and peer dependency matrices |
-| Features | HIGH | Cross-referenced against 10+ live tools (BeFunky, Canva, TurboCollage, Unfold, PicCollage, Fotor, PhotoJoiner, Adobe Express) |
-| Architecture | HIGH | Patterns verified against official React, Zustand, and html-to-image documentation; code patterns confirmed against FlexLayout reference implementation |
-| Pitfalls | HIGH | Sourced from specific GitHub issues with issue numbers; all critical pitfalls have documented community workarounds |
+| Stack | HIGH | No new dependencies; all browser APIs verified on MDN and caniuse for target matrix |
+| Features | HIGH | Filter values from authoritative CSS source; audio/video detection from MDN + VideoJS issue tracker |
+| Architecture | HIGH | Derived from direct codebase reading, not inference; all integration points verified against actual source files |
+| Pitfalls | HIGH | Browser bug tracker references (Chromium #46939, Firefox #1468019); W3C filter spec for order non-commutativity; MDN autoplay policy |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **html-to-image vs modern-screenshot decision:** If html-to-image produces rendering artifacts in Phase 4 testing (CSS blur filters, complex border-radius clipping), swap to `modern-screenshot@^4.6.8`. Validate in Phase 4 before declaring the export engine stable. API is nearly identical.
-- **Divider drag-to-store commit strategy:** Two valid patterns exist — (a) commit on every rAF tick for live preview, (b) commit only on `pointerup` for cleaner undo history. Decide in Phase 2 based on perceived responsiveness. Option (a) is more expected by users; option (b) means each resize is a single undo step.
-- **Pan/zoom UX mode-entry interaction:** Brief says "drag to reposition, scroll to scale" but does not specify how the user enters pan mode. Research-confirmed convention is: click already-selected cell → enter pan mode (visual indicator); Escape or click outside → exit. Implement this exact model to prevent accidental repositioning during selection.
-- **Export double-call performance:** The documented font-embedding workaround calls `toPng()` twice, doubling export time. On a complex 8-cell canvas this could mean 2–4s total. Validate in Phase 4; show "Preparing…" → "Exporting…" in the progress indicator to mask the delay.
-
----
+- **Mediabunny `VideoSampleSink` TypeScript types:** API shape confirmed from docs but TypeScript parameter names and return types are MEDIUM confidence. Read Mediabunny's `.d.ts` files at the start of Phase 7.
+- **Safari `AudioContext` behavior:** Safari 15's autoplay policy requires `ctx.resume()` on every play press even when `ctx.state === 'running'`. Verify in-browser at the start of Phase 6.
+- **Chrome audio detection check:** FEATURES.md mentions `webkitAudioDecodedByteCount` as more reliable than `audioTracks` for some Chrome formats. Validate the combined check order (`mozHasAudio || audioTracks.length || webkitAudioDecodedByteCount`) before shipping Phase 3.
+- **`computeBoomerangTime()` triangle-wave math:** Write and test this pure function in Phase 1 so it is a verified primitive available for both preview and export. Do not defer to the boomerang feature phase.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Vite 8 release: https://vite.dev/blog/announcing-vite8
-- Zustand v5 migration guide: https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-- Tailwind v4 upgrade guide: https://tailwindcss.com/docs/upgrade-guide
-- React.memo — https://react.dev/reference/react/memo
-- Zustand Immer middleware — https://zustand.docs.pmnd.rs/reference/integrations/immer-middleware
-- html-to-image GitHub — https://github.com/bubkoo/html-to-image
-- FlexLayout reference implementation — https://github.com/caplin/FlexLayout
-- React Compiler 1.0 stable (React 19) — https://www.infoq.com/news/2025/12/react-compiler-meta/
+- picturepan2/instagram.css (raw distributed file) — Clarendon, Juno, Lark, Nashville, Lo-fi, Inkwell filter values
+- MDN — `CanvasRenderingContext2D.filter`, `AudioContext.createMediaElementSource`, `HTMLMediaElement.audioTracks`, Web Audio API autoplay policy
+- Chromium bug #46939 — negative `playbackRate` unsupported in Chrome
+- Mozilla bug #1468019 — negative `playbackRate`, no implementation plans
+- W3C filter-effects spec — CSS filter application order is sequential left-to-right
+- StoryGrid codebase (direct reading) — `src/lib/effects.ts`, `src/lib/export.ts`, `src/lib/videoExport.ts`, `src/lib/media.ts`, `src/lib/tree.ts`, `src/store/gridStore.ts`, `src/types/index.ts`, `src/Grid/LeafNode.tsx`, `src/Editor/PlaybackTimeline.tsx`
 
 ### Secondary (MEDIUM confidence)
-- modern-screenshot npm (drop-in html-to-image alternative) — https://www.npmjs.com/package/modern-screenshot
-- @dnd-kit maintenance discussion — https://github.com/clauderic/dnd-kit/issues/1830
-- @dnd-kit unnecessary re-renders — https://github.com/clauderic/dnd-kit/issues/389
-- Zustand re-render optimization — https://dev.to/eraywebdev/optimizing-zustand-how-to-prevent-unnecessary-re-renders-in-your-react-app-59do
-- TurboCollage pan/zoom UX — https://www.turbocollage.com/6-photo-collage.html
-- BeFunky collage features — https://www.befunky.com/features/collage-maker/
-- Canva Instagram Stories guide — https://www.canva.com/learn/instagram-stories/
-- Icecream Apps best collage makers 2025 — https://icecreamapps.com/learn/best-free-collage-makers.html
-- COEP credentialless — https://blog.tomayac.com/2025/03/08/setting-coop-coep-headers-on-static-hosting-like-github-pages/
-- Zundo undo middleware — https://github.com/charkour/zundo
+- Mediabunny docs — `VideoSampleSink.samples(startSecs, endSecs)` bounded iteration confirmed; TypeScript type names unverified
+- Paul Kinlan — boomerang frame-buffer approach: https://paul.kinlan.me/simple-boomerang-video/
+- Cloudinary boomerang blog — forward + reversed frame concatenation pattern
+- VideoJS GitHub issue #7096 — browser-specific `audioTracks` behavior differences
 
 ### Tertiary (LOW confidence)
-- Font double-render workaround — community pattern from html-to-image GitHub issues; not officially documented; validated by multiple independent reporters
-- Zustand v5.0.9 middleware TypeScript regression — GitHub Discussion #3331; fix confirmed in 5.0.12
+- caniuse — `HTMLMediaElement.audioTracks` behind flags in Chrome/Firefox; conclusion is HIGH confidence, specific flag names in current browser versions are LOW
 
 ---
-*Research completed: 2026-03-31*
+*Research completed: 2026-04-11*
 *Ready for roadmap: yes*

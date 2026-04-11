@@ -594,13 +594,12 @@ export async function exportVideoGrid(
         recentFrameTimes.push(lastFrameMs);
         if (recentFrameTimes.length > 30) recentFrameTimes.shift();
       }
-      emitMetrics('encoding', i + 1, totalFrames);
-
       // Release bitmaps immediately after encode — key to memory savings.
       for (const b of bitmapsToClose) {
         b.close();
         activeBitmaps--;
       }
+      emitMetrics('encoding', i + 1, totalFrames);
 
       // WR-01 FIX: use (i+1) so progress reaches 100% on the last frame.
       onProgress('encoding', Math.round(((i + 1) / totalFrames) * 100));

@@ -238,6 +238,7 @@ export function ExportSplitButton() {
     hasVideos,
     root,
     mediaRegistry,
+    mediaTypeMap,
     exportFormat,
     exportQuality,
     setIsExporting,

@@ -280,9 +280,9 @@ The `overlays ?? []` guard is the established pattern for handling snapshots tak
 |---|-------|---------|---------------|
 | A1 | Adding `hasAudioTrack` to `moveLeafToEdge`'s `sourceContent` capture is in scope for Phase 17 | Common Pitfalls §3 | Low risk in Phase 17 (all values are `true`); high risk in Phase 19 if not fixed — a Phase 19 task can address it instead |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should moveLeafToEdge copy hasAudioTrack?**
+1. **Should moveLeafToEdge copy hasAudioTrack?** (RESOLVED: out of scope for Phase 17)
    - What we know: Currently copies `mediaId, fit, backgroundColor, panX, panY, panScale, objectPosition, effects`. All these are content fields. `audioEnabled` is NOT copied (noted in Phase 9 decisions). `hasAudioTrack` is a detection result, not user-set content.
    - What's unclear: Is `hasAudioTrack` "content" (should follow the media) or "structural" (set at upload time, independent of position)? Phase 19 sets it at upload time — it is tied to the media, not the cell position.
    - Recommendation: `hasAudioTrack` SHOULD follow the media (like `audioEnabled`). But since `audioEnabled` itself is not copied in `moveLeafToEdge`, consistency argues for not copying it in Phase 17 either. Phase 19 can address both when it adds detection logic. Treat this as out of scope for Phase 17.

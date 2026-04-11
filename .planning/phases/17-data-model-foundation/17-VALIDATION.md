@@ -48,7 +48,7 @@ created: 2026-04-11
 
 ## Wave 0 Requirements
 
-- [ ] `src/store/__tests__/leafNode.hasAudioTrack.test.ts` — tests for MUTE-04 (hasAudioTrack field, undo/redo, snapshot compatibility)
+- [ ] `src/test/phase17-has-audio-track.test.ts` — tests for MUTE-04 (hasAudioTrack field, undo/redo, snapshot compatibility)
 
 *All new tests live in Wave 0 before any implementation tasks.*
 

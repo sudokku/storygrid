@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Effects, Overlays & Persistence
 status: completed
-stopped_at: Phase 15 complete — VideoSampleSink decode pipeline shipped
-last_updated: "2026-04-11T00:00:00.000Z"
+stopped_at: Phase 16 context gathered
+last_updated: "2026-04-11T11:08:47.283Z"
 last_activity: 2026-04-11
 progress:
   total_phases: 5
@@ -217,8 +217,8 @@ None active. Phase 7 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-10T22:22:26.686Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-replace-htmlvideoelement-seeking-with-webcodecs-videodecoder/15-CONTEXT.md
+Last session: 2026-04-11T11:08:47.280Z
+Stopped at: Phase 16 context gathered
+Resume file: .planning/phases/16-export-metrics-panel/16-CONTEXT.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

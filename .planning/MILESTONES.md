@@ -1,5 +1,26 @@
 # Milestones
 
+## v1.2 Effects, Overlays & Persistence (Shipped: 2026-04-11)
+
+**Phases completed:** 6 phases (11–16), 17 plans
+**Timeline:** 2026-04-09 → 2026-04-11 (3 days)
+**Git range:** `v1.1..HEAD` (144 commits, 181 files changed, +28,101 / −1,094)
+
+**Key accomplishments:**
+
+1. **Per-cell visual effects layer** — 6 preset filters (B&W, Sepia, Vivid, Fade, Warm, Cool) + 4 sliders (brightness/contrast/saturation/blur); single-hook `drawLeafToCanvas` path guarantees preview ≡ PNG ≡ MP4 parity with drag-to-one-undo semantics
+2. **Per-cell audio toggle with Web Audio mixing** — `audioEnabled` on LeafNode; ActionBar + Sidebar toggle surfaces; full `AudioContext` → `MediaElementAudioSourceNode` → `MediaStreamAudioDestinationNode` graph; AUD-06 zero-audio MP4 skip path
+3. **Text/emoji/sticker overlay system** — Global overlay layer with free-position drag, corner-handle resize, rotation; `overlayStore` with 8 actions; `stickerRegistry` side-channel; undo integration; export in PNG and MP4
+4. **ffmpeg.wasm eliminated — Mediabunny direct MP4 pipeline** — Removed `@ffmpeg/ffmpeg`; no COOP/COEP headers; Mediabunny CanvasSource + AudioBufferSource + OfflineAudioContext; VP9/AVC codec selection; non-fatal AAC fallback toast
+5. **Decode-then-encode via Mediabunny VideoSampleSink** — Replaced frame-by-frame seeking (99.4% of export time) with upfront decode via Mediabunny's higher-level API; sequential decode bounds peak GPU memory; `findSampleForTime()` O(log n) lookup
+6. **Export Metrics Panel** — 17-field `ExportMetrics` interface; ref-based 250ms polling; Shift+M toggle; `VITE_ENABLE_EXPORT_METRICS` feature flag for zero production cost
+
+**Deferred to v1.3:** PERS-01..PERS-12 (Project Persistence), AUD-08 (persist audio state) — Phase 14 slot was repurposed for Mediabunny migration.
+
+**Archived:** `.planning/milestones/v1.2-ROADMAP.md`, `.planning/milestones/v1.2-REQUIREMENTS.md`
+
+---
+
 ## v1.1 UI Polish & Bug Fixes (Shipped: 2026-04-08)
 
 **Phases completed:** 4 phases (7–10), 11 plans

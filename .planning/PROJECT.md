@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.2 Effects, Overlays & Persistence in progress (started 2026-04-09); Phase 11 Effects & Filters shipped 2026-04-09. v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and MediaRecorder video export; v1.1 polished the editing experience with portal-based ActionBar (always-accessible cell controls at any size), safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 kicked off with per-cell effects and presets (6 presets + 4 sliders + 2 reset buttons) rendered via a single-hook `drawLeafToCanvas` path that guarantees preview ≡ PNG ≡ MP4 parity.
+**Current State:** v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
 
 ## Core Value
 
@@ -121,31 +121,36 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ⏳ AUD-08 (persist `audioEnabled` in project file) deferred to Phase 14 Project Persistence — Phase 12 delivers only the data-model precondition
 - ⏳ Human-UAT pending: audio fidelity in exported MP4 + ffprobe no-audio-track confirmation (12-HUMAN-UAT.md)
 
+**Phase 13 — Text & Sticker Overlay Layer** (v1.2)
+- ✓ Overlay type union (TextOverlay, EmojiOverlay, StickerOverlay) with VISUAL CENTER coordinate convention — v1.2
+- ✓ Zustand+Immer `overlayStore` with 8 actions; `stickerRegistry` side-channel mirrors `mediaRegistry` — v1.2
+- ✓ OverlayLayer rendering above the grid; drag, corner-handle resize, rotation handle; `pointer-events-none` on non-selected overlays — v1.2
+- ✓ Text overlay inline editing + styling controls (font family/size/color/weight/alignment) — v1.2
+- ✓ Emoji picker panel + custom PNG/SVG image sticker upload with DOMPurify sanitization — v1.2
+- ✓ Export integration: overlays rendered at 1080×1920 in both PNG and MP4 export paths (OVL-16) — v1.2
+- ✓ Overlay selection mutually exclusive with cell selection (OVL-15); Delete key + trash button for removal (OVL-13) — v1.2
+
 **Phase 14 — Migrate video export to Mediabunny** (v1.2)
-- ✓ `@ffmpeg/ffmpeg` and `@ffmpeg/util` removed; `mediabunny@^1.40.1` and `@mediabunny/aac-encoder@^1.40.1` installed (AUD-05, AUD-06, AUD-07) — v1.2
-- ✓ `src/lib/transcodeToMp4.ts` deleted; `vercel.json` and `public/_headers` deleted (no COOP/COEP headers) — v1.2
-- ✓ `videoExport.ts` rewritten: Mediabunny `CanvasSource`+`AudioBufferSource` pipeline, OfflineAudioContext audio mixing, VP9/AVC codec selection, D-03 non-fatal audio fallback via `onWarning` callback, VideoEncoder guard — v1.2
-- ✓ `Toast.tsx` updated with `audio-warning` state (amber); `ExportSplitButton.tsx` wires `onWarning` callback — v1.2
+- ✓ `@ffmpeg/ffmpeg` and `@ffmpeg/util` removed; `mediabunny@^1.40.1` and `@mediabunny/aac-encoder@^1.40.1` installed — v1.2
+- ✓ `src/lib/transcodeToMp4.ts` deleted; COOP/COEP headers removed from `vercel.json` and `public/_headers` — v1.2
+- ✓ `videoExport.ts` rewritten: Mediabunny `CanvasSource`+`AudioBufferSource` pipeline, OfflineAudioContext audio mixing, VP9/AVC codec selection, non-fatal AAC fallback via `onWarning` callback — v1.2
 - ✓ 628 tests pass / 2 skipped; zero COOP/COEP dependency — v1.2
-- ⏳ Human-UAT pending: MP4 audio mix playback, no-audio-track confirmation, D-03 warning toast, Firefox VP9 codec (14-HUMAN-UAT.md)
+
+**Phase 15 — Mediabunny VideoSampleSink Decode Pipeline** (v1.2)
+- ✓ Extended `export.ts` to handle `VideoFrame` and `OffscreenCanvas` as `CanvasImageSource` drawable types — v1.2
+- ✓ Replaced frame-by-frame seeking (99.4% of export time) with Mediabunny `VideoSampleSink` decode-then-encode: all frames decoded upfront, drawn directly during encode loop — v1.2
+- ✓ Sequential per-video decode bounds peak GPU memory to one video at a time; `findSampleForTime()` O(log n) frame lookup; GPU memory cleanup in `finally` block — v1.2
+
+**Phase 16 — Export Metrics Panel** (v1.2)
+- ✓ `ExportMetrics` interface with 17 fields (timing, throughput, JS heap, active bitmaps/frames, device info) — v1.2
+- ✓ `videoExport.ts` instrumented with local counters and `performance.mark` calls via optional `onMetrics` callback — v1.2
+- ✓ `ExportMetricsPanel` component: fixed overlay, ref-based 250ms polling (no React re-renders per frame), Shift+M toggle, collapse/expand — v1.2
+- ✓ Feature-flagged via `VITE_ENABLE_EXPORT_METRICS`; Vite tree-shaking = zero production cost — v1.2
+- ✓ Human-verified on 749-frame export — no memory leaks — v1.2
 
 ### Active
 
-## Current Milestone: v1.2 Effects, Overlays & Persistence
-
-**Goal:** Expand StoryGrid from a layout/export tool into a full creative editor — add per-cell visual effects, a global overlay layer for text and stickers, project persistence, and per-cell audio toggle on video export.
-
-**Target features:**
-- **Effects & filters (per-cell)** — Preset filters (B&W, sepia, vivid, fade, warm, cool, etc.) + manual sliders (brightness, contrast, saturation, blur). Applied per leaf cell, non-destructive, rendered in the canvas preview loop and in exports.
-- **Text & stickers (global overlay layer)** — New overlay data model above the grid tree. Three overlay types: text (font/size/color/weight/position), emoji (picker → sticker), image stickers (user-uploaded PNG/SVG). Free-position, drag/resize/rotate/delete. Renders in both PNG and MP4 export.
-- **Project persistence (localStorage + file)** — Auto-save current project to localStorage on every change; named multi-project management (save/load/rename/delete); export/import `.storygrid` JSON file for sharing. Blob-URL media handling strategy TBD (likely base64 embed).
-- **Per-cell audio toggle on video export** — Each video cell has an audio on/off toggle with a speaker/muted icon (ActionBar + sidebar). On export, only cells with audio enabled contribute source audio to the MP4 mix. Defaults: new video → audio on. Simple and explicit — no background music, no mixing UI beyond the toggle.
-
-**Deferred to future milestones:**
-- Per-cell CSS filters beyond the agreed preset/slider set (hue-rotate, opacity, etc. — evaluate after v1.2 ships)
-- Aspect ratio presets: 9:16 (default), 1:1 (1080×1080), 4:5 (1080×1350)
-- Multi-slide stories: add/remove/reorder pages, batch export
-- D-16: cell swap touch on iOS/Android (dnd-kit TouchSensor refactor)
+*No active milestone requirements — v1.2 complete. Next: `/gsd-new-milestone` to define v1.3.*
 
 ### Out of Scope
 
@@ -208,6 +213,9 @@ Current state (after v1.1):
 | New `SafeZoneOverlay` component | Replaces toggle-only button with visible striped/dimmed unsafe-area indicator | ✓ Good — dramatically clearer UX for story composition (Phase 8) |
 | MediaRecorder video export (continued) | No 25MB WASM, no COOP/COEP, faster startup | ✓ Good — validated across v1.1 with no regressions |
 | Mediabunny direct MP4 encoding (Phase 14) | Two-stage MediaRecorder+ffmpeg.wasm replaced by Mediabunny WebCodecs pipeline — direct MP4 via CanvasSource+AudioBufferSource, OfflineAudioContext audio mix, no WASM, no COOP/COEP | ✓ Good — simpler pipeline, maintains full audio parity (AUD-05, AUD-06, AUD-07) |
+| Mediabunny VideoSampleSink for decode (Phase 15) | Used Mediabunny's higher-level decode API instead of raw WebCodecs VideoDecoder — simpler GPU memory management, no low-level codec configuration | ✓ Good — eliminated 99.4% of export time (seeking bottleneck); sequential decode bounds peak GPU memory |
+| PERS-01..PERS-12 dropped from v1.2 | Phase 14 slot repurposed for Mediabunny migration; persistence deferred to v1.3 | — Deferred — AUD-08 deferred alongside PERS block |
+| Export Metrics Panel feature-flagged (Phase 16) | `VITE_ENABLE_EXPORT_METRICS` + Vite tree-shaking = zero production cost; ref-based polling avoids React re-renders during export | ✓ Good — developer tool with no user-facing cost |
 
 ## Evolution
 
@@ -227,4 +235,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 — Phase 14 Mediabunny migration complete (pending human MP4 audio/codec UAT). AUD-05, AUD-06, AUD-07 re-validated via Mediabunny pipeline. Phase 14 is the last phase in milestone v1.2.*
+*Last updated: 2026-04-11 — v1.2 milestone complete. 6 phases / 17 plans shipped. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.3. Next milestone: `/gsd-new-milestone`.*

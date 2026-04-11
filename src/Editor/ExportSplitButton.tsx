@@ -7,6 +7,11 @@ import { exportVideoGrid } from '../lib/videoExport';
 import type { CanvasSettings } from '../lib/export';
 import { Toast } from './Toast';
 import type { ToastState } from './Toast';
+import { ExportMetricsPanel } from './ExportMetricsPanel';
+import type { ExportMetrics } from '../types/exportMetrics';
+
+// Feature flag — Vite tree-shakes dead branches in production when not set
+const METRICS_ENABLED = import.meta.env.VITE_ENABLE_EXPORT_METRICS === 'true';
 
 // ---------------------------------------------------------------------------
 // ExportSplitButton component
@@ -27,6 +32,13 @@ export function ExportSplitButton() {
   const setIsExporting = useEditorStore(s => s.setIsExporting);
   const setExportFormat = useEditorStore(s => s.setExportFormat);
   const setExportQuality = useEditorStore(s => s.setExportQuality);
+
+  // Metrics panel state (D-07: only active when METRICS_ENABLED)
+  const metricsRef = useRef<ExportMetrics | null>(null);
+  const [metricsSnapshot, setMetricsSnapshot] = useState<ExportMetrics | null>(null);
+  const [metricsVisible, setMetricsVisible] = useState(false);
+  const [metricsCollapsed, setMetricsCollapsed] = useState(false);
+  const metricsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const root = useGridStore(s => s.root);
   const mediaRegistry = useGridStore(s => s.mediaRegistry);
@@ -79,6 +91,53 @@ export function ExportSplitButton() {
   }, [popoverOpen]);
 
   // -------------------------------------------------------------------------
+  // Metrics polling effect (D-08: setInterval at 250ms, not rAF — P-07)
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!METRICS_ENABLED) return;
+    if (!isExporting) {
+      // Stop polling when export ends — panel stays with final snapshot (D-06)
+      if (metricsIntervalRef.current) {
+        clearInterval(metricsIntervalRef.current);
+        metricsIntervalRef.current = null;
+      }
+      // Set final snapshot so panel keeps showing last metrics
+      if (metricsRef.current) {
+        setMetricsSnapshot({ ...metricsRef.current });
+      }
+      return;
+    }
+    // Start polling at 250ms
+    metricsIntervalRef.current = setInterval(() => {
+      if (metricsRef.current) {
+        setMetricsSnapshot({ ...metricsRef.current });
+      }
+    }, 250);
+    return () => {
+      if (metricsIntervalRef.current) {
+        clearInterval(metricsIntervalRef.current);
+        metricsIntervalRef.current = null;
+      }
+    };
+  }, [isExporting]);
+
+  // -------------------------------------------------------------------------
+  // Shift+M keyboard shortcut to toggle panel visibility (D-12)
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!METRICS_ENABLED) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.shiftKey && e.key === 'M') {
+        setMetricsVisible(v => !v);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // -------------------------------------------------------------------------
   // Export handler
   // -------------------------------------------------------------------------
 
@@ -101,6 +160,14 @@ export function ExportSplitButton() {
       };
 
       if (hasVideos) {
+        // D-03: Reset panel to expanded on each new export
+        if (METRICS_ENABLED) {
+          metricsRef.current = null;
+          setMetricsSnapshot(null);
+          setMetricsVisible(true);
+          setMetricsCollapsed(false);
+        }
+
         // Video export path — auto-detected (per D-14)
         const totalDuration = useEditorStore.getState().totalDuration;
         const blob = await exportVideoGrid(
@@ -126,6 +193,8 @@ export function ExportSplitButton() {
             // Store for post-export display (D-03)
             audioWarningRef.current = message;
           },
+          // onMetrics callback (D-09: only when METRICS_ENABLED)
+          METRICS_ENABLED ? (m: ExportMetrics) => { metricsRef.current = m; } : undefined,
         );
         setToastState(null);
         // Download blob — extension matches actual container (mp4).
@@ -157,7 +226,8 @@ export function ExportSplitButton() {
         const filename = `storygrid-${Date.now()}.${ext}`;
         downloadDataUrl(dataUrl, filename);
       }
-    } catch {
+    } catch (err) {
+      console.error('[export] Export failed:', err);
       setToastState('error');
     } finally {
       // MUST be in finally per RESEARCH Pitfall 7
@@ -305,6 +375,16 @@ export function ExportSplitButton() {
         onRetry={handleExport}
         onDismiss={() => setToastState(null)}
       />
+
+      {/* Export metrics overlay (development only, D-07) */}
+      {METRICS_ENABLED && (
+        <ExportMetricsPanel
+          metrics={metricsSnapshot}
+          visible={metricsVisible}
+          collapsed={metricsCollapsed}
+          onToggleCollapse={() => setMetricsCollapsed(c => !c)}
+        />
+      )}
     </>
   );
 }

@@ -47,7 +47,7 @@
 
 ### v1.3 Filters, Video Tools & Playback
 
-- [ ] **Phase 17: Data Model Foundation** — Add `hasAudioTrack` to LeafNode; verify snapshot compatibility for all new v1.3 fields
+- [x] **Phase 17: Data Model Foundation** — Add `hasAudioTrack` to LeafNode; verify snapshot compatibility for all new v1.3 fields (completed 2026-04-11)
 - [ ] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale
 - [ ] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order
 - [ ] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes
@@ -64,9 +64,9 @@
   2. Undo/redo correctly restores `hasAudioTrack` after a mutating action — a restored snapshot never has `undefined` for the field
   3. All existing tests pass with no regressions against prior LeafNode shape
   4. `leaf.hasAudioTrack ?? true` defensive reads are verified to never produce `undefined` on pre-existing snapshots
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 17-01-PLAN.md — Add hasAudioTrack to LeafNode type + createLeaf + test factories; TDD tests for undo/redo + legacy snapshot
+- [x] 17-01-PLAN.md — Add hasAudioTrack to LeafNode type + createLeaf + test factories; TDD tests for undo/redo + legacy snapshot
 
 ### Phase 18: Instagram-Style Named Presets
 **Goal**: Users can choose from 6 named Instagram-aesthetic presets that produce visually distinct results through the existing single-draw-path pipeline
@@ -121,7 +121,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Data Model Foundation | 0/1 | Not started | - |
+| 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
 | 18. Instagram-Style Named Presets | 0/? | Not started | - |
 | 19. Auto-Mute Detection & Breadth-First Drop | 0/? | Not started | - |
 | 20. Playback UI Polish | 0/? | Not started | - |

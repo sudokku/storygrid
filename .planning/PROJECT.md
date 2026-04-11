@@ -4,7 +4,20 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
+**Current State:** v1.3 Filters, Video Tools & Playback in progress (started 2026-04-11). v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
+
+## Current Milestone: v1.3 Filters, Video Tools & Playback
+
+**Goal:** Replace the 6 generic presets with research-accurate Instagram-style filters, add video editing tools (boomerang, trimming, live audio preview), improve multi-file drop distribution, polish the playback UI, and harden audio state for no-audio video cells.
+
+**Target features:**
+- Instagram-style named presets (Los Angeles, Tokyo, etc.) — research-driven redesign of the 6 existing presets; 4 custom sliders unchanged
+- Breadth-first multi-file drop — alternate H/V split by node depth for a grid-like pattern instead of depth-stacking
+- Auto-mute lock for no-audio videos — detect at upload; show grayed-out VolumeX icon, not interactive
+- Playback UI visual redesign — research-driven polish (shadcn / design community references); no new controls
+- Boomerang per-cell — forward-then-backward loop toggle on video cells; affects preview and export (may defer)
+- Video trimming per-cell — sidebar drag handles + time inputs; affects playback duration and export clip length (may defer)
+- Live audio preview — Web Audio mix of unmuted cells during editor playback (may defer)
 
 ## Core Value
 
@@ -150,7 +163,7 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 
 ### Active
 
-*No active milestone requirements — v1.2 complete. Next: `/gsd-new-milestone` to define v1.3.*
+*v1.3 requirements — see REQUIREMENTS.md (generated after roadmap)*
 
 ### Out of Scope
 
@@ -235,4 +248,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 — v1.2 milestone complete. 6 phases / 17 plans shipped. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.3. Next milestone: `/gsd-new-milestone`.*
+*Last updated: 2026-04-11 — v1.3 milestone started. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.4 (blob storage cost concern for free Vercel tier).*

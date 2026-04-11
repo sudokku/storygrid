@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Effects, Overlays & Persistence
-status: complete
-stopped_at: Milestone archived
+milestone: v1.3
+milestone_name: Filters, Video Tools & Playback
+status: defining_requirements
+stopped_at: Milestone started
 last_updated: "2026-04-11T00:00:00.000Z"
-last_activity: 2026-04-11 -- v1.2 milestone archived
+last_activity: 2026-04-11 -- Milestone v1.3 started
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.2 Effects, Overlays & Persistence — COMPLETE (shipped 2026-04-11)
-**Current focus:** Start v1.3 via `/gsd-new-milestone`
+**Current milestone:** v1.3 Filters, Video Tools & Playback — IN PROGRESS (started 2026-04-11)
+**Current focus:** Defining requirements and roadmap
 
 ## Current Position
 
-Phase: — (milestone complete)
+Phase: Not started (defining requirements)
 Plan: —
-Status: v1.2 archived — ready for next milestone
-Last activity: 2026-04-11 -- v1.2 milestone archived
+Status: Defining requirements
+Last activity: 2026-04-11 -- Milestone v1.3 started
 
-Progress: [██████████] 100% (6/6 phases, 17/17 plans)
+Progress: [          ] 0% (0/? phases, 0/? plans)
 
 ## Performance Metrics
 

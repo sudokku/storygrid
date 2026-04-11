@@ -95,8 +95,8 @@ Plans:
 
 **Goal:** Add a real-time metrics overlay that appears during video export, displaying every observable browser signal (timing, throughput, JS heap, custom resource counters). Fully decoupled via optional `onMetrics` callback; zero runtime cost when `VITE_ENABLE_EXPORT_METRICS` is unset.
 **Depends on:** Phase 15
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 16-01-PLAN.md — ExportMetrics type + videoExport.ts instrumentation (onMetrics callback, counters, performance marks)
-- [ ] 16-02-PLAN.md — ExportMetricsPanel component + ExportSplitButton wiring + feature flag
+- [x] 16-01-PLAN.md — ExportMetrics type + videoExport.ts instrumentation (onMetrics callback, counters, performance marks)
+- [x] 16-02-PLAN.md — ExportMetricsPanel component + ExportSplitButton wiring + feature flag

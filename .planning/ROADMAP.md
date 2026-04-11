@@ -32,7 +32,7 @@
 
 </details>
 
-### 🚧 v1.2 Effects, Overlays & Persistence (In Progress)
+### v1.2 Effects, Overlays & Persistence (In Progress)
 
 - [x] **Phase 11: Effects & Filters** — Per-cell non-destructive visual effects and preset filters (completed 2014-04-09)
 - [x] **Phase 12: Per-Cell Audio Toggle** — Audio on/off per video cell in MP4 export (completed 2014-04-09)
@@ -85,8 +85,18 @@ Plans:
 **Goal:** Replace seekAllVideosTo bottleneck (99.4% of export time) with Mediabunny VideoSampleSink decode pipeline — decode all video frames upfront, draw from sorted in-memory arrays during encode loop
 **Requirements**: VDEC-01..VDEC-07
 **Depends on:** Phase 14
+**Plans:** 2/2 plans complete
+
+Plans:
+- [x] 15-01-PLAN.md — Extend export.ts for CanvasImageSource types + test stubs (VDEC-01, VDEC-02, VDEC-03)
+- [x] 15-02-PLAN.md — Decode pipeline in videoExport.ts + Toast/ExportSplitButton 'decoding' stage (VDEC-04, VDEC-05, VDEC-06, VDEC-07)
+
+### Phase 16: Export Metrics Panel
+
+**Goal:** Add a real-time metrics overlay that appears during video export, displaying every observable browser signal (timing, throughput, JS heap, custom resource counters). Fully decoupled via optional `onMetrics` callback; zero runtime cost when `VITE_ENABLE_EXPORT_METRICS` is unset.
+**Depends on:** Phase 15
 **Plans:** 2 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Extend export.ts for CanvasImageSource types + test stubs (VDEC-01, VDEC-02, VDEC-03)
-- [ ] 15-02-PLAN.md — Decode pipeline in videoExport.ts + Toast/ExportSplitButton 'decoding' stage (VDEC-04, VDEC-05, VDEC-06, VDEC-07)
+- [ ] 16-01-PLAN.md — ExportMetrics type + videoExport.ts instrumentation (onMetrics callback, counters, performance marks)
+- [ ] 16-02-PLAN.md — ExportMetricsPanel component + ExportSplitButton wiring + feature flag

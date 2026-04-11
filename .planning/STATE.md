@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Filters, Video Tools & Playback
-status: defining_requirements
-stopped_at: Milestone started
+status: roadmap_created
+stopped_at: Roadmap created — ready to plan Phase 17
 last_updated: "2026-04-11T00:00:00.000Z"
-last_activity: 2026-04-11 -- Milestone v1.3 started
+last_activity: 2026-04-11 -- Roadmap created for v1.3 (Phases 17–21)
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,16 +22,16 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
 **Current milestone:** v1.3 Filters, Video Tools & Playback — IN PROGRESS (started 2026-04-11)
-**Current focus:** Defining requirements and roadmap
+**Current focus:** Phase 17 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 17 — Data Model Foundation (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-11 -- Milestone v1.3 started
+Status: Roadmap created
+Last activity: 2026-04-11 -- Roadmap created (Phases 17–21, 19 requirements mapped)
 
-Progress: [          ] 0% (0/? phases, 0/? plans)
+Progress: [          ] 0% (0/5 phases, 0/? plans)
 
 ## Performance Metrics
 
@@ -175,6 +175,9 @@ Recent decisions affecting current work:
 - [Phase 09-improve-cell-movement-and-swapping]: ActionBar drag handle hasMedia gate relaxed (EC-06) — empty cells are movable; aria-label changed to 'Drag to move'
 - [Phase 09-improve-cell-movement-and-swapping]: LeafNode 5-zone drag detection uses getBoundingClientRect math with 20% threshold + 20px minimum band; overlays are pointer-events-none to avoid intercepting drag events
 - [Phase 09-improve-cell-movement-and-swapping]: jsdom DragEvent ignores MouseEventInit fields — test harness uses createEvent+defineProperty to inject clientX/Y
+- [Roadmap v1.3]: Phase 17 data model foundation scoped to MUTE-04 only — effectsToFilterString extension ships in Phase 18 alongside preset UI (avoids orphan infrastructure)
+- [Roadmap v1.3]: MUTE + DROP grouped in Phase 19 — both are upload/interaction-path changes with no shared code; grouping reduces phase count while keeping Phase 20 PLAY pure CSS
+- [Roadmap v1.3]: Phase 21 LAUD depends on Phase 19 because hasAudioTrack must be reliable before AudioContext wiring — MUTE-01 is the prerequisite for LAUD-03
 
 ### Pending Todos
 
@@ -210,15 +213,16 @@ None yet.
 - Phase 9 added: Improve cell movement and swapping (2026-04-08)
 - Phase 14 added: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
 - Phase 15 added: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
+- v1.3 phases 17–21 added: Filters, Video Tools & Playback (2026-04-11)
 
 ### Blockers/Concerns
 
-None active. Phase 7 ready to plan.
+None active. Phase 17 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-11T11:08:47.280Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-export-metrics-panel/16-CONTEXT.md
+Last session: 2026-04-11T00:00:00.000Z
+Stopped at: v1.3 roadmap created (Phases 17–21)
+Resume file: .planning/ROADMAP.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

@@ -75,31 +75,31 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PRESET-01 | — | Pending |
-| PRESET-02 | — | Pending |
-| PRESET-03 | — | Pending |
-| PRESET-04 | — | Pending |
-| DROP-01 | — | Pending |
-| DROP-02 | — | Pending |
-| DROP-03 | — | Pending |
-| MUTE-01 | — | Pending |
-| MUTE-02 | — | Pending |
-| MUTE-03 | — | Pending |
-| MUTE-04 | — | Pending |
-| PLAY-01 | — | Pending |
-| PLAY-02 | — | Pending |
-| PLAY-03 | — | Pending |
-| LAUD-01 | — | Pending |
-| LAUD-02 | — | Pending |
-| LAUD-03 | — | Pending |
-| LAUD-04 | — | Pending |
-| LAUD-05 | — | Pending |
+| MUTE-04 | Phase 17 | Pending |
+| PRESET-01 | Phase 18 | Pending |
+| PRESET-02 | Phase 18 | Pending |
+| PRESET-03 | Phase 18 | Pending |
+| PRESET-04 | Phase 18 | Pending |
+| MUTE-01 | Phase 19 | Pending |
+| MUTE-02 | Phase 19 | Pending |
+| MUTE-03 | Phase 19 | Pending |
+| DROP-01 | Phase 19 | Pending |
+| DROP-02 | Phase 19 | Pending |
+| DROP-03 | Phase 19 | Pending |
+| PLAY-01 | Phase 20 | Pending |
+| PLAY-02 | Phase 20 | Pending |
+| PLAY-03 | Phase 20 | Pending |
+| LAUD-01 | Phase 21 | Pending |
+| LAUD-02 | Phase 21 | Pending |
+| LAUD-03 | Phase 21 | Pending |
+| LAUD-04 | Phase 21 | Pending |
+| LAUD-05 | Phase 21 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 19 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 19 ⚠️
+- Mapped to phases: 19/19 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after initial definition*
+*Last updated: 2026-04-11 — traceability filled after roadmap creation (Phases 17–21)*

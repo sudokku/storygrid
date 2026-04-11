@@ -28,6 +28,7 @@ function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
       preset: null,
     },
     audioEnabled: true,
+    hasAudioTrack: true,
     ...overrides,
   };
 }

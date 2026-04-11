@@ -18,6 +18,7 @@ export type LeafNode = {
   panScale: number; // 1.0-3.0, default 1
   effects: EffectSettings;
   audioEnabled: boolean;
+  hasAudioTrack: boolean;
 };
 
 export type ContainerNode = {

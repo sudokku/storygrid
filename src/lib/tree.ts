@@ -93,6 +93,7 @@ export function createLeaf(): LeafNode {
     panScale: 1,
     effects: { ...DEFAULT_EFFECTS },
     audioEnabled: true,
+    hasAudioTrack: true,
   };
 }
 

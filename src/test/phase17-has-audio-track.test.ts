@@ -17,11 +17,8 @@ describe('Phase 17 — hasAudioTrack on LeafNode', () => {
   // -------------------------------------------------------------------------
   it('SC1: createLeaf() returns hasAudioTrack: true', () => {
     const leaf = createLeaf();
-    // Use `as any` cast so the test file compiles before the field exists on the type.
-    // When the field is missing, (leaf as any).hasAudioTrack is undefined — assertion fails (RED).
-    // When the field is added in Task 2, this assertion passes (GREEN).
-    expect((leaf as any).hasAudioTrack).toBe(true);
-    expect(typeof (leaf as any).hasAudioTrack).toBe('boolean');
+    expect(leaf.hasAudioTrack).toBe(true);
+    expect(typeof leaf.hasAudioTrack).toBe('boolean');
   });
 
   // -------------------------------------------------------------------------
@@ -51,8 +48,7 @@ describe('Phase 17 — hasAudioTrack on LeafNode', () => {
       expect(leaves.length).toBeGreaterThan(0);
 
       for (const leaf of leaves) {
-        // Use `as any` cast before the field exists on the type.
-        expect((leaf as any).hasAudioTrack).toBe(true);
+        expect(leaf.hasAudioTrack).toBe(true);
       }
     });
   });

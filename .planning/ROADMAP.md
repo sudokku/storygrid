@@ -64,7 +64,9 @@
   2. Undo/redo correctly restores `hasAudioTrack` after a mutating action — a restored snapshot never has `undefined` for the field
   3. All existing tests pass with no regressions against prior LeafNode shape
   4. `leaf.hasAudioTrack ?? true` defensive reads are verified to never produce `undefined` on pre-existing snapshots
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 17-01-PLAN.md — Add hasAudioTrack to LeafNode type + createLeaf + test factories; TDD tests for undo/redo + legacy snapshot
 
 ### Phase 18: Instagram-Style Named Presets
 **Goal**: Users can choose from 6 named Instagram-aesthetic presets that produce visually distinct results through the existing single-draw-path pipeline
@@ -119,7 +121,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Data Model Foundation | 0/? | Not started | - |
+| 17. Data Model Foundation | 0/1 | Not started | - |
 | 18. Instagram-Style Named Presets | 0/? | Not started | - |
 | 19. Auto-Mute Detection & Breadth-First Drop | 0/? | Not started | - |
 | 20. Playback UI Polish | 0/? | Not started | - |

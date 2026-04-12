@@ -78,7 +78,10 @@ Plans:
   3. A cell with a preset applied and slider adjustments exports identically in canvas preview, PNG, and MP4 — no divergence between render paths
   4. Resetting a preset clears the named preset selection while leaving brightness/contrast/saturation/blur slider values unchanged
   5. Filter string construction flows exclusively through `effectsToFilterString()` — no inline filter string construction anywhere in the codebase
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 18-01-PLAN.md — Extend filter pipeline with sepia/hueRotate/grayscale, replace preset keys with Instagram names, update store logic
+- [ ] 18-02-PLAN.md — Update EffectsPanel UI with live CSS-filter chips, delete old PNGs, update tests
 **UI hint**: yes
 
 ### Phase 19: Auto-Mute Detection & Breadth-First Drop
@@ -122,7 +125,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
-| 18. Instagram-Style Named Presets | 0/? | Not started | - |
+| 18. Instagram-Style Named Presets | 0/2 | Planning complete | - |
 | 19. Auto-Mute Detection & Breadth-First Drop | 0/? | Not started | - |
 | 20. Playback UI Polish | 0/? | Not started | - |
 | 21. Live Audio Preview | 0/? | Not started | - |

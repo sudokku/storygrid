@@ -11,7 +11,7 @@ export type LeafNode = {
   id: string;
   mediaId: string | null;
   fit: 'cover' | 'contain';
-  objectPosition?: string;
+  objectPosition: string;
   backgroundColor: string | null;
   panX: number;    // percentage offset -100 to +100, default 0
   panY: number;    // percentage offset -100 to +100, default 0

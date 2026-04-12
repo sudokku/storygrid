@@ -132,6 +132,50 @@ describe('effects actions', () => {
         grayscale: 0,
       });
     });
+
+    it('D-11: clicking the active preset toggles it off and resets ALL sliders to neutral defaults', () => {
+      const id = firstLeafId();
+      // Apply a preset that modifies brightness, contrast, saturation, sepia, hueRotate
+      useGridStore.getState().applyPreset(id, 'clarendon');
+      expect(getLeaf(id).effects.preset).toBe('clarendon');
+      expect(getLeaf(id).effects.brightness).toBe(25);
+
+      // Click the same preset again — should toggle off
+      useGridStore.getState().applyPreset(id, 'clarendon');
+
+      const eff = getLeaf(id).effects;
+      expect(eff).toEqual({
+        preset: null,
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        blur: 0,
+        sepia: 0,
+        hueRotate: 0,
+        grayscale: 0,
+      });
+    });
+
+    it('D-11: toggle-off resets ALL fields including brightness/contrast/saturation (not just sepia/hueRotate/grayscale)', () => {
+      const id = firstLeafId();
+      // Apply juno which sets saturation: 80, contrast: 15, brightness: 15, sepia: 35
+      useGridStore.getState().applyPreset(id, 'juno');
+      expect(getLeaf(id).effects.saturation).toBe(80);
+      expect(getLeaf(id).effects.brightness).toBe(15);
+
+      // Toggle off
+      useGridStore.getState().applyPreset(id, 'juno');
+
+      const eff = getLeaf(id).effects;
+      expect(eff.brightness).toBe(0);
+      expect(eff.contrast).toBe(0);
+      expect(eff.saturation).toBe(0);
+      expect(eff.blur).toBe(0);
+      expect(eff.sepia).toBe(0);
+      expect(eff.hueRotate).toBe(0);
+      expect(eff.grayscale).toBe(0);
+      expect(eff.preset).toBeNull();
+    });
   });
 
   describe('resetEffects', () => {

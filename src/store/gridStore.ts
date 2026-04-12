@@ -264,22 +264,16 @@ export const useGridStore = create<GridStoreState>()(
       }),
 
     // applyPreset: one snapshot + write. Sets preset flag + numeric values.
-    // D-11: clicking the active preset toggles it off — clears preset and
-    // preset-only fields (sepia/hueRotate/grayscale) while leaving sliders.
+    // D-11: clicking the active preset toggles it off — resets ALL effect fields
+    // to DEFAULT_EFFECTS (including brightness/contrast/saturation/blur sliders).
     applyPreset: (nodeId, presetName) =>
       set(state => {
         const leaf = findNode(current(state.root), nodeId);
         if (!leaf || leaf.type !== 'leaf') return;
         pushSnapshot(state);
         if (leaf.effects.preset === presetName) {
-          // D-11: toggle off — clear preset + zero preset-only fields, leave sliders
-          const nextEffects: EffectSettings = {
-            ...leaf.effects,
-            preset: null,
-            sepia: 0,
-            hueRotate: 0,
-            grayscale: 0,
-          };
+          // D-11: toggle off — reset ALL fields to neutral defaults
+          const nextEffects: EffectSettings = { ...DEFAULT_EFFECTS };
           state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
         } else {
           // Apply preset: set preset flag + all 7 numeric values

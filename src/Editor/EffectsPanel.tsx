@@ -2,14 +2,8 @@ import { useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
-import { DEFAULT_EFFECTS, type PresetName } from '../lib/effects';
-// Thumbnail placeholders — Plan 02 will replace with Instagram-style thumbnails
-import clarendonThumb from '../assets/presets/vivid.png';
-import larkThumb from '../assets/presets/warm.png';
-import junoThumb from '../assets/presets/fade.png';
-import reyesThumb from '../assets/presets/cool.png';
-import moonThumb from '../assets/presets/bw.png';
-import inkwellThumb from '../assets/presets/sepia.png';
+import { DEFAULT_EFFECTS, type PresetName, effectsToFilterString, PRESET_VALUES } from '../lib/effects';
+import sampleThumb from '../assets/presets/sample.jpg';
 
 const PRESETS: PresetName[] = ['clarendon', 'lark', 'juno', 'reyes', 'moon', 'inkwell'];
 
@@ -20,15 +14,6 @@ const DISPLAY_NAMES: Record<PresetName, string> = {
   reyes: 'Reyes',
   moon: 'Moon',
   inkwell: 'Inkwell',
-};
-
-const PRESET_THUMBS: Record<PresetName, string> = {
-  clarendon: clarendonThumb,
-  lark: larkThumb,
-  juno: junoThumb,
-  reyes: reyesThumb,
-  moon: moonThumb,
-  inkwell: inkwellThumb,
 };
 
 const KEYBOARD_NUDGE_KEYS = new Set([
@@ -116,6 +101,7 @@ export function EffectsPanel({ nodeId }: { nodeId: string }) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {PRESETS.map((name) => {
           const isActive = effects.preset === name;
+          const chipFilterStr = effectsToFilterString({ ...PRESET_VALUES[name], preset: name });
           return (
             <button
               key={name}
@@ -131,9 +117,10 @@ export function EffectsPanel({ nodeId }: { nodeId: string }) {
                 }`}
               >
                 <img
-                  src={PRESET_THUMBS[name]}
+                  src={sampleThumb}
                   alt={DISPLAY_NAMES[name]}
                   className="w-full h-full object-cover"
+                  style={{ filter: chipFilterStr }}
                 />
               </div>
               <span className="text-[10px] font-normal text-neutral-400">

@@ -270,6 +270,8 @@ export function swapLeafContent(root: GridNode, idA: string, idB: string): GridN
     panY: leafA.panY,
     panScale: leafA.panScale,
     effects: { ...leafA.effects },
+    audioEnabled: leafA.audioEnabled,
+    hasAudioTrack: leafA.hasAudioTrack,
   };
   const contentB = {
     mediaId: leafB.mediaId,
@@ -279,6 +281,8 @@ export function swapLeafContent(root: GridNode, idA: string, idB: string): GridN
     panY: leafB.panY,
     panScale: leafB.panScale,
     effects: { ...leafB.effects },
+    audioEnabled: leafB.audioEnabled,
+    hasAudioTrack: leafB.hasAudioTrack,
   };
 
   let result = updateLeaf(root, idA, contentB);

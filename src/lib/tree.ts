@@ -93,7 +93,7 @@ export function createLeaf(): LeafNode {
     panScale: 1,
     effects: { ...DEFAULT_EFFECTS },
     audioEnabled: true,
-    hasAudioTrack: true,
+    hasAudioTrack: false,   // no media assigned yet → no audio track
   };
 }
 

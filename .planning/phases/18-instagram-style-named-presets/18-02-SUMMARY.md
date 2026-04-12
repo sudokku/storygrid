@@ -25,15 +25,15 @@ key_files:
     - src/assets/presets/warm.png
     - src/assets/presets/cool.png
 decisions:
-  - "sample.jpg generated via ffmpeg lavfi color source + drawbox filter (192x192 JPEG, 2KB) — ImageMagick not available on build machine"
+  - "sample.jpg replaced with Unsplash mountain landscape (photo-1464822759023, 35KB) for better filter visibility"
   - "chipFilterStr computed inline per chip in the render loop using effectsToFilterString({ ...PRESET_VALUES[name], preset: name })"
-  - "D-11 toggle-off is UI-transparent: applyPreset in gridStore handles toggle internally; no UI branching needed in onClick"
+  - "D-11 toggle-off uses { ...DEFAULT_EFFECTS } spread — resets all 7 fields including brightness/contrast/saturation/blur"
 metrics:
-  duration: "~10 minutes"
+  duration: "~25 minutes"
   completed: "2026-04-12"
-  tasks_completed: 2
-  tasks_total: 3
-  files_modified: 4
+  tasks_completed: 4
+  tasks_total: 4
+  files_modified: 6
 ---
 
 # Phase 18 Plan 02: EffectsPanel UI — Live Filter Chips, Toggle-Off, Sample Photo Summary
@@ -46,6 +46,8 @@ Updated EffectsPanel to show 6 Instagram-named preset chips with live CSS-filter
 |------|------|--------|-------|
 | 1 | Update EffectsPanel UI — live filter chips, toggle-off, sample photo, delete old PNGs | 2753a2a | src/Editor/EffectsPanel.tsx, src/assets/presets/sample.jpg, src/assets/presets/README.md, (deleted 6 PNGs) |
 | 2 | Update EffectsPanel.test.tsx for new preset names and D-05/D-11 behavior | e402c17 | src/Editor/__tests__/EffectsPanel.test.tsx |
+| 3 | Replace sample preset image with mountain landscape | 4c36338 | src/assets/presets/sample.jpg |
+| 4 | Fix toggle-off to reset all effect sliders to neutral defaults | ed7d876 | src/store/gridStore.ts, src/store/gridStore.test.ts |
 
 ## What Was Built
 
@@ -64,31 +66,44 @@ Updated EffectsPanel to show 6 Instagram-named preset chips with live CSS-filter
 - Added new D-11 toggle-off test: applies Moon preset, clicks again, verifies `preset: null` + sepia/hueRotate/grayscale zeroed + brightness/contrast preserved at Moon's values (10/10)
 - 9/9 EffectsPanel tests pass
 
+**Task 3 — Replace sample image (post-checkpoint fix):**
+- Downloaded mountain landscape from Unsplash (photo-1464822759023-fed622ff2c3b, w=400, q=80)
+- 35KB JPEG — sufficient color range and contrast to make warm/cool/bw filter effects visually distinct
+- Replaces the 2KB flat color-block JPEG that had poor filter differentiation
+
+**Task 4 — Fix toggle-off resets all sliders (post-checkpoint fix):**
+- D-11 toggle-off path in `applyPreset` previously spread `...leaf.effects` then zeroed only `sepia/hueRotate/grayscale`, leaving `brightness/contrast/saturation/blur` at preset values
+- Fixed: toggle-off now spreads `{ ...DEFAULT_EFFECTS }` — all 7 numeric fields plus `preset: null` reset to neutral
+- Added 2 new `gridStore.test.ts` tests verifying the full reset (one for clarendon, one for juno covering saturation)
+- 642 tests pass / 2 pre-existing phase17 failures unrelated to this work
+
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-None.
+None — post-checkpoint fixes were user-reported issues, not auto-detected deviations.
 
-### Asset Generation Method
+### Asset Generation Method (Task 1)
 
-The plan specified using `npx tsx` with the `canvas` npm package or ImageMagick's `convert`. Neither was available (`canvas` package not installed, ImageMagick not present). Used `ffmpeg` (available at `/opt/homebrew/bin/ffmpeg`) with `-f lavfi -i "color=..."` + `drawbox` filter to generate the 192x192 JPEG. Result is a valid JPEG at `src/assets/presets/sample.jpg` (2KB) with warm-toned color blocks. Not tracked as a Rule deviation — same outcome, different tool.
+The plan specified using `npx tsx` with the `canvas` npm package or ImageMagick's `convert`. Neither was available. Used `ffmpeg` with lavfi color source. The resulting 2KB flat-color image was then replaced in Task 3 with a real mountain photograph per user feedback.
 
 ## Known Stubs
 
-None. Task 3 (visual verification checkpoint) is pending — this SUMMARY covers the 2 automated tasks only.
+None.
 
 ## Verification
 
 - `npx tsc --noEmit` — 0 errors
-- `npx vitest run src/Editor/__tests__/EffectsPanel.test.tsx` — 9/9 pass
-- `npx vitest run` — 639 pass / 2 pre-existing failures in phase17-has-audio-track.test.ts (unrelated)
+- `npx vitest run` — 642 pass / 2 pre-existing failures in phase17-has-audio-track.test.ts (unrelated)
+- D-11 toggle-off tests: 2 new tests pass in src/store/gridStore.test.ts
 
 ## Self-Check: PASSED
 
 - `src/Editor/EffectsPanel.tsx` modified: FOUND
-- `src/assets/presets/sample.jpg` created: FOUND
-- `src/assets/presets/README.md` updated: FOUND
-- bw.png deleted: CONFIRMED
+- `src/assets/presets/sample.jpg` replaced with mountain photo (35KB): FOUND
+- `src/store/gridStore.ts` toggle-off fix: FOUND (commit ed7d876)
+- `src/store/gridStore.test.ts` D-11 tests added: FOUND
 - Commit 2753a2a: FOUND
 - Commit e402c17: FOUND
+- Commit 4c36338: FOUND
+- Commit ed7d876: FOUND

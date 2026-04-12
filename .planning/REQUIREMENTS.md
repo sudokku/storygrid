@@ -10,7 +10,7 @@
 - [ ] **PRESET-01**: User can choose from 6 Instagram-style named presets (Clarendon, Lark, Juno, Reyes, Moon, Inkwell) in the Effects panel
 - [ ] **PRESET-02**: Each named preset produces a visually distinct result approximating the aesthetic of its Instagram namesake using CSS filter functions (`brightness`, `contrast`, `saturate`, `sepia`, `hue-rotate`, `grayscale`)
 - [ ] **PRESET-03**: Preset and slider values (brightness/contrast/saturation/blur) combine in a single draw call, producing identical results in canvas preview, PNG export, and MP4 export
-- [ ] **PRESET-04**: User can reset a cell's preset selection while keeping slider adjustments (existing Reset effects behavior unchanged)
+- [ ] **PRESET-04**: User can toggle off an active preset by clicking its chip again — this resets all effect fields (brightness, contrast, saturation, blur, sepia, hueRotate, grayscale) to neutral defaults and deselects the preset chip
 
 ### Cell Drop Distribution
 

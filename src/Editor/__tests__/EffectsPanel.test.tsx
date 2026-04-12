@@ -125,9 +125,12 @@ describe('EffectsPanel', () => {
     expect(leaf.effects.sepia).toBe(0);
     expect(leaf.effects.hueRotate).toBe(0);
     expect(leaf.effects.grayscale).toBe(0);
-    // Slider values from Moon preset are preserved (D-11)
-    expect(leaf.effects.brightness).toBe(10);
-    expect(leaf.effects.contrast).toBe(10);
+    // Toggle-off resets all slider values to neutral defaults (D-11)
+    // Scale is -100..+100 where 0 = neutral (brightness(1.0) = no change)
+    expect(leaf.effects.brightness).toBe(0);
+    expect(leaf.effects.contrast).toBe(0);
+    expect(leaf.effects.saturation).toBe(0);
+    expect(leaf.effects.blur).toBe(0);
   });
 
   it('renders disabled state when leaf has no media', () => {

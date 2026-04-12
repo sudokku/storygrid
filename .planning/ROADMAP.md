@@ -48,7 +48,7 @@
 ### v1.3 Filters, Video Tools & Playback
 
 - [x] **Phase 17: Data Model Foundation** — Add `hasAudioTrack` to LeafNode; verify snapshot compatibility for all new v1.3 fields (completed 2026-04-11)
-- [ ] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale
+- [x] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale (completed 2026-04-12)
 - [ ] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order
 - [ ] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes
 - [ ] **Phase 21: Live Audio Preview** — Web Audio mix of unmuted video cells during editor playback via AudioContext + MediaElementAudioSourceNode
@@ -76,12 +76,12 @@ Plans:
   1. The Effects panel shows 6 named presets: Clarendon, Lark, Juno, Reyes, Moon, Inkwell — replacing the previous generic labels
   2. Each preset produces a visually distinct result using `brightness`, `contrast`, `saturate`, `sepia`, `hue-rotate`, and/or `grayscale` CSS filter functions
   3. A cell with a preset applied and slider adjustments exports identically in canvas preview, PNG, and MP4 — no divergence between render paths
-  4. Resetting a preset clears the named preset selection while leaving brightness/contrast/saturation/blur slider values unchanged
+  4. Toggling off an active preset chip resets all effect fields to neutral defaults (brightness=100, contrast=100, saturation=100, blur=0, sepia=0, hueRotate=0, grayscale=0) and deselects the chip
   5. Filter string construction flows exclusively through `effectsToFilterString()` — no inline filter string construction anywhere in the codebase
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 18-01-PLAN.md — Extend filter pipeline with sepia/hueRotate/grayscale, replace preset keys with Instagram names, update store logic
-- [ ] 18-02-PLAN.md — Update EffectsPanel UI with live CSS-filter chips, delete old PNGs, update tests
+- [x] 18-01-PLAN.md — Extend filter pipeline with sepia/hueRotate/grayscale, replace preset keys with Instagram names, update store logic
+- [x] 18-02-PLAN.md — Update EffectsPanel UI with live CSS-filter chips, delete old PNGs, update tests
 **UI hint**: yes
 
 ### Phase 19: Auto-Mute Detection & Breadth-First Drop
@@ -125,7 +125,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
-| 18. Instagram-Style Named Presets | 0/2 | Planning complete | - |
+| 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
 | 19. Auto-Mute Detection & Breadth-First Drop | 0/? | Not started | - |
 | 20. Playback UI Polish | 0/? | Not started | - |
 | 21. Live Audio Preview | 0/? | Not started | - |

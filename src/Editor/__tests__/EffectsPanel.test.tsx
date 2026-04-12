@@ -39,12 +39,12 @@ describe('EffectsPanel', () => {
     }
   });
 
-  it("clicking the Moon chip applies the moon preset to the leaf", () => {
+  it("clicking the Clarendon chip applies the clarendon preset", () => {
     render(<EffectsPanel nodeId={leafId} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Moon' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clarendon' }));
     const leaf = getLeaf(leafId);
-    expect(leaf.effects.preset).toBe('moon');
-    expect(leaf.effects.grayscale).toBe(100);
+    expect(leaf.effects.preset).toBe('clarendon');
+    expect(leaf.effects.brightness).toBe(25);
   });
 
   it('clicking Reset effects restores DEFAULT_EFFECTS', () => {
@@ -107,6 +107,27 @@ describe('EffectsPanel', () => {
     const leaf = getLeaf(leafId);
     expect(leaf.effects.preset).toBeNull();
     expect(leaf.effects.brightness).toBe(10);
+    expect(leaf.effects.sepia).toBe(0);
+    expect(leaf.effects.hueRotate).toBe(0);
+    expect(leaf.effects.grayscale).toBe(0);
+  });
+
+  it('clicking an already-active preset chip toggles it off (D-11)', () => {
+    render(<EffectsPanel nodeId={leafId} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Moon' }));
+    expect(getLeaf(leafId).effects.preset).toBe('moon');
+    expect(getLeaf(leafId).effects.grayscale).toBe(100);
+
+    // Click the same chip again to toggle off
+    fireEvent.click(screen.getByRole('button', { name: 'Moon' }));
+    const leaf = getLeaf(leafId);
+    expect(leaf.effects.preset).toBeNull();
+    expect(leaf.effects.sepia).toBe(0);
+    expect(leaf.effects.hueRotate).toBe(0);
+    expect(leaf.effects.grayscale).toBe(0);
+    // Slider values from Moon preset are preserved (D-11)
+    expect(leaf.effects.brightness).toBe(10);
+    expect(leaf.effects.contrast).toBe(10);
   });
 
   it('renders disabled state when leaf has no media', () => {

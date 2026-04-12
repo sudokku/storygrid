@@ -3,31 +3,32 @@ import { useShallow } from 'zustand/react/shallow';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
 import { DEFAULT_EFFECTS, type PresetName } from '../lib/effects';
-import bwThumb from '../assets/presets/bw.png';
-import sepiaThumb from '../assets/presets/sepia.png';
-import vividThumb from '../assets/presets/vivid.png';
-import fadeThumb from '../assets/presets/fade.png';
-import warmThumb from '../assets/presets/warm.png';
-import coolThumb from '../assets/presets/cool.png';
+// Thumbnail placeholders — Plan 02 will replace with Instagram-style thumbnails
+import clarendonThumb from '../assets/presets/vivid.png';
+import larkThumb from '../assets/presets/warm.png';
+import junoThumb from '../assets/presets/fade.png';
+import reyesThumb from '../assets/presets/cool.png';
+import moonThumb from '../assets/presets/bw.png';
+import inkwellThumb from '../assets/presets/sepia.png';
 
-const PRESETS: PresetName[] = ['bw', 'sepia', 'vivid', 'fade', 'warm', 'cool'];
+const PRESETS: PresetName[] = ['clarendon', 'lark', 'juno', 'reyes', 'moon', 'inkwell'];
 
 const DISPLAY_NAMES: Record<PresetName, string> = {
-  bw: 'B&W',
-  sepia: 'Sepia',
-  vivid: 'Vivid',
-  fade: 'Fade',
-  warm: 'Warm',
-  cool: 'Cool',
+  clarendon: 'Clarendon',
+  lark: 'Lark',
+  juno: 'Juno',
+  reyes: 'Reyes',
+  moon: 'Moon',
+  inkwell: 'Inkwell',
 };
 
 const PRESET_THUMBS: Record<PresetName, string> = {
-  bw: bwThumb,
-  sepia: sepiaThumb,
-  vivid: vividThumb,
-  fade: fadeThumb,
-  warm: warmThumb,
-  cool: coolThumb,
+  clarendon: clarendonThumb,
+  lark: larkThumb,
+  juno: junoThumb,
+  reyes: reyesThumb,
+  moon: moonThumb,
+  inkwell: inkwellThumb,
 };
 
 const KEYBOARD_NUDGE_KEYS = new Set([

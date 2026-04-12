@@ -56,8 +56,8 @@ describe('effects actions', () => {
 
     it('clears effects.preset when a numeric slider is touched while preset active (D-15)', () => {
       const id = firstLeafId();
-      useGridStore.getState().applyPreset(id, 'vivid');
-      expect(getLeaf(id).effects.preset).toBe('vivid');
+      useGridStore.getState().applyPreset(id, 'clarendon');
+      expect(getLeaf(id).effects.preset).toBe('clarendon');
 
       useGridStore.getState().setEffects(id, { brightness: 10 });
 
@@ -68,9 +68,9 @@ describe('effects actions', () => {
 
     it('does NOT clear preset if partial is empty', () => {
       const id = firstLeafId();
-      useGridStore.getState().applyPreset(id, 'sepia');
+      useGridStore.getState().applyPreset(id, 'juno');
       useGridStore.getState().setEffects(id, {});
-      expect(getLeaf(id).effects.preset).toBe('sepia');
+      expect(getLeaf(id).effects.preset).toBe('juno');
     });
   });
 
@@ -106,20 +106,20 @@ describe('effects actions', () => {
   });
 
   describe('applyPreset', () => {
-    it("applyPreset(id, 'vivid') sets preset + vivid numeric values in one snapshot", () => {
+    it("applyPreset(id, 'clarendon') sets preset + clarendon numeric values in one snapshot", () => {
       const id = firstLeafId();
       const historyBefore = useGridStore.getState().history.length;
 
-      useGridStore.getState().applyPreset(id, 'vivid');
+      useGridStore.getState().applyPreset(id, 'clarendon');
 
       const eff = getLeaf(id).effects;
-      expect(eff).toEqual({ preset: 'vivid', brightness: 0, contrast: 15, saturation: 40, blur: 0 });
+      expect(eff).toEqual({ preset: 'clarendon', brightness: 25, contrast: 25, saturation: 0, blur: 0, sepia: 15, hueRotate: 5, grayscale: 0 });
       expect(useGridStore.getState().history.length).toBe(historyBefore + 1);
     });
 
     it('undo after applyPreset restores DEFAULT_EFFECTS', () => {
       const id = firstLeafId();
-      useGridStore.getState().applyPreset(id, 'bw');
+      useGridStore.getState().applyPreset(id, 'clarendon');
       useGridStore.getState().undo();
       expect(getLeaf(id).effects).toEqual({
         preset: null,
@@ -127,6 +127,9 @@ describe('effects actions', () => {
         contrast: 0,
         saturation: 0,
         blur: 0,
+        sepia: 0,
+        hueRotate: 0,
+        grayscale: 0,
       });
     });
   });
@@ -152,6 +155,9 @@ describe('effects actions', () => {
         contrast: 0,
         saturation: 0,
         blur: 0,
+        sepia: 0,
+        hueRotate: 0,
+        grayscale: 0,
       });
       expect(leaf.panX).toBe(10);
       expect(leaf.panY).toBe(20);
@@ -162,8 +168,8 @@ describe('effects actions', () => {
 
     it('undo immediately after resetEffects restores DEFAULT_EFFECTS (single snapshot)', () => {
       const id = firstLeafId();
-      useGridStore.getState().applyPreset(id, 'warm');
-      // Starting from warm state, calling resetEffects pushes a snapshot and
+      useGridStore.getState().applyPreset(id, 'lark');
+      // Starting from lark state, calling resetEffects pushes a snapshot and
       // resets to default. Undo unwinds the most recent snapshot; because the
       // store's snapshot model records pre-action state at each index, undo
       // returns to the baseline state captured at store init.
@@ -175,6 +181,9 @@ describe('effects actions', () => {
         contrast: 0,
         saturation: 0,
         blur: 0,
+        sepia: 0,
+        hueRotate: 0,
+        grayscale: 0,
       });
     });
   });
@@ -191,7 +200,7 @@ describe('effects actions', () => {
         objectPosition: 'top left',
         backgroundColor: '#00ff00',
       });
-      useGridStore.getState().applyPreset(id, 'sepia');
+      useGridStore.getState().applyPreset(id, 'juno');
 
       useGridStore.getState().resetCell(id);
 
@@ -203,6 +212,9 @@ describe('effects actions', () => {
         contrast: 0,
         saturation: 0,
         blur: 0,
+        sepia: 0,
+        hueRotate: 0,
+        grayscale: 0,
       });
       expect(leaf.panX).toBe(0);
       expect(leaf.panY).toBe(0);

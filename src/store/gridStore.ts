@@ -247,6 +247,9 @@ export const useGridStore = create<GridStoreState>()(
           'blur' in partial;
         if (touchesNumeric && leaf.effects.preset !== null) {
           nextEffects.preset = null;
+          nextEffects.sepia = 0;
+          nextEffects.hueRotate = 0;
+          nextEffects.grayscale = 0;
         }
         state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
       }),
@@ -261,16 +264,31 @@ export const useGridStore = create<GridStoreState>()(
       }),
 
     // applyPreset: one snapshot + write. Sets preset flag + numeric values.
+    // D-11: clicking the active preset toggles it off — clears preset and
+    // preset-only fields (sepia/hueRotate/grayscale) while leaving sliders.
     applyPreset: (nodeId, presetName) =>
       set(state => {
         const leaf = findNode(current(state.root), nodeId);
         if (!leaf || leaf.type !== 'leaf') return;
         pushSnapshot(state);
-        const nextEffects: EffectSettings = {
-          preset: presetName,
-          ...PRESET_VALUES[presetName],
-        };
-        state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
+        if (leaf.effects.preset === presetName) {
+          // D-11: toggle off — clear preset + zero preset-only fields, leave sliders
+          const nextEffects: EffectSettings = {
+            ...leaf.effects,
+            preset: null,
+            sepia: 0,
+            hueRotate: 0,
+            grayscale: 0,
+          };
+          state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
+        } else {
+          // Apply preset: set preset flag + all 7 numeric values
+          const nextEffects: EffectSettings = {
+            preset: presetName,
+            ...PRESET_VALUES[presetName],
+          };
+          state.root = updateLeaf(current(state.root), nodeId, { effects: nextEffects });
+        }
       }),
 
     // resetEffects: one snapshot + write. Only touches effects (preserves

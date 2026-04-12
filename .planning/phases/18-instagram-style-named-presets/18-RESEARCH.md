@@ -525,14 +525,14 @@ This table captures every file that needs modification. The planner should creat
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Toggle-off store action: extend `applyPreset` vs add `clearPreset`?**
+1. **Toggle-off store action: extend `applyPreset` vs add `clearPreset`?** RESOLVED: Extended `applyPreset` to handle toggle-off (Plan 01 Task 2).
    - What we know: D-11 requires clearing preset + zeroing 3 fields when an active chip is clicked. The current `setEffects` won't do this automatically.
    - What's unclear: Whether the planner prefers extending `applyPreset` (single action, handles both apply and deselect) or adding a discrete `clearPreset` action (more explicit, easier to test).
    - Recommendation: Extend `applyPreset` — it already handles preset application and one function call in the chip `onClick` is cleaner.
 
-2. **Sample photo: who sources it?**
+2. **Sample photo: who sources it?** RESOLVED: Executor generates programmatically using Canvas API or downloads from a CC0 source per Plan 02 Task 1.
    - What we know: The plan must specify the photo (D-09). The executor cannot invent it.
    - What's unclear: Whether the project maintainer (Radu) will provide the photo or the executor should fetch one from a public CC0 source.
    - Recommendation: Planner should include a task step: "Source a 192×192px CC0 portrait or landscape photo, save as `src/assets/presets/sample.jpg`." The executor can download from Unsplash or Pexels.

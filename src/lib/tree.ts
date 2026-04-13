@@ -360,6 +360,8 @@ export function moveLeafToEdge(
     panScale: sourceNode.panScale,
     objectPosition: sourceNode.objectPosition,
     effects: { ...sourceNode.effects },
+    audioEnabled: sourceNode.audioEnabled,
+    hasAudioTrack: sourceNode.hasAudioTrack,
   };
 
   const direction: SplitDirection =

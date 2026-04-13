@@ -217,6 +217,10 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
     const n = findNode(s.root, nodeId) as LeafNode | null;
     return n && n.type === 'leaf' ? n.audioEnabled : true;
   });
+  const hasAudioTrack = useGridStore(s => {
+    const n = findNode(s.root, nodeId) as LeafNode | null;
+    return n && n.type === 'leaf' ? (n.hasAudioTrack ?? true) : true;
+  });
   const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
   const root = useGridStore(s => s.root);
   const updateCell = useGridStore(s => s.updateCell);
@@ -337,22 +341,34 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
             Playback
           </p>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-400">Cell audio</span>
-            <button
-              data-testid="sidebar-audio-button"
-              className={`flex items-center justify-center rounded p-2 transition-colors ${
-                audioEnabled
-                  ? 'hover:bg-white/10 text-white'
-                  : 'hover:bg-red-500/20 text-red-500'
-              }`}
-              onClick={() => toggleAudioEnabled(nodeId)}
-              aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
-            >
-              {audioEnabled
-                ? <Volume2 size={20} />
-                : <VolumeX size={20} />
-              }
-            </button>
+            <span className="text-xs text-neutral-400">
+              {hasAudioTrack ? 'Cell audio' : 'No audio track'}
+            </span>
+            {hasAudioTrack ? (
+              // Interactive toggle — unchanged
+              <button
+                data-testid="sidebar-audio-button"
+                className={`flex items-center justify-center rounded p-2 transition-colors ${
+                  audioEnabled
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-red-500/20 text-red-500'
+                }`}
+                onClick={() => toggleAudioEnabled(nodeId)}
+                aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+              >
+                {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+              </button>
+            ) : (
+              // Locked state — no audio track
+              <button
+                data-testid="sidebar-audio-button"
+                className="flex items-center justify-center rounded p-2 text-gray-400 opacity-40 cursor-not-allowed"
+                disabled
+                aria-label="No audio track"
+              >
+                <VolumeX size={20} />
+              </button>
+            )}
           </div>
         </div>
       )}

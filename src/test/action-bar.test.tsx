@@ -25,6 +25,7 @@ function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
     objectPosition: 'center center',
     backgroundColor: null,
     audioEnabled: true,
+    hasAudioTrack: true,
     ...overrides,
   };
 }
@@ -152,6 +153,57 @@ describe('ActionBar', () => {
       setStoreRoot(leaf);
       render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={false} onUploadClick={vi.fn()} />);
       expect(screen.getByRole('button', { name: /remove cell/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('Audio locked state (MUTE-02)', () => {
+    it('renders disabled VolumeX when video has no audio track', () => {
+      const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', hasAudioTrack: false });
+      useGridStore.setState({
+        root: leaf,
+        mediaRegistry: { 'mid-1': 'blob:video' },
+        mediaTypeMap: { 'mid-1': 'video' },
+      });
+      render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+      const audioBtn = screen.getByTestId('audio-button');
+      expect(audioBtn).toBeDisabled();
+    });
+
+    it('locked audio button has aria-label "No audio track"', () => {
+      const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', hasAudioTrack: false });
+      useGridStore.setState({
+        root: leaf,
+        mediaRegistry: { 'mid-1': 'blob:video' },
+        mediaTypeMap: { 'mid-1': 'video' },
+      });
+      render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+      expect(screen.getByTestId('audio-button')).toHaveAttribute('aria-label', 'No audio track');
+    });
+
+    it('locked audio button does not call toggleAudioEnabled on click', async () => {
+      const user = userEvent.setup();
+      const toggleAudioEnabled = vi.fn();
+      const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', hasAudioTrack: false });
+      useGridStore.setState({
+        root: leaf,
+        mediaRegistry: { 'mid-1': 'blob:video' },
+        mediaTypeMap: { 'mid-1': 'video' },
+        toggleAudioEnabled,
+      });
+      render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+      await user.click(screen.getByTestId('audio-button'));
+      expect(toggleAudioEnabled).not.toHaveBeenCalled();
+    });
+
+    it('renders interactive toggle when video HAS audio track', () => {
+      const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', hasAudioTrack: true });
+      useGridStore.setState({
+        root: leaf,
+        mediaRegistry: { 'mid-1': 'blob:video' },
+        mediaTypeMap: { 'mid-1': 'video' },
+      });
+      render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
+      expect(screen.getByTestId('audio-button')).not.toBeDisabled();
     });
   });
 

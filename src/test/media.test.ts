@@ -228,20 +228,42 @@ describe('autoFillCells', () => {
   });
 
   it('calls setHasAudioTrack after each media assignment for video files', async () => {
-    // Mock URL.createObjectURL since jsdom doesn't support it
+    // Mock URL.createObjectURL / revokeObjectURL since jsdom doesn't support them
     const origCreateObjectURL = URL.createObjectURL;
+    const origRevokeObjectURL = URL.revokeObjectURL;
     URL.createObjectURL = vi.fn().mockReturnValue('blob:fake-url');
+    URL.revokeObjectURL = vi.fn();
+    // Mock document.createElement('video') so detectAudioTrack completes via HTMLVideoElement path
+    const handlers: Record<string, () => void> = {};
+    const mockVideo = {
+      preload: '',
+      audioTracks: { length: 1 }, // simulate video with audio → returns true
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+      }),
+    };
+    Object.defineProperty(mockVideo, 'src', {
+      set(_val: string) { setTimeout(() => handlers['loadedmetadata']?.(), 0); },
+      get() { return ''; },
+    });
+    const origCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return origCreateElement(tag);
+    });
     try {
       const root = buildInitialTree();
       const actions = makeMockActions(root);
       const leaves = getAllLeaves(actions.getRoot());
       const videoFile = new File([''], 'clip.mp4', { type: 'video/mp4' });
       await autoFillCells([videoFile], actions as FillActions);
-      // setHasAudioTrack must be called once — value comes from detectAudioTrack (mocked true)
+      // setHasAudioTrack must be called once — value comes from detectAudioTrack (true via mock)
       expect(actions.setHasAudioTrack).toHaveBeenCalledTimes(1);
       expect(actions.setHasAudioTrack).toHaveBeenCalledWith(leaves[0].id, true);
     } finally {
       URL.createObjectURL = origCreateObjectURL;
+      URL.revokeObjectURL = origRevokeObjectURL;
+      vi.restoreAllMocks();
     }
   });
 

@@ -89,68 +89,129 @@ describe('getBFSLeavesWithDepth', () => {
 });
 
 // ---------------------------------------------------------------------------
-// detectAudioTrack tests
+// detectAudioTrack tests (HTMLVideoElement-based)
 // ---------------------------------------------------------------------------
 
 describe('detectAudioTrack', () => {
-  const mockClose = vi.fn().mockResolvedValue(undefined);
-  const mockDecode = vi.fn();
+  // Helper: create a mock video element with configurable audio detection APIs
+  function makeMockVideo(opts: {
+    audioTracks?: { length: number };
+    mozHasAudio?: boolean;
+    fireEvent?: 'loadedmetadata' | 'error';
+  } = {}) {
+    const handlers: Record<string, () => void> = {};
+    const video = {
+      preload: '',
+      src: '',
+      audioTracks: opts.audioTracks,
+      mozHasAudio: opts.mozHasAudio,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+        // Auto-fire the requested event after src is set (via set src accessor)
+      }),
+      _fireEvent: (event: string) => {
+        handlers[event]?.();
+      },
+    };
+
+    // Override src setter to auto-fire the event after assignment
+    const eventToFire = opts.fireEvent ?? 'loadedmetadata';
+    Object.defineProperty(video, 'src', {
+      set(_val: string) {
+        setTimeout(() => video._fireEvent(eventToFire), 0);
+      },
+      get() { return ''; },
+    });
+
+    return video;
+  }
 
   beforeEach(() => {
     vi.resetAllMocks();
-    mockClose.mockResolvedValue(undefined);
-
-    global.AudioContext = vi.fn().mockImplementation(() => ({
-      decodeAudioData: mockDecode,
-      close: mockClose,
-    })) as unknown as typeof AudioContext;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:test');
+    URL.revokeObjectURL = vi.fn();
   });
 
-  it('returns true when audioBuffer has numberOfChannels > 0', async () => {
-    mockDecode.mockResolvedValue({ numberOfChannels: 2 });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns true when video has audioTracks with length > 0', async () => {
+    const mockVideo = makeMockVideo({ audioTracks: { length: 2 } });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
     const result = await detectAudioTrack(file);
     expect(result).toBe(true);
   });
 
-  it('returns false when audioBuffer has numberOfChannels === 0', async () => {
-    mockDecode.mockResolvedValue({ numberOfChannels: 0 });
+  it('returns false when video has audioTracks with length === 0', async () => {
+    const mockVideo = makeMockVideo({ audioTracks: { length: 0 } });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
     const result = await detectAudioTrack(file);
     expect(result).toBe(false);
   });
 
-  it('returns true (fail-open) when decodeAudioData rejects', async () => {
-    mockDecode.mockRejectedValue(new Error('Unsupported codec'));
+  it('returns true when mozHasAudio is true (Firefox)', async () => {
+    const mockVideo = makeMockVideo({ mozHasAudio: true });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
     const result = await detectAudioTrack(file);
     expect(result).toBe(true);
   });
 
-  it('returns true when AudioContext constructor throws', async () => {
-    global.AudioContext = vi.fn().mockImplementation(() => {
-      throw new Error('AudioContext not available');
-    }) as unknown as typeof AudioContext;
+  it('returns false when mozHasAudio is false and no audioTracks', async () => {
+    const mockVideo = makeMockVideo({ mozHasAudio: false });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
+    const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
+    const result = await detectAudioTrack(file);
+    expect(result).toBe(false);
+  });
 
+  it('returns true (fail-open) when neither API is available', async () => {
+    // No audioTracks, no mozHasAudio
+    const mockVideo = makeMockVideo({});
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
     const result = await detectAudioTrack(file);
     expect(result).toBe(true);
   });
 
-  it('calls ctx.close() after successful decode', async () => {
-    mockDecode.mockResolvedValue({ numberOfChannels: 1 });
+  it('returns true (fail-open) on video error event', async () => {
+    const mockVideo = makeMockVideo({ fireEvent: 'error' });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
-    await detectAudioTrack(file);
-    expect(mockClose).toHaveBeenCalledTimes(1);
+    const result = await detectAudioTrack(file);
+    expect(result).toBe(true);
   });
 
-  it('calls ctx.close() even when decodeAudioData rejects', async () => {
-    mockDecode.mockRejectedValue(new Error('decode failed'));
+  it('revokes blob URL after detection', async () => {
+    const mockVideo = makeMockVideo({ audioTracks: { length: 1 } });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return document.createElement(tag);
+    });
     const file = new File(['data'], 'test.mp4', { type: 'video/mp4' });
     await detectAudioTrack(file);
-    // close is called in finally, so even on rejection it should be called
-    // (unless the AudioContext constructor itself throws)
-    expect(mockClose).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test');
   });
 });
 

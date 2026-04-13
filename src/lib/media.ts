@@ -27,26 +27,62 @@ export type FillActions = {
 };
 
 /**
- * Detects whether a video file contains an audio track by attempting
- * to decode its audio data via AudioContext.
+ * Detects whether a video file contains an audio track using HTMLVideoElement.
  *
- * Returns true if audio channels are detected, false if none.
- * On any error (no AudioContext, unsupported codec, no audio stream),
- * returns true (fail-open per D-05) — a false positive is better
- * than locking the toggle on a video that actually has audio.
+ * Uses the AudioTrackList API (Chrome/Safari) or mozHasAudio (Firefox) to
+ * detect audio presence after loading video metadata. Falls open (returns true)
+ * when detection fails, the video element errors, times out, or the browser
+ * does not support either API.
+ *
+ * Returns true if audio is detected or detection is uncertain (fail-open).
+ * Returns false only when the browser confirms no audio track is present.
+ * A false positive is better than locking the toggle on a video that has audio.
  */
 export async function detectAudioTrack(file: File): Promise<boolean> {
+  const url = URL.createObjectURL(file);
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const ctx = new AudioContext();
-    try {
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      return audioBuffer.numberOfChannels > 0;
-    } finally {
-      await ctx.close();
-    }
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+
+    return await new Promise<boolean>((resolve) => {
+      // 5-second timeout — fail-open if metadata never loads (T-19-gc-02)
+      const timer = setTimeout(() => resolve(true), 5000);
+
+      video.addEventListener('loadedmetadata', () => {
+        clearTimeout(timer);
+        const audioTracks = (video as unknown as { audioTracks?: { length: number } }).audioTracks;
+        const mozHasAudio = (video as unknown as { mozHasAudio?: boolean }).mozHasAudio;
+
+        if (audioTracks !== undefined) {
+          // Chrome/Safari: AudioTrackList API available
+          if (audioTracks.length > 0) {
+            resolve(true);
+          } else if (mozHasAudio === true) {
+            // Belt-and-suspenders: Firefox also has audioTracks in newer versions
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        } else if (mozHasAudio !== undefined) {
+          // Firefox: mozHasAudio available, audioTracks not
+          resolve(mozHasAudio === true);
+        } else {
+          // Neither API available — fail-open, browser doesn't support detection
+          resolve(true);
+        }
+      });
+
+      video.addEventListener('error', () => {
+        clearTimeout(timer);
+        resolve(true); // fail-open on video load error
+      });
+
+      video.src = url;
+    });
   } catch {
-    return true;
+    return true; // fail-open on any unexpected error
+  } finally {
+    URL.revokeObjectURL(url); // T-19-gc-01: always revoke blob URL
   }
 }
 

@@ -53,7 +53,10 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
 /**
  * Fills empty cells with files in BFS (breadth-first) order.
  * Per D-13: level-by-level fill via getBFSLeavesWithDepth.
- * Per D-14: overflow splits use depth % 2 for direction (even=horizontal, odd=vertical).
+ * Per D-14 (revised): overflow splits use overflowCount % 2 for direction
+ *   (even=horizontal, odd=vertical). overflowCount reliably alternates
+ *   regardless of which splitNode case (A or B) is triggered — unlike the
+ *   previous depth-based approach which failed when Case B kept depth constant.
  * Per D-15: audio detection runs for video files; images are always false.
  */
 export async function autoFillCells(
@@ -69,7 +72,7 @@ export async function autoFillCells(
   if (mediaFiles.length === 0) return;
 
   let lastFilledNodeId: string | null = null;
-  let lastFilledDepth = 0;
+  let overflowCount = 0;
 
   for (const file of mediaFiles) {
     // Re-read root each iteration to get fresh tree after splits
@@ -78,31 +81,29 @@ export async function autoFillCells(
     const emptyEntry = bfsLeaves.find(e => e.leaf.mediaId === null);
 
     let targetNodeId: string;
-    let targetDepth: number;
 
     if (emptyEntry) {
       targetNodeId = emptyEntry.leaf.id;
-      targetDepth = emptyEntry.depth;
     } else if (lastFilledNodeId !== null) {
-      // D-14: overflow split direction based on depth of last filled node
-      const splitDir = lastFilledDepth % 2 === 0 ? 'horizontal' : 'vertical';
+      // D-14 (revised): overflow split direction based on overflowCount
+      const splitDir = overflowCount % 2 === 0 ? 'horizontal' : 'vertical';
       actions.split(lastFilledNodeId, splitDir);
+      overflowCount++;
       const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
       const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
       if (!newEmpty) continue;
       targetNodeId = newEmpty.leaf.id;
-      targetDepth = newEmpty.depth;
     } else {
       // Edge case: single filled root leaf — no previous fill tracked
       const anyEntry = bfsLeaves[0];
       if (!anyEntry) continue;
-      const splitDir = anyEntry.depth % 2 === 0 ? 'horizontal' : 'vertical';
+      const splitDir = overflowCount % 2 === 0 ? 'horizontal' : 'vertical';
       actions.split(anyEntry.leaf.id, splitDir);
+      overflowCount++;
       const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
       const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
       if (!newEmpty) continue;
       targetNodeId = newEmpty.leaf.id;
-      targetDepth = newEmpty.depth;
     }
 
     const mediaId = nanoid();
@@ -126,6 +127,5 @@ export async function autoFillCells(
     actions.setHasAudioTrack(targetNodeId, hasAudio);
 
     lastFilledNodeId = targetNodeId;
-    lastFilledDepth = targetDepth;
   }
 }

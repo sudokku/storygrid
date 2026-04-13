@@ -172,14 +172,38 @@ describe('autoFillCells', () => {
     expect(actions.split).not.toHaveBeenCalled();
   });
 
-  it('auto-splits last filled leaf for overflow files (depth-based direction)', async () => {
-    const root = buildInitialTree(); // vertical container (depth 0) with 2 empty leaves at depth 1
+  it('auto-splits last filled leaf for overflow files (alternating direction)', async () => {
+    const root = buildInitialTree(); // vertical container with 2 empty leaves
     const actions = makeMockActions(root);
     // 3 files but only 2 empty cells → 3rd file should trigger a split
-    // The last filled leaf is at depth 1 (odd) → vertical split
     await autoFillCells([makeImageFile(), makeImageFile(), makeImageFile()], actions as FillActions);
     expect(actions.split).toHaveBeenCalledTimes(1);
     expect(actions.addMedia).toHaveBeenCalledTimes(3);
+  });
+
+  it('overflow splits alternate direction across multiple overflows', async () => {
+    // Single-leaf tree: 5 files → 4 overflow splits needed
+    // overflowCount: 0=H, 1=V, 2=H, 3=V
+    const root = buildInitialTree(); // has 2 leaves by default — we need 1
+    // Use a single leaf tree for clarity
+    const singleLeaf: GridNode = { type: 'leaf', id: 'root-leaf', mediaId: null, fit: 'cover', objectPosition: { x: 0.5, y: 0.5 }, effects: { brightness: 100, contrast: 100, saturation: 100, blur: 0, preset: 'none' }, audioEnabled: true, hasAudioTrack: false };
+    const actions = makeMockActions(singleLeaf);
+    const files = [
+      makeImageFile('a.jpg'),
+      makeImageFile('b.jpg'),
+      makeImageFile('c.jpg'),
+      makeImageFile('d.jpg'),
+      makeImageFile('e.jpg'),
+    ];
+    await autoFillCells(files, actions as FillActions);
+    // 4 overflow splits for 5 files into 1 initial leaf
+    expect(actions.split).toHaveBeenCalledTimes(4);
+    // Directions should alternate: H, V, H, V
+    expect(actions.split).toHaveBeenNthCalledWith(1, expect.any(String), 'horizontal');
+    expect(actions.split).toHaveBeenNthCalledWith(2, expect.any(String), 'vertical');
+    expect(actions.split).toHaveBeenNthCalledWith(3, expect.any(String), 'horizontal');
+    expect(actions.split).toHaveBeenNthCalledWith(4, expect.any(String), 'vertical');
+    expect(actions.addMedia).toHaveBeenCalledTimes(5);
   });
 
   it('fills a 2x2 grid (4 leaves) in BFS order (level-by-level)', async () => {

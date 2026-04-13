@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { GridNode } from '../types';
-import { getBFSLeavesWithDepth } from './tree';
+import { getBFSLeavesWithDepth, getParentDirection } from './tree';
 
 /**
  * Converts a File to a base64 data URI using FileReader.
@@ -87,12 +87,20 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
 }
 
 /**
- * Fills empty cells with files in BFS (breadth-first) order.
+ * Fills cells with files using a two-phase BFS approach.
+ *
+ * Phase 1 — Pre-expand: Grow the tree until it has at least N empty leaves,
+ *   using a FIFO queue seeded with all current leaves in BFS order. Each
+ *   split uses the cross-direction of the parent (horizontal parent → vertical
+ *   split, vertical parent → horizontal split) to force Case C in splitNode
+ *   (wrap in new container). This prevents Case B (same-direction sibling
+ *   append at the same depth) and ensures all splits descend uniformly,
+ *   producing a balanced tree.
+ *
+ * Phase 2 — Fill: Assign media to empty leaves in BFS order (level-by-level,
+ *   left-to-right) so all cells at the same depth are filled before going deeper.
+ *
  * Per D-13: level-by-level fill via getBFSLeavesWithDepth.
- * Per D-14 (revised): overflow splits use overflowCount % 2 for direction
- *   (even=horizontal, odd=vertical). overflowCount reliably alternates
- *   regardless of which splitNode case (A or B) is triggered — unlike the
- *   previous depth-based approach which failed when Case B kept depth constant.
  * Per D-15: audio detection runs for video files; images are always false.
  */
 export async function autoFillCells(
@@ -107,40 +115,50 @@ export async function autoFillCells(
   );
   if (mediaFiles.length === 0) return;
 
-  let lastFilledNodeId: string | null = null;
-  let overflowCount = 0;
+  const N = mediaFiles.length;
 
-  for (const file of mediaFiles) {
-    // Re-read root each iteration to get fresh tree after splits
-    const currentRoot = actions.getRoot();
-    const bfsLeaves = getBFSLeavesWithDepth(currentRoot);
-    const emptyEntry = bfsLeaves.find(e => e.leaf.mediaId === null);
+  // Phase 1: Pre-expand the tree until there are at least N empty leaves.
+  // FIFO queue ensures BFS-order expansion (all nodes at depth D before D+1).
+  {
+    const initialLeaves = getBFSLeavesWithDepth(actions.getRoot());
+    const expandQueue: string[] = initialLeaves.map(e => e.leaf.id);
 
-    let targetNodeId: string;
+    while (true) {
+      const emptyCount = getBFSLeavesWithDepth(actions.getRoot())
+        .filter(e => e.leaf.mediaId === null).length;
+      if (emptyCount >= N) break;
 
-    if (emptyEntry) {
-      targetNodeId = emptyEntry.leaf.id;
-    } else if (lastFilledNodeId !== null) {
-      // D-14 (revised): overflow split direction based on overflowCount
-      const splitDir = overflowCount % 2 === 0 ? 'horizontal' : 'vertical';
-      actions.split(lastFilledNodeId, splitDir);
-      overflowCount++;
-      const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
-      const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
-      if (!newEmpty) continue;
-      targetNodeId = newEmpty.leaf.id;
-    } else {
-      // Edge case: single filled root leaf — no previous fill tracked
-      const anyEntry = bfsLeaves[0];
-      if (!anyEntry) continue;
-      const splitDir = overflowCount % 2 === 0 ? 'horizontal' : 'vertical';
-      actions.split(anyEntry.leaf.id, splitDir);
-      overflowCount++;
-      const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
-      const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
-      if (!newEmpty) continue;
-      targetNodeId = newEmpty.leaf.id;
+      const toSplitId = expandQueue.shift();
+      if (!toSplitId) break;
+
+      // Capture current leaf IDs so we can identify the newly created sibling
+      const beforeIds = new Set(
+        getBFSLeavesWithDepth(actions.getRoot()).map(e => e.leaf.id),
+      );
+
+      // Always use the cross-direction of the parent to force Case C (deeper
+      // nesting). If there is no parent the leaf is root — use horizontal.
+      const parentDir = getParentDirection(actions.getRoot(), toSplitId);
+      const splitDir: 'horizontal' | 'vertical' =
+        parentDir === 'horizontal' ? 'vertical' : 'horizontal';
+
+      actions.split(toSplitId, splitDir);
+
+      // Enqueue the original leaf (still exists, just moved deeper) and the
+      // new sibling at the back of the queue. Both go to the end so all
+      // current-level nodes are processed before descending another level.
+      const newLeafId = getBFSLeavesWithDepth(actions.getRoot())
+        .find(e => !beforeIds.has(e.leaf.id))?.leaf.id;
+      expandQueue.push(toSplitId);
+      if (newLeafId) expandQueue.push(newLeafId);
     }
+  }
+
+  // Phase 2: Fill empty leaves in BFS order (level-by-level, left-to-right).
+  for (const file of mediaFiles) {
+    const bfsLeaves = getBFSLeavesWithDepth(actions.getRoot());
+    const emptyEntry = bfsLeaves.find(e => e.leaf.mediaId === null);
+    if (!emptyEntry) break;
 
     const mediaId = nanoid();
 
@@ -154,14 +172,12 @@ export async function autoFillCells(
       actions.addMedia(mediaId, dataUri, 'image');
     }
 
-    actions.setMedia(targetNodeId, mediaId);
+    actions.setMedia(emptyEntry.leaf.id, mediaId);
 
     // D-15: Audio detection — video files get detected, images are always false
     const hasAudio = file.type.startsWith('video/')
       ? await detectAudioTrack(file)
       : false;
-    actions.setHasAudioTrack(targetNodeId, hasAudio);
-
-    lastFilledNodeId = targetNodeId;
+    actions.setHasAudioTrack(emptyEntry.leaf.id, hasAudio);
   }
 }

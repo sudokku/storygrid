@@ -1,375 +1,446 @@
-# Pitfalls Research
+# Domain Pitfalls
 
-**Domain:** Web-based Instagram story editor — v1.3 feature additions (filters, boomerang, trim, audio preview, auto-mute, breadth-first drop)
-**Researched:** 2026-04-11
-**Confidence:** HIGH (based on direct codebase inspection + domain knowledge)
+**Domain:** Browser-based media editor (Instagram Story collage, recursive split-tree, CSS→image export)
+**Stack:** Vite + React 18 + TypeScript + Zustand + Immer + Tailwind + html-to-image + @dnd-kit + @ffmpeg/ffmpeg
+**Researched:** 2026-03-31
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Instagram Filter CSS Approximation — Filter Function Order Is Non-Commutative
+Mistakes that cause rewrites, blank exports, or unshippable features.
+
+---
+
+### Pitfall 1: html-to-image produces a blank or partial PNG on the first call
 
 **What goes wrong:**
-CSS filter functions are applied in declaration order, and that order changes the visual result. `brightness(1.2) saturate(1.5)` produces a different output than `saturate(1.5) brightness(1.2)`. The existing `effectsToFilterString` locks the order to brightness → contrast → saturate → blur. If Instagram-style presets are authored assuming a different order (e.g. contrast before brightness, as many LUT pipelines do), the exported result will look wrong relative to the preview and relative to Instagram's actual filters.
+`toPng()` internally serializes the DOM to SVG, then draws that SVG onto a canvas. On the first invocation, external resources — images, fonts, stylesheets — may not have finished fetching into the library's internal base64 cache. The result is a PNG where image cells are white rectangles and text uses the browser's fallback font.
 
 **Why it happens:**
-Developers prototype filters interactively in DevTools and do not notice order dependence because the eye adapts. When the formula is later coded with a different sequence, the result diverges from the prototype.
+The library fetches every external resource referenced in computed CSS (including `@font-face` sources and `<img>` `src` attributes) during each call, re-encoding them as data URIs inside the SVG blob. On the first call the fetches race against SVG serialization. Subsequent calls often succeed because the fetches complete before serialization begins.
 
-**How to avoid:**
-Lock the canonical order first, then tune numeric values to match the target look within that fixed order. The existing contract in `effects.ts` (brightness → contrast → saturate → blur) is the single source of truth. Any v1.3 preset must use this same function signature; the order must NOT change to accommodate a new preset's aesthetics. If a new preset genuinely requires a different function (e.g. `sepia()`, `hue-rotate()`), extend `effectsToFilterString` with those functions appended at a stable position, and update the contract tests in `effects.test.ts`.
+**Consequences:**
+- MVP export silently delivers corrupt PNGs.
+- Users report "blank download" but cannot reproduce after retrying.
+- The bug is masked in dev because localhost has near-zero latency.
+
+**Prevention:**
+1. Call `toPng()` twice and discard the first result. This is the documented community workaround (verified: multiple issues on `bubkoo/html-to-image`).
+2. Call `getFontEmbedCSS()` once at app load, store the result, and pass it as `{ fontEmbedCSS: cachedValue }` to every subsequent `toPng()` call — this skips redundant font fetching on each export.
+3. Pre-load all user images as base64 data URIs at the time of upload (convert `File` → `data:` URL via `FileReader.readAsDataURL`), and store that data URI in the cell state instead of a blob URL. The export element then contains only inline data, eliminating all network fetches during capture.
 
 **Warning signs:**
-- The preset looks correct on screen but wrong in the exported PNG/MP4 (indicates the filter string is built differently in two code paths — check that both paths call `effectsToFilterString` from `effects.ts`, not a local string).
-- Two presets that share the same slider values look different from each other (indicates order is inconsistent between them).
+- Export works in development, fails or is incomplete in staging/production.
+- First export call in a fresh session produces blank cells; retrying works.
+- Console shows `SecurityError: Failed to fetch` or CORS errors during export.
 
-**Phase to address:**
-Instagram preset redesign phase (first v1.3 phase). Lock contract tests before any preset values are tuned.
+**Phase relevance:** Phase 4 (Export Engine) — must be addressed before export is considered done.
 
 ---
 
-### Pitfall 2: CSS Filters Cannot Replicate LUT-Based Tone Curves — Manage Expectations Before Naming Filters
+### Pitfall 2: html-to-image and video elements — always renders blank
 
 **What goes wrong:**
-Instagram filters (Clarendon, Juno, Lark, etc.) use per-channel LUTs that bend the tone curve non-linearly. CSS `brightness/contrast/saturate/hue-rotate` are linear-gain operations applied uniformly to all channels. You cannot replicate the warm-shadows + cool-highlights of Clarendon with CSS filters; the result will look approximately similar at best. If the phase is named "Instagram filters" in user-facing UI, users will compare directly to their phone and notice the gap.
+`toPng()` cannot capture the current frame of a `<video>` element. The SVG serialization step omits video content entirely; the canvas cell that corresponds to the video is blank (black or transparent). This is a hard limitation of the SVG-serialization approach — it does not use `drawImage` against the video element.
 
 **Why it happens:**
-The scope is defined by the feature name. Once the phase is complete, changing the product copy is a separate discussion, but the technical gap is fixed — you cannot add LUT support later without a canvas overlay pass.
+The library rasterizes by drawing SVG into a canvas via `new Image().src = svgBlob`. At that point, video security restrictions (`tainted canvas` rules) prevent the browser from drawing cross-origin video frames, and no frame callback fires during serialization.
 
-**How to avoid:**
-Name the presets with their own names (e.g. "Golden Hour", "Faded Film", "Vivid City") rather than Instagram's trademarked names. Define target aesthetics by the CSS sliders that are achievable, not by reverse-engineering Instagram. Research the visual territory each preset should occupy (warm/cool, high/low contrast, vivid/muted) and tune to that spec. Optionally: if a canvas overlay pass is added later (e.g. a semi-transparent gradient overlay per preset), it can extend the effect. But do not block v1.3 on canvas overlay — that is a separate feature.
+**Consequences:**
+- Phase 6 (Video Support) cannot use the Phase 4 export path for cells that contain video.
+- Shipping video cells without solving this means video frames are always missing from exports.
+
+**Prevention:**
+For video export (Phase 6) use ffmpeg.wasm's `xstack` filter entirely — do not attempt html-to-image for video frames. The architecture is already correct: Phase 4 is image-only, Phase 6 is ffmpeg-only. Never attempt to use `toPng()` on a container that has live `<video>` children.
+
+For a "poster frame" thumbnail during video export progress display, use `requestVideoFrameCallback` or draw the video to an offscreen canvas first, then export that canvas as a data URL.
 
 **Warning signs:**
-- A preset is named after an Instagram filter but the result looks noticeably different from the Instagram equivalent.
-- Stakeholder feedback says "the filters don't look like Instagram" — this is expected and unavoidable with CSS-only; it should be addressed in the roadmap before naming.
+- Any code that calls `toPng()` on a parent element containing `<video>` tags.
+- Export function is not branching on whether any cells contain video.
 
-**Phase to address:**
-Instagram preset redesign phase. Naming and scope decisions happen in the plan doc, not in code.
+**Phase relevance:** Phase 4 (confirm image-only path) and Phase 6 (enforce ffmpeg-only path).
 
 ---
 
-### Pitfall 3: Boomerang rAF Loop — Frame Timing Drift Breaks Multi-Cell Sync
+### Pitfall 3: CORS tainted canvas prevents export of user images from object URLs or external URLs
 
 **What goes wrong:**
-A boomerang cell plays forward then backward in a rAF loop. If the reverse loop is driven by decrementing a frame index on each `requestAnimationFrame` callback, the actual display timing depends on the rAF callback rate (typically 60 fps). If the source video is 30 fps, every other rAF callback will advance the index but show the same frame — this is fine. However, if the rAF callback is jittery (e.g. during heavy GPU load), the index increments at a variable rate. When other non-boomerang cells are also playing in the same rAF loop, they advance time using `video.currentTime`, which is independent of the rAF callback rate. The result is that boomerang cells drift out of sync with normal cells on low-end hardware.
+If any `<img>` inside the export container has a `src` that is cross-origin (including some CDN-hosted assets or improperly handled local file URLs), the browser marks the canvas as tainted, throwing `SecurityError: The operation is insecure` when `toPng()` calls `canvas.toDataURL()`.
+
+Separately, Chromium has a documented cache behavior: if an image is first loaded without CORS headers and then re-requested with `crossOrigin="anonymous"`, Chromium serves the cached non-CORS response, which re-taints the canvas. This is flagged as `WontFix` in Chromium's tracker.
 
 **Why it happens:**
-Two different time sources (rAF callback count vs. `video.currentTime`) are mixed in the same playback loop.
+- User drops an image from an external URL (not a local file) directly into a cell.
+- The export div uses `<img src="blob:...">` — blob URLs are same-origin, so these are safe. But if the user pastes an `https://` URL, it becomes cross-origin.
+- CSS `background-image` from cross-origin URLs in the export element triggers the same failure.
 
-**How to avoid:**
-Drive boomerang playback from wall-clock time, not from rAF callback count. Store `boomerangStartTime = performance.now()` when playback begins and compute `loopedVideoTime = computeBoomerangTime(performance.now() - boomerangStartTime, videoDuration)`. `computeBoomerangTime` maps wall-clock elapsed time into the forward+backward cycle using a triangle wave (t mod 2D, mirrored). Set `video.currentTime` from this computed time on each rAF callback instead of incrementing/decrementing a frame counter. This keeps boomerang cells synchronized with `video.currentTime`-driven non-boomerang cells.
+**Consequences:**
+Export silently produces a tainted canvas error; the download never happens.
+
+**Prevention:**
+1. At upload time, convert every user-supplied `File` object to a `data:` URI immediately using `FileReader.readAsDataURL`. Store only the data URI in `MediaItem.src`. Never store raw blob URLs in export state.
+2. If external URL pasting is ever supported, proxy the image through a same-origin fetch, convert to data URI, then store.
+3. In the export container, all `<img>` elements must have `crossOrigin="anonymous"` set AND be loaded against a server that returns `Access-Control-Allow-Origin: *`.
 
 **Warning signs:**
-- Boomerang cell noticeably drifts relative to non-boomerang cells during a 10+ second playback.
-- Boomerang loop gets faster or slower when the browser tab is backgrounded and then re-focused.
+- `MediaItem.src` stores `https://` URLs or `blob:` URLs.
+- Console shows `SecurityError` or `tainted canvas` during export.
+- Export works on localhost but fails on deployed Vercel/Netlify.
 
-**Phase to address:**
-Boomerang implementation phase. The `computeBoomerangTime` pure function should be unit tested before the rAF loop is wired up.
+**Phase relevance:** Phase 3 (Media Upload — enforce data URI conversion) and Phase 4 (Export Engine).
 
 ---
 
-### Pitfall 4: Boomerang Export — Mediabunny Timestamps Must Be Monotonically Increasing
+### Pitfall 4: ffmpeg.wasm fails without COOP/COEP headers — and those headers break third-party embeds
 
 **What goes wrong:**
-During MP4 export the encode loop in `exportVideoGrid` calls `videoSource.add(i / FPS, 1 / FPS)` where `i` is the frame index, so timestamps fed to Mediabunny are always monotonically increasing. However, for a boomerang cell, the video *content* plays in reverse. The frame decoded from the boomerang video must correspond to the reversed position, but the MP4 timestamp must still be `i / FPS`. The pitfall is confusing "the timestamp at which this frame appears in the output MP4" (always increasing) with "the position in the source video to decode from" (which reverses for boomerang). If code passes the reversed source timestamp directly to the export timestamp slot, Mediabunny will receive non-monotonic timestamps and the encoder will likely discard frames or produce a corrupt file.
+`@ffmpeg/ffmpeg` requires `SharedArrayBuffer`, which browsers only expose in cross-origin isolated contexts. Without the following headers on every page response, ffmpeg.wasm throws `ReferenceError: SharedArrayBuffer is not defined`:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+The secondary trap: once COEP is set to `require-corp`, every sub-resource (images, fonts, iframes, workers) loaded by the page must also serve `Cross-Origin-Resource-Policy: cross-origin` or `same-origin`. Any third-party resource without this header is blocked — breaking Google Fonts, external CDN images, analytics scripts, social embeds, etc.
 
 **Why it happens:**
-The existing `makeTimestampGen` generator produces source video timestamps (used by `samplesAtTimestamps` for seeking). If boomerang is implemented by modifying `makeTimestampGen` to yield timestamps that go backward, the generator output will be used correctly for seeking but the frame added to `videoSource.add()` will still use `i / FPS` — no bug. The bug arises only if someone misreads the architecture and feeds the source timestamp to `videoSource.add()`.
+COEP `require-corp` enforces that no sub-resource is loaded without explicit opt-in. It was designed for post-Spectre isolation. Most public CDNs do not serve `CORP` headers.
 
-**How to avoid:**
-Keep the two timestamp concepts named and documented separately:
-- `sourceTimestamp`: where in the source video to seek (reverses for boomerang — drives `makeTimestampGen`)
-- `exportTimestamp`: `i / FPS` — always monotonically increasing — drives `videoSource.add()`
+**Consequences:**
+- Adding these headers for MVP breaks Google Fonts or any externally hosted asset.
+- Not adding them means ffmpeg.wasm never loads.
+- Safari on iOS as of mid-2025 still has intermittent `SharedArrayBuffer` availability issues even with correct headers.
 
-`makeTimestampGen` for a boomerang cell should yield the triangle-wave source timestamp. `videoSource.add(i / FPS, 1 / FPS)` is unchanged. Add a comment in the export loop asserting `exportTimestamp === i / FPS` to prevent future confusion.
+**Prevention:**
+1. Do NOT set COOP/COEP headers in Phase 0-5 (MVP). Only add them in Phase 6 configuration.
+2. In Vercel (`vercel.json`) and Netlify (`netlify.toml`), scope the headers to a specific route if possible, or accept that the whole app becomes cross-origin isolated for v1.
+3. Use `COEP: credentialless` instead of `require-corp` where browser support allows (Chrome 96+, Firefox 119+). This is less restrictive — anonymous resources load without needing a CORP header.
+4. All fonts must be self-hosted (not Google Fonts CDN) before COEP is enabled.
+5. Implement ffmpeg.wasm behind a feature-flag that is only initialized after user interaction (lazy load the ~25MB WASM on first video export request).
+6. Keep Safari video export explicitly out of scope — `SharedArrayBuffer` on iOS WebKit is unreliable.
+
+**Vercel configuration:**
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
+      ]
+    }
+  ]
+}
+```
 
 **Warning signs:**
-- Exported MP4 plays normally during the forward portion but freezes or corrupts during the backward portion.
-- Mediabunny throws an error mentioning "timestamp" or "PTS" during export.
+- `SharedArrayBuffer is not defined` in console.
+- Third-party fonts or images stop loading after adding COEP headers.
+- ffmpeg.wasm imported at module level (not lazily) — adds 25MB to initial bundle.
 
-**Phase to address:**
-Boomerang export integration. Write a unit test for `makeTimestampGen` with boomerang that verifies the yielded source timestamps are a triangle wave, not a straight ramp.
+**Phase relevance:** Phase 6 (Video Support) exclusively. No COOP/COEP in MVP phases.
 
 ---
 
-### Pitfall 5: Video Trimming — Mediabunny `samplesAtTimestamps` Starting Mid-Video Requires GOP Alignment
+### Pitfall 5: CSS `transform: scale()` on the preview canvas does NOT affect the export container — but it can break `overflow: hidden` clipping in Safari
 
 **What goes wrong:**
-When a cell has `trimStart > 0`, the `makeTimestampGen` generator must start yielding timestamps at `trimStart` seconds instead of `firstTimestamp`. `VideoSampleSink.samplesAtTimestamps` will seek to the nearest keyframe (GOP boundary) that precedes the requested timestamp and then decode forward to reach the exact frame. If the GOP interval is large (2 seconds is common in user-shot mobile video) and `trimStart` lands in the middle of a GOP, the decoder must decode and discard several frames before reaching `trimStart`. This is not incorrect but adds latency proportional to `(trimStart % gopInterval) * fps` frames per seek. For a 30-fps video with 2-second GOPs, the worst case is 59 discarded frames per seek.
+The architecture uses a scaled-down preview (`transform: scale(viewportScale)`) alongside a hidden full-resolution export div. This is correct. The trap is two-fold:
+
+1. **Safari overflow clipping bug**: `overflow: hidden` + `border-radius` on a parent element fails to clip children when a `transform` is applied on a descendant. The image visually overflows its cell boundary. Safari requires `isolation: isolate` on the container to enforce clipping.
+
+2. **Export div must NOT use `transform: scale()`**: If the hidden 1080×1920px div is positioned off-screen using negative `transform: translateX(-9999px)`, html-to-image will capture it correctly. But if the export div itself has a `scale()` transform applied (e.g., mistakenly inheriting from a parent), the captured dimensions will be wrong.
 
 **Why it happens:**
-Most video files from mobile phones use variable GOP sizes and the GOP boundaries are not exposed by the Mediabunny API. The caller cannot know the GOP interval at trim-setup time.
+- `transform: scale()` is a visual-only operation. It does not affect layout dimensions or `getBoundingClientRect()` for capture libraries that read CSS computed styles.
+- Safari's compositing layer for `overflow: hidden` does not always apply when child elements have transforms.
 
-**How to avoid:**
-Accept the GOP-alignment cost — it is one-time per video stream during export setup, not per-frame. The existing streaming architecture (`buildVideoStreams`) calls `samplesAtTimestamps` with a generator, so the decoder handles the initial seek internally. The phase implementation simply needs to ensure `makeTimestampGen` clamps the start of its yield range to `firstTimestamp + trimStart` and the end to `firstTimestamp + trimEnd`. Do not attempt to pre-seek `video.currentTime` before handing control to Mediabunny — this conflicts with the streaming iterator's internal seek state.
+**Consequences:**
+- Cell images overflow their borders in Safari preview mode.
+- Export PNG is the wrong size (scaled instead of full-res) if the export div has an accidental scale transform.
+
+**Prevention:**
+1. Add `isolation: isolate` to every `LeafNode` container that applies `overflow: hidden` with `border-radius`.
+2. The export div must be a completely separate React subtree that never inherits the preview's scale transform. Position it with `position: absolute; left: -9999px; top: 0` (NOT `transform: translate`), so it is visually off-screen but layout-present at full resolution.
+3. Confirm export div dimensions with `div.getBoundingClientRect()` in a test — should be exactly `1080 × 1920`.
+4. Use `transform: scale()` only on the preview canvas wrapper, never on the export canvas wrapper.
 
 **Warning signs:**
-- Export of a trimmed cell takes disproportionately longer than an untrimmed cell of the same duration.
-- The first few frames of a trimmed export show content from before `trimStart`.
+- Cell images render outside cell borders in Safari.
+- Export PNG is smaller than 1080×1920.
+- Export div is a child of the scaled preview container.
 
-**Phase to address:**
-Video trimming export integration. Add a test case where `trimStart > gopInterval` to confirm correct first-frame content.
+**Phase relevance:** Phase 2 (Grid Rendering — Safari overflow fix) and Phase 4 (Export Engine — export div isolation).
 
 ---
 
-### Pitfall 6: Video Trimming — Timeline Duration Mismatch Across Cells
+### Pitfall 6: @dnd-kit causes every tree node to re-render on drag start/move
 
 **What goes wrong:**
-The total export duration is currently computed from the longest video cell in the grid. If cell A is 10 seconds trimmed to 5 seconds, and cell B is 7 seconds untrimmed, the export duration should be `max(5, 7) = 7` seconds. If the trim duration is not reflected in the duration calculation, the export will be 10 seconds (the untrimmed duration of cell A), and cell A will show frozen frame or blank for seconds 5–10.
+`DndContext` exposes an `active` property on its context. When dragging starts, `active` changes, and every component that consumes `useDraggable`, `useDroppable`, or `useSortable` gets a new context value, triggering a re-render — regardless of whether `React.memo` is applied.
+
+In a recursive tree with 20+ leaf nodes each registered as a drop target, this means 20+ re-renders on every pointer move event, causing visible lag during divider drag-resize.
 
 **Why it happens:**
-The duration calculation happens early in the export setup before trim state is consulted. If `effectiveDuration` in `buildVideoStreams` uses `computeDuration - firstTimestamp` without subtracting `trimStart` or clamping to `trimEnd`, the loop runs longer than the trimmed playback.
+React Context re-renders all consumers when the context value reference changes. The dnd-kit maintainer has acknowledged this as an architectural trade-off pending official React `useContextSelector` support. A partial fix (context splitting) was merged in PR #569, but re-renders are not fully eliminated.
 
-**How to avoid:**
-Pass trim settings alongside the leaf state into `buildVideoStreams`. Compute `effectiveDuration = min(trimEnd, rawDuration) - trimStart` (where `trimEnd = null` means use `rawDuration`). The `totalDuration` passed to `exportVideoGrid` must be `max over all cells of effectiveDuration`. Derive this in the UI's export trigger, not inside `exportVideoGrid`, so it is testable in isolation.
+**Consequences:**
+- Divider drag-resize stutters at >10 cells on mid-tier hardware.
+- Any expensive computation (tree traversal, layout recalculation) in a node's render body fires on every pointer move.
+
+**Prevention:**
+1. StoryGrid does not use dnd-kit for the divider resize interaction. Dividers use raw `pointerdown`/`pointermove`/`pointerup` handlers, completely bypassing dnd-kit's context. This is the correct architecture per PROJECT.md.
+2. For any dnd-kit usage (file drop onto leaf cells), keep `DndContext` scoped as narrowly as possible — ideally wrapping only the active drop zone, not the entire canvas.
+3. Every tree node component (`GridNode`, `ContainerNode`, `LeafNode`) must be wrapped with `React.memo`. Even though `React.memo` does not prevent the context-triggered re-render inside the dnd-kit hook, it prevents the render propagating to child components that are NOT dnd-kit consumers.
+4. Move all state selectors inside leaf components to use per-node Zustand selectors (select `state.nodes[nodeId]`, not the entire `state.grid`), so that leaf nodes only re-render when their own data changes.
 
 **Warning signs:**
-- Exported video is longer than expected; trimmed cells show frozen last-frame for excess duration.
-- Scrub bar in playback UI shows the wrong total duration after trimming.
+- `DndContext` wrapping the entire editor canvas.
+- Leaf node components using `useSelector(state => state.grid)` — subscribes to the entire tree.
+- No `React.memo` on recursive node components.
+- Drag-resize latency increases linearly with cell count.
 
-**Phase to address:**
-Video trimming implementation phase and export integration phase.
+**Phase relevance:** Phase 2 (Grid Rendering) and Phase 3 (Media Upload & Cell Controls).
 
 ---
 
-### Pitfall 7: AudioContext Autoplay Policy — Context Created Too Early Is Immediately Suspended
+### Pitfall 7: Object URL memory leak — `URL.createObjectURL` without `revokeObjectURL`
 
 **What goes wrong:**
-In Chrome and Safari, an `AudioContext` created without a prior user gesture is suspended. If a "live audio preview" AudioContext is created during component mount or store initialization (before any user interaction), its `state` will be `'suspended'` and all audio nodes wired into it will produce silence. The developer tests locally after the first user interaction and hears audio, so the bug goes unnoticed.
+Every call to `URL.createObjectURL(file)` allocates a blob URL that holds a reference to the file's bytes in memory. These URLs persist until the page is unloaded or `revokeObjectURL` is explicitly called. In a single-page app with media replacement (user drops a new image on a cell that already has media), the old blob URL is never freed, accumulating memory with each swap.
+
+In a multi-slide v1+ session with many images replaced across many slides, Chrome's soft limit (~10,000 active blob URLs) can be reached, causing `createObjectURL` to fail silently or the tab to crash with OOM.
 
 **Why it happens:**
-Chrome's autoplay policy was tightened in 2018. The browser measures "user activation" per top-level browsing context. An AudioContext created before the user has clicked, tapped, or pressed a key on the page is automatically suspended.
+Zustand stores the blob URL string in `MediaItem.src`. When `setMedia` replaces the media item, the old string is overwritten in state, but the browser's blob registry still holds the underlying bytes until revoked.
 
-**How to avoid:**
-Create the `AudioContext` in the same synchronous call stack as the user gesture that starts playback (the play button click handler). Store the context in a ref (`useRef`) or module-level singleton. Implement a `resumeIfSuspended()` guard that calls `ctx.resume()` before connecting nodes. Never create the AudioContext during component mount or zustand store initialization. On Safari, additionally call `ctx.resume()` unconditionally in the play handler even if `ctx.state === 'running'` — Safari requires the call every time.
+**Consequences:**
+- Memory grows ~5-20MB per replaced image, never reclaimed.
+- Long editing sessions crash the tab.
+- Harder to diagnose than JS heap leaks because the memory is in the browser's blob registry, not the JS heap.
+
+**Prevention:**
+1. At upload time, convert `File` → `data:` URI (base64) using `FileReader.readAsDataURL`. Do NOT use `createObjectURL` for images stored in state. Data URIs are owned by the JS heap (garbage collected normally) and have no separate registry.
+2. If `blob:` URLs are needed for performance with large video files, implement a `MediaStore` utility that:
+   - Tracks every active blob URL keyed by `nodeId`.
+   - On `setMedia(nodeId, newMedia)`, calls `URL.revokeObjectURL(oldUrl)` before replacing.
+   - On `removeNode(nodeId)`, revokes the URL.
+   - On React component unmount, revokes the URL.
+3. In `useEffect` cleanup for any component that calls `createObjectURL`, always revoke:
+   ```typescript
+   useEffect(() => {
+     const url = URL.createObjectURL(file);
+     setPreviewUrl(url);
+     return () => URL.revokeObjectURL(url);
+   }, [file]);
+   ```
 
 **Warning signs:**
-- Audio preview works after clicking play a second time but not the first.
-- `audioCtx.state === 'suspended'` logs appear in the console.
-- Silent audio on Safari regardless of user interaction.
+- Task Manager shows tab memory growing continuously during editing.
+- `blob:` URLs appear in `MediaItem.src` in the Zustand devtools store.
+- No `URL.revokeObjectURL` call anywhere in the codebase.
 
-**Phase to address:**
-Live audio preview implementation phase. The `resumeIfSuspended()` pattern must be established before any audio node graph is connected.
+**Phase relevance:** Phase 3 (Media Upload) — must be correct from day one; retrofitting revocation logic into stored state is painful.
 
 ---
 
-### Pitfall 8: Live Audio Preview — Rapid isPlaying Toggles Create Orphaned AudioNodes
+## Moderate Pitfalls
+
+---
+
+### Pitfall 8: Zustand + Immer undo history — full state snapshots grow unbounded
 
 **What goes wrong:**
-If the user clicks play/pause rapidly, each toggle can create new `MediaElementAudioSourceNode`s connected to the AudioContext destination. `MediaElementAudioSourceNode` is a singleton per `HTMLVideoElement` instance — connecting the same video element twice throws `InvalidStateError: failed to construct MediaElementSourceNode`. But if new nodes are created for each playback cycle (because the graph is torn down and rebuilt on each toggle), old nodes may not be properly disconnected before the new ones are connected, or the GC doesn't run fast enough to collect the old nodes. The result is either an error or doubled/echoing audio.
+The PROJECT.md architecture stores undo history as an array of full `GridState` snapshots (one snapshot per mutating action). A complex grid with 8 cells, each with a base64 image (~500KB each), produces state snapshots of ~4MB each. With 50 undo steps, that is ~200MB of JS heap used for history alone.
 
 **Why it happens:**
-The audio graph teardown path is skipped when isPlaying transitions from `true → false → true` faster than the teardown completes (especially if teardown involves async operations).
+Immer produces structurally-shared immutable trees, so unchanged subtrees share references. However, when images are stored as base64 data URIs in state, those large strings are duplicated across every snapshot that postdates the upload, because Immer treats strings as primitives (no sharing).
 
-**How to avoid:**
-Treat the audio graph as a stable long-lived object. Create `MediaElementAudioSourceNode` instances once per video element (at upload time or first playback), not on each play toggle. Gate nodes on/off by muting/unmuting or by `gainNode.gain.setValueAtTime()`, not by connect/disconnect. On pause, do not disconnect nodes — just call `video.pause()`. Only disconnect and close the AudioContext when the grid is cleared or the component unmounts.
+**Consequences:**
+- Memory exhaustion in long editing sessions.
+- `JSON.stringify` for persistence to localStorage fails or produces huge strings.
+- Undo/redo becomes slow as the history array grows.
+
+**Prevention:**
+1. Do NOT store image data URIs in the undo-tracked state. Store a `mediaId` string instead, and keep a separate `mediaRegistry: Record<mediaId, dataUri>` that is excluded from undo history (it is append-only; images are never un-uploaded by undo).
+2. Cap the undo stack at 50 entries maximum. On push, if `history.length >= 50`, shift the oldest entry.
+3. For the undo history, only snapshot the `grid` tree structure (node IDs, split directions, size ratios, selected media IDs) — not the full editor UI state (zoom level, selected node, safe zone toggle). These should be separate Zustand slices.
+4. Consider `zundo` (< 700B, Zustand middleware) for production-quality undo/redo with built-in equality checks that skip no-op actions.
 
 **Warning signs:**
-- `InvalidStateError` in console when toggling play/pause quickly.
-- Audio volume doubles after three play cycles.
-- CPU usage climbs monotonically as play/pause is toggled.
+- `history` array in Zustand devtools shows snapshots with large `dataUri` strings.
+- `localStorage.setItem` throws `QuotaExceededError`.
+- Browser memory profiler shows heap growing with each image upload.
 
-**Phase to address:**
-Live audio preview implementation phase. The audio graph must be described as a data structure (which nodes exist, their connections) before code is written.
+**Phase relevance:** Phase 1 (Grid Tree Engine — design history correctly before it is hard to change) and Phase 7 (Save/Load — serialize only what is necessary).
 
 ---
 
-### Pitfall 9: Auto-Mute Detection — Audio Track Info Unavailable Until After `loadedmetadata`
+### Pitfall 9: Stale closures in memoized recursive tree nodes
 
 **What goes wrong:**
-`HTMLVideoElement.audioTracks` (non-standard, WebKit) and `HTMLVideoElement.mozHasAudio` (Firefox) are checked before the video has loaded enough metadata for the browser to parse track info. At this point the properties return `undefined` or `0` even for videos that do have audio. The detection code incorrectly concludes "no audio" and marks the cell as permanently muted.
+In a recursive component tree (`GridNode → ContainerNode → LeafNode`), each node receives callbacks via props (e.g., `onSplit`, `onRemove`, `onResize`). If these callbacks are created in a parent and memoized with `useCallback`, they capture state at their creation time. When a sibling node is added/removed, the captured tree snapshot is stale. The callback fires with the old tree, overwriting the current state.
 
 **Why it happens:**
-Detection is run synchronously immediately after `URL.createObjectURL()`, before the browser has parsed the file's track header. The existing `captureVideoThumbnail` function in `gridStore.ts` already handles the async pattern (waits for `loadedmetadata`), but a naive audio detection implementation may not follow the same pattern.
+`React.memo` prevents re-render from propagating down; `useCallback` caches the closure. Together they create a classic stale closure: the child component never gets a new callback, so the callback still references the old state.
 
-**How to avoid:**
-Run audio detection inside a `loadedmetadata` event listener, identical to the thumbnail capture pattern in `captureVideoThumbnail`. Do not check `audioTracks.length` or `mozHasAudio` synchronously. Also check `audioTracks.length > 0` AND `audioTracks[0].enabled` — a file may have a track header but the track may be disabled. As a fallback, attempt `decodeAudioData` on the blob and check the resulting `AudioBuffer.numberOfChannels > 0` and `AudioBuffer.length > 0` (this is codec-agnostic and works across browsers).
+**Consequences:**
+- Split / resize operations silently operate on outdated state, corrupting the tree.
+- Difficult to debug — the bug depends on the sequence of actions.
+
+**Prevention:**
+1. Do NOT pass tree-mutating callbacks as props. Instead, each node component calls a Zustand action directly (`useGridStore(s => s.splitNode)`). Zustand actions always operate on current state, never on captured snapshots.
+2. Selectors per node: `useGridStore(s => s.nodes[props.nodeId])`. This is a stable subscription — the component re-renders only when its own node data changes.
+3. If callbacks must be passed as props (e.g., for testing), use a `ref`-wrapped callback pattern:
+   ```typescript
+   const callbackRef = useRef(callback);
+   callbackRef.current = callback; // always fresh
+   const stableCallback = useCallback((...args) => callbackRef.current(...args), []);
+   ```
 
 **Warning signs:**
-- All uploaded videos are detected as "no audio" regardless of their actual content.
-- Audio detection works in Chrome but not in Firefox (because `audioTracks` is Chrome/Safari only; Firefox requires `mozHasAudio` or `decodeAudioData` fallback).
+- Tree mutation callbacks defined in `App.tsx` or a high-level `Editor` component and drilled down via props.
+- `useCallback` with `[]` dependency array on functions that read tree state.
+- Intermittent "wrong cell got split" bugs that depend on operation order.
 
-**Phase to address:**
-Auto-mute detection implementation phase. Write separate unit-test stubs for each detection method (audioTracks, mozHasAudio, decodeAudioData fallback) and verify the priority order is correct.
+**Phase relevance:** Phase 1 (store design) and Phase 2 (Grid Rendering).
 
 ---
 
-### Pitfall 10: Breadth-First Drop — Alternating H/V Split Conflicts With Existing Tree Structure at Depth > 0
+### Pitfall 10: html-to-image fails silently on Safari / iOS — blank PNG with no error
 
 **What goes wrong:**
-Breadth-first multi-file drop is designed to alternate split direction by tree depth: depth 0 splits horizontally, depth 1 vertically, depth 2 horizontally, etc. But if the existing tree was built by the user splitting manually (not by breadth-first drop), the tree's direction at a given depth may already be vertical. When new files are dropped and breadth-first logic calls `splitNode` on an existing leaf at depth 1 with `direction: 'horizontal'`, the existing `splitNode` logic (Phase 1) will create a cross-direction split (Case C in tree.ts) — wrapping the leaf in a new container. This produces deep nesting rather than a flat grid.
+On Safari (macOS and iOS), `toPng()` frequently returns a valid-looking but blank PNG. The promise resolves (no rejection), but the image contains only the background color. No error is thrown. The issue is caused by Safari's stricter canvas security model and different `foreignObject` SVG rendering behavior.
 
 **Why it happens:**
-`splitNode` is designed for user-driven splitting where the user explicitly chooses direction. Breadth-first drop imposes a structural regularity that conflicts with arbitrary existing trees.
+Safari renders SVG `foreignObject` content differently from Chrome. Specifically, remote resources (images, fonts) that have not already been painted in the current tab's rendering context are not re-fetched during SVG serialization, leaving those elements invisible.
 
-**How to avoid:**
-The breadth-first drop algorithm should NOT call `splitNode` on already-occupied cells. It should only target empty leaf cells (`mediaId === null`). The BFS traversal fills empty cells first; it only creates new cells (via `splitNode`) when all existing empty cells are exhausted. When the tree is empty (single empty leaf), breadth-first drop can build the grid structure freely. When the tree already has structure, breadth-first drop should fill empty cells in BFS order without restructuring. If the user drops more files than there are empty cells, the extra files are dropped (or queued) without auto-splitting. This avoids the nesting problem entirely.
+**Consequences:**
+- Export appears to succeed (no error, download happens), but the PNG is blank.
+- Users may not notice until they open the downloaded file.
+
+**Prevention:**
+1. Use the double-call workaround: call `toPng()` twice; use the second result.
+2. All images must be pre-converted to data URIs before the export div is mounted (not just before export is triggered).
+3. Test export on Safari explicitly in Phase 4. Do not rely on Chrome-passing tests as proxy.
+4. Display an export progress indicator that shows "Preparing assets…" during the pre-flight image conversion step, so the user does not click export while images are still loading.
 
 **Warning signs:**
-- Dropping 4 files onto a 2x2 grid (which has 4 cells) produces a nested structure instead of filling the cells.
-- Dropping 6 files onto a single-cell canvas produces a deeply nested tree instead of a 3x2-like grid.
+- Export not tested on Safari.
+- Images stored as `blob:` or `https://` URLs in cell state (not data URIs).
+- No double-call pattern in export code.
 
-**Phase to address:**
-Breadth-first drop implementation phase. The BFS traversal function should be a pure function (input: tree root, output: ordered list of target leaf IDs) so it can be unit tested against all tree shapes.
+**Phase relevance:** Phase 4 (Export Engine).
 
 ---
 
-### Pitfall 11: Adding Per-Cell Boolean Flags — Snapshot Compatibility in History Array
+## Minor Pitfalls
+
+---
+
+### Pitfall 11: `html-to-image` captures content outside viewport — but only if layout is correct
 
 **What goes wrong:**
-When a new boolean field (e.g. `isBoomerang`, `isMuted`, `trimStart`) is added to `LeafNode`, existing snapshots in the `history` array do not have this field. If the user undoes past the point where the flag was introduced, the restored snapshot's leaves will have `undefined` for the new field instead of the default value. If component code accesses `leaf.isBoomerang` without a nullish fallback, it throws or renders incorrectly.
+If the export div (1080×1920px) is positioned such that it causes page scroll (e.g., `position: relative` in normal document flow), `toPng()` only captures the portion of the element that is within the viewport. Content below the fold is missing from the export.
 
-**Why it happens:**
-Zustand's undo/redo stores `structuredClone` snapshots. Old snapshots were created before the new field existed. Unlike a database migration, there is no snapshot migration step.
+**Prevention:**
+The export div must be `position: absolute` (or `fixed`) and removed from normal document flow. Using `position: absolute; left: -9999px; width: 1080px; height: 1920px; overflow: hidden` ensures the full element is present in the layout without affecting scroll.
 
-**How to avoid:**
-Always use optional chaining or nullish coalescing when reading new fields from leaf nodes: `leaf.isBoomerang ?? false`. Add the default value to `createLeaf()` so new leaves always have the field. Add the default value to `DEFAULT_EFFECTS` or its equivalent for the new field type. Do NOT rely on the snapshot having the field populated. Optionally, add a snapshot migration step in the `undo` action that patches restored snapshots with defaults for any missing fields — but the nullish fallback in component code is sufficient and simpler.
-
-**Warning signs:**
-- After undoing several steps, a cell behaves as if boomerang is enabled when it should be off (or vice versa).
-- TypeScript does not catch this at compile time because the type declares the field non-optional, but the runtime snapshot lacks it.
-
-**Phase to address:**
-Any phase that adds new `LeafNode` fields. Apply the pattern consistently. Add a test that restores a snapshot missing the new field and verifies the component renders without error.
+**Phase relevance:** Phase 4 (Export Engine).
 
 ---
 
-### Pitfall 12: Adding Per-Cell Boolean Flags — Immer Draft Reads vs. `current()` Snapshots
+### Pitfall 12: Divider resize updates cause excessive Zustand state writes
 
 **What goes wrong:**
-Inside a Zustand/Immer `set` callback, `state.root` is an Immer draft. Reading `leaf.audioEnabled` directly from the draft is fine for the purpose of toggling it. But if the new action for (e.g.) `toggleBoomerang` reads `leaf.isBoomerang` without first calling `current(state.root)`, and then calls `pushSnapshot(state)` which calls `current(state.root)`, the snapshot may capture the draft's in-progress mutations rather than the pre-mutation state. The existing `toggleAudioEnabled` action in `gridStore.ts` is the correct reference: it calls `findNode(current(state.root), nodeId)` (using `current()` to unwrap the draft) BEFORE calling `pushSnapshot(state)`.
+Divider drag fires `pointermove` at 60fps. If each move event directly calls the Zustand `resize` action (which Immer wraps in a full state production), 60 state writes per second trigger 60 re-renders across all subscribed components.
 
-**Why it happens:**
-Immer drafts look like plain objects but carry mutation proxies. Calling `current()` materializes a plain snapshot. If the draft is mutated before `current()` is called, the snapshot captures the mutated state — effectively making undo skip the pre-mutation state.
+**Prevention:**
+1. Throttle `pointermove` handler to ~16ms using `requestAnimationFrame`.
+2. Use a local React `useRef` to accumulate the drag delta during drag; only commit to Zustand state on `pointerup` (or at most on animation frames). This means intermediate positions are purely local state, not global.
+3. Pattern: `localSizeRef.current = newRatio` during drag, `store.resize(nodeId, localSizeRef.current)` on release.
 
-**How to avoid:**
-Follow the exact pattern in `toggleAudioEnabled`:
-1. `const leaf = findNode(current(state.root), nodeId)` — unwrap draft first
-2. `if (!leaf || leaf.type !== 'leaf') return` — guard
-3. `pushSnapshot(state)` — snapshot the pre-mutation state
-4. `state.root = updateLeaf(current(state.root), nodeId, { ... })` — apply mutation
+**Phase relevance:** Phase 2 (Grid Rendering).
 
-Do not reorder steps 1-4. Add this pattern to the project conventions in CLAUDE.md.
+---
+
+### Pitfall 13: Recursive tree can render infinitely if a `ContainerNode` with zero children is created
+
+**What goes wrong:**
+If a bug in `removeNode` or `mergeNode` produces a `ContainerNode` with an empty `children` array, the recursive renderer enters an infinite loop trying to render the container's children, causing a React stack overflow.
+
+**Prevention:**
+1. Add a guard in `splitNode` and `removeNode` pure functions: a `ContainerNode` must always have exactly 2 children. Throw a descriptive error (in dev) or auto-correct to a `LeafNode` (in prod) if this invariant is violated.
+2. Add a `MAX_DEPTH = 8` guard in the renderer: `if (depth > 8) return <ErrorBoundary />`.
+3. TypeScript discriminated union (`NodeType: 'container' | 'leaf'`) enforced at every mutation site prevents accidental creation of invalid states.
+
+**Phase relevance:** Phase 1 (Grid Tree Engine) and Phase 2 (Grid Rendering).
+
+---
+
+### Pitfall 14: `@ffmpeg/ffmpeg` vite build requires explicit WASM plugin configuration
+
+**What goes wrong:**
+Vite does not natively support ES Module WebAssembly imports. Without `vite-plugin-wasm` (or equivalent), the Vite production build either inlines the 25MB WASM as base64 (bloating the JS bundle) or fails to load it entirely with a `TypeError: Failed to fetch dynamically imported module`.
+
+**Prevention:**
+1. Install `vite-plugin-wasm` and add it to `vite.config.ts` before Phase 6.
+2. The ffmpeg WASM core and worker files must be served as static assets, not bundled. Configure Vite to copy them to `public/`:
+   ```typescript
+   // vite.config.ts
+   import wasm from 'vite-plugin-wasm';
+   export default { plugins: [wasm()] }
+   ```
+3. Use the `@ffmpeg/ffmpeg` dynamic import pattern: `const { createFFmpeg } = await import('@ffmpeg/ffmpeg')` inside the export handler — never at module top level.
 
 **Warning signs:**
-- Undo after toggling a boolean flag restores a state that already has the toggled value (the snapshot captured the post-mutation state).
-- The history array contains duplicate states.
+- ffmpeg imported at the top of any file (not lazy).
+- Build output includes a >5MB JS chunk.
+- `TypeError: WebAssembly.instantiate` errors in production console.
 
-**Phase to address:**
-Every phase that adds new store actions. The pattern should be a CLAUDE.md convention, not rediscovered each phase.
-
----
-
-## Technical Debt Patterns
-
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Reading `leaf.newField ?? defaultValue` everywhere instead of migrating snapshots | No migration code needed | Every future new-field read site must include the fallback | Acceptable for boolean flags; never for fields where `null` is a valid non-default value |
-| Hardcoding 30fps in `FPS` constant for all video operations | Simple implementation | Boomerang frame-rate mismatch if source video is not 30fps | Acceptable for MVP; a follow-up should read fps from track metadata |
-| Creating `AudioContext` in the play button handler instead of a singleton | Avoids suspended-context bugs | Multiple AudioContexts can be created if play is clicked before prior context closes | Acceptable if guarded by a ref that checks `ctx.state !== 'closed'` before creating a new one |
-| Skipping GOP alignment measurement during trim | No extra API surface needed | First-frame accuracy after trim is probabilistic | Acceptable; seeking to nearest-preceding keyframe is standard behavior |
-| Using `decodeAudioData` for auto-mute detection (loads full audio into memory) | Codec-agnostic, accurate | Large audio files briefly double memory during detection | Acceptable at upload time for files under 500MB |
+**Phase relevance:** Phase 6 (Video Support).
 
 ---
 
-## Integration Gotchas
+## Phase-Specific Warnings
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| `drawLeafToCanvas` + preset filters | Adding a `hue-rotate()` or `sepia()` CSS function outside `effectsToFilterString` (e.g. inline in the component) | All filter functions must go through `effectsToFilterString` in `effects.ts`; the Canvas `ctx.filter` is set once per leaf from this string |
-| Mediabunny `samplesAtTimestamps` + trim | Starting the generator at `trimStart` in seconds but forgetting `firstTimestamp` offset | Generator must yield `firstTimestamp + trimmedOffset`, not just `trimmedOffset`; see existing `makeTimestampGen` for the offset pattern |
-| Mediabunny `samplesAtTimestamps` + boomerang | Yielding negative timestamps when the reverse phase wraps below `firstTimestamp` | Clamp yielded timestamps to `[firstTimestamp, firstTimestamp + effectiveDuration]`; the triangle wave calculation must respect this range |
-| `VideoSampleSink` + boomerang | Calling `.return()` on the iterator mid-stream when the direction reverses | Do NOT destroy and recreate the iterator at the direction reversal; `samplesAtTimestamps` handles backward jumps internally via re-seek |
-| AudioContext + video `MediaElementAudioSourceNode` | Creating a new node for the same `HTMLVideoElement` twice | `MediaElementAudioSourceNode` is a singleton per video element; store the node in a `WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>` keyed by element |
-| `pushSnapshot` + new Immer action | Reading from draft before calling `current()` | Always call `current(state.root)` before `pushSnapshot` and before any read used to compute the new value |
-| BFS drop + `splitNode` | Calling `splitNode` on a filled leaf | BFS drop should only call `splitNode` on empty (`mediaId === null`) leaf nodes; do not restructure filled cells |
-
----
-
-## Performance Traps
-
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Boomerang preview rAF loop seeking `video.currentTime` every frame | Visible stutter on mobile, high CPU | Set `video.currentTime` only when the computed time differs from previous by more than one video frame duration | At 60fps rAF on a 30fps video; every other seek is redundant |
-| Live audio preview `OfflineAudioContext` created per playback session | Memory pressure if playback is toggled frequently | Use Web Audio API `MediaElementAudioSourceNode` for live preview (real-time, not offline); `OfflineAudioContext` is export-only | More than 3 play/pause cycles without GC running |
-| Trim sliders triggering `pushSnapshot` on every drag event | History array fills to cap (50 entries) after one drag operation | Use `beginEffectsDrag` pattern: snapshot on `pointerdown`, no snapshot during drag, one undo entry per drag | Any trim slider drag longer than a few pixels |
-| `decodeAudioData` for audio detection running on every file in a multi-file drop | Drop of 10 videos blocks UI for several seconds | Run audio detection in a queued async batch after all files are added to cells; do not block the drop handler | Multi-file drop with 5+ video files |
-
----
-
-## UX Pitfalls
-
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Boomerang toggle shown for image cells | Confusion; no visible effect | Show boomerang toggle only when `mediaTypeMap[leaf.mediaId] === 'video'`; same guard as the audio toggle |
-| Trim handles visible but non-interactive during export | User expects to continue editing but the UI is frozen | Disable trim handle pointer events during export; same as existing export progress lock |
-| Auto-mute icon (grayed VolumeX) looks like an interactive button | Users click it expecting to unmute | Use `cursor-not-allowed` and a tooltip "No audio track" rather than making the icon look like a toggle |
-| Live audio preview plays during export | Export is already mixing audio via OfflineAudioContext; real-time preview creates a second concurrent decode | Stop the live AudioContext (pause all source nodes, do not close) when export starts; resume after export completes |
-| Preset rename confusion | Users expecting Instagram names see different names | If presets are renamed for v1.3, any locally stored project files (if persistence is added later) need a migration for the `preset` enum in `EffectSettings` |
-
----
-
-## "Looks Done But Isn't" Checklist
-
-- [ ] **Instagram presets:** Verify `effectsToFilterString` produces identical output in preview canvas (`ctx.filter`) and in export canvas (`drawLeafToCanvas`). Both must call the same function from `effects.ts` — there is no second code path.
-- [ ] **Boomerang preview:** Verify boomerang cells stay in sync with non-boomerang cells at 5, 10, and 30 seconds of playback on a low-end device simulation (CPU throttle in DevTools).
-- [ ] **Boomerang export:** Verify the exported MP4 timestamp sequence fed to Mediabunny is strictly increasing (add assertion in test or debug log during development).
-- [ ] **Trim export:** Verify first frame of exported trimmed cell shows content at `trimStart`, not at 0. Use a video with a visible timecode or distinctive frames.
-- [ ] **Trim + total duration:** Verify export duration equals `max(effectiveDuration for each cell)` accounting for trim, not `max(rawDuration)`.
-- [ ] **AudioContext autoplay:** Verify live audio preview works on the FIRST play button press on a fresh page load (no prior user gesture except clicking play itself). Test on Chrome and Safari.
-- [ ] **Auto-mute detection:** Verify a video with no audio track (e.g. a screen recording without microphone) is detected correctly. Verify a video with audio is NOT incorrectly flagged as muted.
-- [ ] **BFS drop:** Verify dropping N files onto a grid with N empty cells fills all cells without creating new splits. Verify dropping N+1 files fills N cells and drops the extra without error.
-- [ ] **New LeafNode fields + undo:** Verify that after adding a boomerang/trim field, undoing past the "field introduction" point (restoring an old snapshot) does not crash or produce incorrect state.
-- [ ] **Immer draft order:** Verify all new `set` callbacks follow the `current()` → guard → `pushSnapshot` → mutate order for every new action.
-
----
-
-## Recovery Strategies
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Filter order wrong in presets | LOW | Change numeric values in `PRESET_VALUES`; order is fixed by `effectsToFilterString`. No architecture change needed. |
-| Boomerang timestamp monotonicity bug in export | MEDIUM | Isolate `makeTimestampGen` for boomerang case, add triangle-wave unit tests, fix generator output. No change to `videoSource.add()` call. |
-| AudioContext suspended on first play | LOW | Wrap existing audio init in `resumeIfSuspended()` call in play handler. One-line fix per play trigger site. |
-| BFS drop causes nesting instead of filling | MEDIUM | Rewrite the BFS traversal to target `mediaId === null` leaves only; no tree mutation until all empties are filled. Pure function — unit testable without DOM. |
-| Snapshot compatibility breaks after new field | LOW | Add `?? defaultValue` at every field read site. Grep for all usages of the new field name and add fallbacks. |
-| Immer draft read-before-current bug | MEDIUM | Requires tracing through undo history to confirm the bug, then reordering 3 lines in the affected action. Undo history corruption is hard to detect without explicit tests. |
-
----
-
-## Pitfall-to-Phase Mapping
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Filter function order non-commutativity | Instagram preset redesign | `effects.test.ts` contract tests pass; preview and export produce identical renders for each preset |
-| CSS filters cannot replicate LUTs | Scoping/naming decision before coding | Preset names in UI do not reference Instagram trademarks |
-| Boomerang rAF timing drift | Boomerang preview phase | Sync test: boomerang + normal cell, measure drift at 30s playback |
-| Boomerang export timestamp monotonicity | Boomerang export phase | Unit test on `makeTimestampGen` with triangle-wave; assert strict increase in export timestamps |
-| Trim GOP alignment latency | Trim export phase | Manual test: time export of clip trimmed to mid-GOP vs. keyframe-aligned |
-| Trim total duration mismatch | Trim + export integration | Test: trimmed cell A shorter than untrimmed cell B; export duration equals B duration |
-| AudioContext autoplay policy | Live audio preview phase | Fresh-page test on Chrome + Safari: audio heard on first play click |
-| Rapid play/pause orphaned AudioNodes | Live audio preview phase | Click play/pause 10x rapidly; no console errors, no audio doubling |
-| Auto-mute detection timing | Auto-mute phase | Test with no-audio video: correctly detected. Test with audio video: not falsely muted |
-| BFS drop + nesting | Breadth-first drop phase | Drop N files into N-empty-cell grid: no new splits created |
-| Snapshot field compatibility | Every phase adding LeafNode fields | Unit test: restore snapshot missing new field; no crash; default value applied |
-| Immer draft read order | Every phase adding store actions | Code review checklist: action follows `current()` → guard → `pushSnapshot` → mutate pattern |
+| Phase | Topic | Likely Pitfall | Mitigation |
+|-------|-------|----------------|------------|
+| Phase 1 | Undo history design | Large base64 images duplicated in every snapshot | Store mediaId references only; exclude media registry from history |
+| Phase 1 | Tree invariants | `ContainerNode` with 0 or 1 children causes infinite render | Enforce 2-child invariant in all pure tree functions |
+| Phase 2 | Recursive rendering | Stale closure callbacks mutate wrong state | Nodes call Zustand actions directly; no drilled callbacks |
+| Phase 2 | Safari overflow clipping | `overflow: hidden` + border-radius not respected with transforms | Add `isolation: isolate` to all leaf containers |
+| Phase 2 | Divider drag performance | 60fps Zustand writes | Buffer delta in `useRef`; commit on `pointerup` |
+| Phase 3 | Media upload | `blob:` URLs leak memory on cell replace | Convert to data URI at upload; revoke on replace |
+| Phase 4 | Export PNG blank | First `toPng()` call races with resource fetch | Double-call; pre-convert images; cache `getFontEmbedCSS()` |
+| Phase 4 | Export off-screen div | Wrong position causes viewport-clipped capture | `position: absolute; left: -9999px`; no scale transform |
+| Phase 4 | Cross-origin images | CORS taint blocks canvas export | Data URIs only in export div |
+| Phase 6 | COOP/COEP activation | Breaks third-party resources; not needed for MVP | Enable only in Phase 6; use `credentialless` mode; self-host fonts first |
+| Phase 6 | ffmpeg.wasm bundle size | 25MB hits initial load | Lazy import behind user interaction; Vite WASM plugin |
+| Phase 6 | Video in html-to-image | Always blank | Never call `toPng()` when video cells exist; ffmpeg-only path |
 
 ---
 
 ## Sources
 
-- StoryGrid codebase: `src/lib/effects.ts` — `effectsToFilterString` contract and filter ordering
-- StoryGrid codebase: `src/lib/videoExport.ts` — `makeTimestampGen`, `buildVideoStreams`, `mixAudioForExport` architecture
-- StoryGrid codebase: `src/lib/export.ts` — `drawLeafToCanvas`, blur overdraw pattern, `ctx.filter` assignment
-- StoryGrid codebase: `src/lib/tree.ts` — `createLeaf`, `splitNode` Case A/B/C logic
-- StoryGrid codebase: `src/store/gridStore.ts` — `pushSnapshot`, `toggleAudioEnabled` pattern, `captureVideoThumbnail` async pattern
-- StoryGrid codebase: `src/types/index.ts` — `LeafNode` shape with `audioEnabled: boolean`
-- MDN Web Audio API — AudioContext autoplay policy: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices#autoplay_policy
-- Chrome autoplay policy: https://developer.chrome.com/blog/autoplay/
-- CSS filter specification — application order is sequential left-to-right: https://www.w3.org/TR/filter-effects/#funcdef-filter-brightness
-- Mediabunny VideoSampleSink — sequential decode model (from v1.2 Phase 15 implementation notes in PROJECT.md)
-- Immer documentation — `current()` usage inside `produce`: https://immerjs.github.io/immer/current
-
----
-*Pitfalls research for: StoryGrid v1.3 feature additions*
-*Researched: 2026-04-11*
+- [html-to-image GitHub issues — CORS, Safari, fonts](https://github.com/bubkoo/html-to-image/issues)
+- [html-to-image issue #179: CORS/Crossdomain](https://github.com/bubkoo/html-to-image/issues/179)
+- [html-to-image issue #207: Google Fonts CORS](https://github.com/bubkoo/html-to-image/issues/207)
+- [html-to-image issue #199: Blank Safari](https://github.com/bubkoo/html-to-image/issues/199)
+- [html-to-image issue #461: Blank Safari (more recent)](https://github.com/bubkoo/html-to-image/issues/461)
+- [dnd-kit issue #389: Unnecessary re-renders](https://github.com/clauderic/dnd-kit/issues/389)
+- [dnd-kit issue #898: Sortable tree performance](https://github.com/clauderic/dnd-kit/issues/898)
+- [dnd-kit issue #1071: Re-rendering all draggable items](https://github.com/clauderic/dnd-kit/issues/1071)
+- [ffmpeg.wasm issue #263: SharedArrayBuffer not defined](https://github.com/ffmpegwasm/ffmpeg.wasm/issues/263)
+- [ffmpeg.wasm issue #299: iOS support](https://github.com/ffmpegwasm/ffmpeg.wasm/issues/299)
+- [Zustand discussions #1773: Out of memory with large state](https://github.com/pmndrs/zustand/discussions/1773)
+- [zundo — undo/redo middleware for Zustand](https://github.com/charkour/zundo)
+- [URL.revokeObjectURL — MDN](https://developer.mozilla.org/en-US/docs/Web/API/URL/revokeObjectURL_static)
+- [COEP header — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy)
+- [Setting COOP/COEP on static hosting](https://blog.tomayac.com/2025/03/08/setting-coop-coep-headers-on-static-hosting-like-github-pages/)
+- [Netlify custom headers docs](https://docs.netlify.com/manage/routing/headers/)
+- [React stale closures — TkDodo](https://tkdodo.eu/blog/hooks-dependencies-and-stale-closures)
+- [Zustand re-render optimization](https://dev.to/eraywebdev/optimizing-zustand-how-to-prevent-unnecessary-re-renders-in-your-react-app-59do)

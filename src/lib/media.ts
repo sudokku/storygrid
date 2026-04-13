@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { GridNode } from '../types';
-import { getAllLeaves } from './tree';
+import { getBFSLeavesWithDepth } from './tree';
 
 /**
  * Converts a File to a base64 data URI using FileReader.
@@ -51,10 +51,10 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
 }
 
 /**
- * Fills empty cells with files in getAllLeaves() document order.
- * Per D-04: fill existing empty cells first.
- * Per D-05: overflow files auto-split the last filled leaf (horizontal).
- * Per D-06: used by both action bar upload and canvas drag-drop.
+ * Fills empty cells with files in BFS (breadth-first) order.
+ * Per D-13: level-by-level fill via getBFSLeavesWithDepth.
+ * Per D-14: overflow splits use depth % 2 for direction (even=horizontal, odd=vertical).
+ * Per D-15: audio detection runs for video files; images are always false.
  */
 export async function autoFillCells(
   files: File[],
@@ -69,36 +69,40 @@ export async function autoFillCells(
   if (mediaFiles.length === 0) return;
 
   let lastFilledNodeId: string | null = null;
+  let lastFilledDepth = 0;
 
   for (const file of mediaFiles) {
     // Re-read root each iteration to get fresh tree after splits
     const currentRoot = actions.getRoot();
-    const leaves = getAllLeaves(currentRoot);
-    const emptyLeaf = leaves.find(l => l.mediaId === null);
+    const bfsLeaves = getBFSLeavesWithDepth(currentRoot);
+    const emptyEntry = bfsLeaves.find(e => e.leaf.mediaId === null);
 
     let targetNodeId: string;
+    let targetDepth: number;
 
-    if (emptyLeaf) {
-      targetNodeId = emptyLeaf.id;
-    } else if (lastFilledNodeId) {
-      // D-05: split last filled cell horizontally; the new sibling will be empty
-      actions.split(lastFilledNodeId, 'horizontal');
-      // After split, re-read root and find the newly created empty sibling
-      const freshRoot = actions.getRoot();
-      const freshLeaves = getAllLeaves(freshRoot);
-      const newEmpty = freshLeaves.find(l => l.mediaId === null);
-      if (!newEmpty) continue; // should not happen
-      targetNodeId = newEmpty.id;
-    } else {
-      // No empty cells and no previous fill — edge case: tree is a single filled leaf, split it
-      const anyLeaf = leaves[0];
-      if (!anyLeaf) continue;
-      actions.split(anyLeaf.id, 'horizontal');
-      const freshRoot = actions.getRoot();
-      const freshLeaves = getAllLeaves(freshRoot);
-      const newEmpty = freshLeaves.find(l => l.mediaId === null);
+    if (emptyEntry) {
+      targetNodeId = emptyEntry.leaf.id;
+      targetDepth = emptyEntry.depth;
+    } else if (lastFilledNodeId !== null) {
+      // D-14: overflow split direction based on depth of last filled node
+      const splitDir = lastFilledDepth % 2 === 0 ? 'horizontal' : 'vertical';
+      actions.split(lastFilledNodeId, splitDir);
+      const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
+      const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
       if (!newEmpty) continue;
-      targetNodeId = newEmpty.id;
+      targetNodeId = newEmpty.leaf.id;
+      targetDepth = newEmpty.depth;
+    } else {
+      // Edge case: single filled root leaf — no previous fill tracked
+      const anyEntry = bfsLeaves[0];
+      if (!anyEntry) continue;
+      const splitDir = anyEntry.depth % 2 === 0 ? 'horizontal' : 'vertical';
+      actions.split(anyEntry.leaf.id, splitDir);
+      const freshLeaves = getBFSLeavesWithDepth(actions.getRoot());
+      const newEmpty = freshLeaves.find(e => e.leaf.mediaId === null);
+      if (!newEmpty) continue;
+      targetNodeId = newEmpty.leaf.id;
+      targetDepth = newEmpty.depth;
     }
 
     const mediaId = nanoid();
@@ -114,6 +118,14 @@ export async function autoFillCells(
     }
 
     actions.setMedia(targetNodeId, mediaId);
+
+    // D-15: Audio detection — video files get detected, images are always false
+    const hasAudio = file.type.startsWith('video/')
+      ? await detectAudioTrack(file)
+      : false;
+    actions.setHasAudioTrack(targetNodeId, hasAudio);
+
     lastFilledNodeId = targetNodeId;
+    lastFilledDepth = targetDepth;
   }
 }

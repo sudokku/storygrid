@@ -43,10 +43,6 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
     const leaf = findNode(s.root, nodeId) as LeafNode | null;
     return leaf && leaf.type === 'leaf' ? leaf.audioEnabled : true;
   });
-  const hasAudioTrack = useGridStore(s => {
-    const leaf = findNode(s.root, nodeId) as LeafNode | null;
-    return leaf && leaf.type === 'leaf' ? (leaf.hasAudioTrack ?? true) : true;
-  });
   const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
 
   const handleSplitH = useCallback(() => split(nodeId, 'horizontal'), [split, nodeId]);
@@ -122,49 +118,29 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
         </Tooltip>
 
         {mediaType === 'video' && (
-          hasAudioTrack ? (
-            // Interactive toggle — unchanged from existing behavior
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    data-testid="audio-button"
-                    className={`${btnClass} ${!audioEnabled ? 'hover:bg-red-500/20' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleAudioEnabled(nodeId);
-                    }}
-                    aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
-                  />
-                }
-              >
-                {audioEnabled
-                  ? <Volume2 size={ICON_SIZE} className="text-white" />
-                  : <VolumeX size={ICON_SIZE} className="text-red-500" />
-                }
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            // Locked state — no audio track detected
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    data-testid="audio-button"
-                    className={`${btnClass} cursor-not-allowed`}
-                    disabled
-                    aria-label="No audio track"
-                  />
-                }
-              >
-                <VolumeX size={ICON_SIZE} className="text-gray-400 opacity-40" />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">No audio track</TooltipContent>
-            </Tooltip>
-          )
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  data-testid="audio-button"
+                  className={`${btnClass} ${!audioEnabled ? 'hover:bg-red-500/20' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleAudioEnabled(nodeId);
+                  }}
+                  aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+                />
+              }
+            >
+              {audioEnabled
+                ? <Volume2 size={ICON_SIZE} className="text-white" />
+                : <VolumeX size={ICON_SIZE} className="text-red-500" />
+              }
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {hasMedia && (

@@ -3,7 +3,7 @@ import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { useShallow } from 'zustand/react/shallow';
 import { findNode } from '../lib/tree';
-import { autoFillCells } from '../lib/media';
+import { autoFillCells, detectAudioTrack } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { EffectsPanel } from './EffectsPanel';
@@ -217,10 +217,6 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
     const n = findNode(s.root, nodeId) as LeafNode | null;
     return n && n.type === 'leaf' ? n.audioEnabled : true;
   });
-  const hasAudioTrack = useGridStore(s => {
-    const n = findNode(s.root, nodeId) as LeafNode | null;
-    return n && n.type === 'leaf' ? (n.hasAudioTrack ?? true) : true;
-  });
   const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
   const root = useGridStore(s => s.root);
   const updateCell = useGridStore(s => s.updateCell);
@@ -229,6 +225,7 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
+  const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -263,6 +260,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           addMedia(newId, dataUri, 'image');
         }
         setMedia(nodeId, newId);
+        // Audio detection for single-file replacement
+        const hasAudio = file.type.startsWith('video/')
+          ? await detectAudioTrack(file)
+          : false;
+        setHasAudioTrack(nodeId, hasAudio);
       } else {
         // Multi-file or empty cell: use autoFillCells
         await autoFillCells(files, {
@@ -270,10 +272,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           setMedia,
           split,
           getRoot: () => useGridStore.getState().root,
+          setHasAudioTrack,
         });
       }
     },
-    [node, nodeId, removeMedia, addMedia, setMedia, split],
+    [node, nodeId, removeMedia, addMedia, setMedia, split, setHasAudioTrack],
   );
 
   const handleClearMedia = useCallback(() => {
@@ -334,34 +337,22 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
             Playback
           </p>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-400">
-              {hasAudioTrack ? 'Cell audio' : 'No audio track'}
-            </span>
-            {hasAudioTrack ? (
-              // Interactive toggle — unchanged
-              <button
-                data-testid="sidebar-audio-button"
-                className={`flex items-center justify-center rounded p-2 transition-colors ${
-                  audioEnabled
-                    ? 'hover:bg-white/10 text-white'
-                    : 'hover:bg-red-500/20 text-red-500'
-                }`}
-                onClick={() => toggleAudioEnabled(nodeId)}
-                aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
-              >
-                {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-              </button>
-            ) : (
-              // Locked state — no audio track
-              <button
-                data-testid="sidebar-audio-button"
-                className="flex items-center justify-center rounded p-2 text-gray-400 opacity-40 cursor-not-allowed"
-                disabled
-                aria-label="No audio track"
-              >
-                <VolumeX size={20} />
-              </button>
-            )}
+            <span className="text-xs text-neutral-400">Cell audio</span>
+            <button
+              data-testid="sidebar-audio-button"
+              className={`flex items-center justify-center rounded p-2 transition-colors ${
+                audioEnabled
+                  ? 'hover:bg-white/10 text-white'
+                  : 'hover:bg-red-500/20 text-red-500'
+              }`}
+              onClick={() => toggleAudioEnabled(nodeId)}
+              aria-label={audioEnabled ? 'Mute cell audio' : 'Unmute cell audio'}
+            >
+              {audioEnabled
+                ? <Volume2 size={20} />
+                : <VolumeX size={20} />
+              }
+            </button>
           </div>
         </div>
       )}

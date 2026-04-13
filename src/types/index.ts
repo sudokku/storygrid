@@ -11,14 +11,13 @@ export type LeafNode = {
   id: string;
   mediaId: string | null;
   fit: 'cover' | 'contain';
-  objectPosition: string;
+  objectPosition?: string;
   backgroundColor: string | null;
   panX: number;    // percentage offset -100 to +100, default 0
   panY: number;    // percentage offset -100 to +100, default 0
   panScale: number; // 1.0-3.0, default 1
   effects: EffectSettings;
   audioEnabled: boolean;
-  hasAudioTrack: boolean;
 };
 
 export type ContainerNode = {

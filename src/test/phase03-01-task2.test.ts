@@ -9,6 +9,15 @@ import type { FillActions } from '../lib/media';
 import { useGridStore } from '../store/gridStore';
 import type { ContainerNode, LeafNode } from '../types';
 
+// Mock detectAudioTrack to avoid AudioContext in jsdom
+vi.mock('../lib/media', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/media')>();
+  return {
+    ...actual,
+    detectAudioTrack: vi.fn().mockResolvedValue(true),
+  };
+});
+
 function getInitialState() {
   return useGridStore.getInitialState();
 }
@@ -94,6 +103,7 @@ describe('Phase 03-01 Task 2: fileToBase64 + autoFillCells', () => {
         setMedia: (nodeId, mediaId) => useGridStore.getState().setMedia(nodeId, mediaId),
         split: (nodeId, direction) => useGridStore.getState().split(nodeId, direction),
         getRoot: () => useGridStore.getState().root,
+        setHasAudioTrack: (_nodeId, _hasAudio) => {},
       };
     }
 

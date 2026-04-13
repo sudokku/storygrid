@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
-import { autoFillCells } from '../lib/media';
+import { autoFillCells, detectAudioTrack } from '../lib/media';
 import { loadImage, drawLeafToCanvas } from '../lib/export';
 import { videoElementRegistry, registerVideo, unregisterVideo } from '../lib/videoRegistry';
 import type { LeafNode } from '../types';
@@ -47,6 +47,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
+  const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const updateCell = useGridStore(s => s.updateCell);
   const moveCell = useGridStore(s => s.moveCell);
   const [isHovered, setIsHovered] = useState(false);
@@ -412,8 +413,9 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       setMedia,
       split,
       getRoot: () => useGridStore.getState().root,
+      setHasAudioTrack,
     });
-  }, [addMedia, setMedia, split]);
+  }, [addMedia, setMedia, split, setHasAudioTrack]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -470,17 +472,41 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       return;
     }
 
-    // File drop fallback
+    // File drop
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      await autoFillCells(files, {
-        addMedia,
-        setMedia,
-        split,
-        getRoot: () => useGridStore.getState().root,
-      });
+      if (files.length === 1) {
+        // DROP-03 / SC6: Single file targets THIS cell exactly
+        const file = files[0];
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+        const { nanoid } = await import('nanoid');
+        const mediaId = nanoid();
+        if (file.type.startsWith('video/')) {
+          const blobUrl = URL.createObjectURL(file);
+          addMedia(mediaId, blobUrl, 'video');
+        } else {
+          const { fileToBase64 } = await import('../lib/media');
+          const dataUri = await fileToBase64(file);
+          addMedia(mediaId, dataUri, 'image');
+        }
+        setMedia(id, mediaId);
+        // D-02: Audio detection for single-file direct drops
+        const hasAudio = file.type.startsWith('video/')
+          ? await detectAudioTrack(file)
+          : false;
+        setHasAudioTrack(id, hasAudio);
+      } else {
+        // Multi-file: use BFS autoFillCells
+        await autoFillCells(files, {
+          addMedia,
+          setMedia,
+          split,
+          getRoot: () => useGridStore.getState().root,
+          setHasAudioTrack,
+        });
+      }
     }
-  }, [id, activeZone, moveCell, addMedia, setMedia, split]);
+  }, [id, activeZone, moveCell, addMedia, setMedia, split, setHasAudioTrack]);
 
   // Fix: setPointerCapture on the wrapper div, not e.target
   const handlePointerDown = useCallback((e: React.PointerEvent) => {

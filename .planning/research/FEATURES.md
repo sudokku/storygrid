@@ -1,310 +1,187 @@
-# Feature Research — v1.3 Filters, Video Tools & Playback
+# Feature Landscape: Instagram Story Photo Collage Editor
 
-**Domain:** Browser-based story collage editor — v1.3 incremental milestone
-**Researched:** 2026-04-11
-**Confidence:** HIGH (filter values from authoritative CSS library; audio/video detection from MDN)
-
-> **Scope note:** This file covers only the NEW v1.3 features. The prior FEATURES.md (2026-03-31) covers the overall product feature landscape for v1.0–v1.2 decisions. This document answers the focused research question: "How do the v1.3 features work in practice?"
+**Domain:** Browser-based Instagram Story collage/grid creation tool (9:16 canvas, photo-first, export to PNG/video)
+**Researched:** 2026-03-31
+**Brief reference:** StoryGrid PROJECT.md (Phases 0–7)
 
 ---
 
-## Feature Landscape
+## Brief Validation Summary
 
-### Table Stakes (Users Expect These)
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Named Instagram presets (Clarendon, Juno, Lark, etc.) | Users know these filter names from Instagram; generic "Warm / B&W" labels read as unfinished | LOW | Values are well-documented in CSS filter libraries; only the preset definitions change, not the pipeline |
-| Auto-mute lock for no-audio video | A grayed-out non-interactive disabled control is standard UX; clickable mute on a video with no audio is confusing | LOW | Detection at upload via `audioTracks.length` + legacy browser fallbacks; show VolumeX, cursor-not-allowed |
-| Playback UI visual polish | The scrubber/play-button strip is the first thing users judge on quality; unpolished = untrustworthy | LOW | No new controls — purely a CSS/layout redesign of the existing timeline bar |
-| Breadth-first multi-file drop | Dropping 4 files onto an empty canvas should produce a 2×2 grid, not an L-shape; the current depth-first behavior surprises users | LOW | Pure algorithm change in the tree traversal; no new state or data model changes |
-
-### Differentiators (Competitive Advantage)
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Boomerang per-cell | Matches native Instagram story creation feel; no other browser collage editor offers per-cell boomerang | HIGH | Preview: rAF frame-buffer flip; Export: Mediabunny VideoSampleSink frames + reversed slice; see detail below |
-| Video trimming per-cell | Lets users clip the best 3s of a 30s clip without leaving the editor | HIGH | Sidebar drag handles on mini timeline strip; `trimStart`/`trimEnd` ms on LeafNode; interacts with export |
-| Live audio preview | Hear the actual per-cell audio mix during playback rather than visual-only sync | MEDIUM | `MediaElementAudioSourceNode` per unmuted cell; single shared `AudioContext`; autoplay policy pitfalls apply |
-
-### Anti-Features (Commonly Requested, Often Problematic)
-
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| `video.playbackRate = -1` for boomerang | Obvious native API | Chrome and Firefox do not support negative playbackRate — only Safari does; WHATWG spec does not require it (issue #3754, Firefox Bugzilla #1468019) | Frame-buffer approach: decode all frames into array, append reversed slice, cycle in rAF |
-| Waveform visualization in trim UI | Professional look | Computing a waveform from a video blob in-browser requires AudioContext decodeAudioData on the full clip — expensive for long videos; adds a dependency | Thumbnail strip or solid-color trim region with time labels is sufficient for v1.3 |
-| Boomerang on untrimmed long clips | User may toggle it on any cell | Storing all frames of a 30s 30fps 1080×1920 video in memory = ~900 ImageBitmap objects = memory pressure; rAF loop slows | Enforce a max clip length warning (≤10s recommended, ≤5s optimal) before allowing boomerang toggle |
+The PROJECT.md brief is well-aligned with user expectations for this category. The core interaction model (recursive split-tree, drag-to-fill, PNG export) covers the most critical table-stakes features. Two moderate gaps were identified: per-cell pan/zoom/reposition is described in Phase 7 but user research shows it is more of a table-stakes expectation than a differentiator, and there is no mention of a "swap cells by dragging" interaction which is a well-established UX convention in grid editors.
 
 ---
 
-## Feature Details
+## Table Stakes
 
-### 1. Instagram-Style Named Presets
+Features users expect in any collage/grid editor. Absence causes users to abandon or complain immediately.
 
-**Background:** The existing 6 presets (B&W, Sepia, Vivid, Fade, Warm, Cool) are generic. The v1.3 goal is to replace them with the 6 real Instagram filter names most recognizable to users, backed by research-accurate CSS `filter` strings.
+| Feature | Why Expected | Complexity | Brief Status | Notes |
+|---------|--------------|------------|--------------|-------|
+| Fixed-size canvas at 9:16 (1080×1920) | All Story-focused tools publish to this spec; users know it | Low | Phase 0 (CSS vars) | Instagram safe zones (~250px top/bottom) must be shown |
+| Preset layout templates | Canva, BeFunky, Unfold, Instagram Layout all offer this as entry point; users reach for it first | Low | Phase 5 | Brief has 6 presets; adequate for MVP |
+| Drag image from OS onto cell | Universal drag-drop expectation in browser tools since 2018 | Medium | Phase 3 | Multi-file drop to auto-fill is a bonus — include |
+| Click empty cell to upload | Fallback for touch/trackpad users who cannot drag | Low | Phase 3 | Also required for accessibility |
+| Pan and zoom (reposition) within a cell | TurboCollage, BeFunky, Canva all offer this; users complain when photos cannot be repositioned inside a cell | Medium | **Phase 7 — may be too late** | See flag below |
+| Gap/spacing control between cells | BeFunky, Canva, every grid tool offers spacing slider | Low | Phase 5 (0–20px slider) | Correct placement |
+| Corner radius control | Standard in modern collage tools (BeFunky, Canva frames) | Low | Phase 5 (0–24px) | Correct placement |
+| Download / export to PNG | Non-negotiable — the entire purpose of the tool | Medium | Phase 4 | 1080×1920 pixel-perfect required |
+| Undo / redo | Users will make mistakes immediately; Ctrl+Z is a reflex action; Instagram itself tested adding this | Low | Phase 1 (Zustand history) | Ctrl+Z / Ctrl+Shift+Z correct |
+| Background color for canvas | Expected when cells don't fill the full frame (gaps show through) | Low | Phase 5 | Correct |
+| "Fit vs fill" toggle per cell | Users have portrait and landscape photos; fit (letterbox) vs fill (crop to frame) is table stakes | Low | Phase 3 | Brief calls it "toggle fit" — correct |
+| Remove a cell | Users split then change their mind | Low | Phase 2/3 | Correct |
+| Swap images between cells by dragging | PicCollage, Fotor, BeFunky all allow dragging images between cells to reorder; users expect it | Medium | **Not in brief** | See flag below |
+| Clear media from a cell without removing the cell | Different from remove-cell; users want to swap one photo | Low | Phase 3 | Brief has "clear media" — correct |
+| Export progress indicator | Large images take 1–4s; without feedback users click again thinking it failed | Low | Phase 4 | Correct |
 
-**Source:** CSS filter values pulled directly from the distributed `instagram.css` v0.1.4 by picturepan2, cross-referenced with the CSSgram library by Una Kravets and Depositphotos filter analysis. These values are not guesses — they are the canonical open-source CSS approximations of Instagram's actual filters.
+### Flags on Table-Stakes Items
 
-**Recommended 6 presets and their verified CSS filter strings:**
+**Pan/zoom within cell (Phase 7 risk):** Research shows drag-to-reposition and scroll-to-zoom within a cell is a standard expectation in all grid tools reviewed (TurboCollage, BeFunky, Canva, PhotoJoiner). The brief places this in Phase 7 alongside effects and text overlays. Consider moving the core reposition behavior (object-position drag) to Phase 5 or treating it as a Phase 3 upgrade. Without it, many uploaded photos will look wrong — the subject will be in a corner of a cell rather than centered.
 
-| Preset Name | CSS Filter String | Visual Character | Best For |
-|------------|-------------------|-----------------|---------|
-| **Clarendon** | `sepia(0.15) contrast(1.25) brightness(1.25) hue-rotate(5deg)` | Cool-tinted, lifted highlights, deepened shadows — the most-used Instagram filter globally (119 countries) | Any content; universally flattering |
-| **Juno** | `sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8)` | Punchy reds/yellows/oranges, high saturation, warm | Food, flowers, sunsets, colorful subjects |
-| **Lark** | `sepia(0.25) contrast(1.2) brightness(1.3) saturate(1.25)` | Airy/bright, intensifies blues and greens, washes out reds | Landscapes, nature, outdoor shots |
-| **Nashville** | `sepia(0.25) contrast(1.5) brightness(0.9) hue-rotate(-15deg)` | Warm pinkish-orange cast, high contrast, retro-romantic | Portraits, lifestyle, vintage feel |
-| **Lo-fi** | `saturate(1.1) contrast(1.5)` | Maximum saturation, crushed blacks — dramatic 1990s aesthetic; NO sepia so hues stay pure | Cityscapes, bold graphic content |
-| **Inkwell** | `brightness(1.25) contrast(0.85) grayscale(1)` | Classic B&W with lifted shadows — timeless monochrome; uses `grayscale(1)` not `sepia` so there is zero color cast | Portraits, architecture, storytelling |
-
-**Why these 6:** They cover six distinct moods with minimal overlap — cool-lifted (Clarendon), warm-punchy (Juno), cool-airy (Lark), vintage-warm (Nashville), dramatic-saturated (Lo-fi), monochrome (Inkwell). Together they replace the prior set without losing tonal range.
-
-**Data model impact:** The existing system stores presets as 4-slider tuples `[brightness, contrast, saturation, blur]`. Instagram presets add `sepia` and `hue-rotate` which are not slider-addressable. The preset data must be stored as a full CSS `filter` string. The existing `ctx.filter` path in `drawLeafToCanvas()` already accepts a complete CSS filter string, so the draw pipeline is unchanged. What changes is the preset definition format and how the 4 custom sliders are composed on top (they should be additive multiplicatively, not replacing the preset string).
-
-**Confidence:** HIGH — CSS filter values sourced from `picturepan2/instagram.css` raw distributed file, verified against CSSgram, Depositphotos filter characteristics, and Animatron filter descriptions.
-
----
-
-### 2. Boomerang Per-Cell
-
-**How Instagram boomerang works exactly:** Instagram records 1–2 seconds of camera footage into a frame buffer, concatenates that buffer with its own reversal to produce a forward-then-backward sequence, and loops the combined sequence seamlessly. The result plays forward at normal speed, then backward at normal speed, then repeats — no pause, no direction indicator, no seam.
-
-**Preview implementation (rAF loop):**
-
-Negative `playbackRate` is NOT viable — Chrome and Firefox do not support it (WHATWG HTML issue #3754, Firefox Bugzilla #1468019). The only cross-browser approach is a frame-buffer array:
-
-1. When boomerang is toggled ON on a video cell, decode the (trimmed) video into an array of `ImageBitmap` objects. The Mediabunny `VideoSampleSink` in Phase 15 already does this — it can be reused or its pattern copied.
-2. Build `allFrames = [...forwardFrames, ...[...forwardFrames].reverse()]`.
-3. In the cell's rAF loop, use `frameIdx = (frameIdx + 1) % allFrames.length` and draw `allFrames[frameIdx]` to the canvas.
-4. When boomerang is toggled OFF, revert to the standard `video.currentTime`-based draw path.
-
-**Export implementation (Mediabunny VideoSampleSink):**
-
-The Phase 15 `VideoSampleSink` pipeline collects a `VideoFrame[]` array and loops through it during the Mediabunny encode pass. For boomerang:
-1. Collect `frames[]` from `VideoSampleSink` as normal (already filtered by `trimStart`/`trimEnd` if trimmed).
-2. Create `reversed = [...frames].map(f => f)` — do NOT close the originals yet; keep them open.
-3. Append reversed to the encode loop: encode `[...frames, ...reversed.reverse()]` sequentially.
-4. After encoding, close ALL frames (both original and reversed references) in the `finally` block. `VideoFrame` objects hold GPU memory and must be explicitly closed.
-
-**Clip length guard:** Pre-loading all frames of a 30s 30fps 1080×1920 video as ImageBitmaps = ~900 frames × large pixel arrays = serious memory pressure. Enforce a maximum before allowing boomerang activation. Recommended limit: warn if trimmed clip > 10s; hard-cap at 15s.
-
-**Loop behavior in mixed stories:** Non-boomerang cells loop normally. A boomerang cell's effective duration is `2 × (trimEnd - trimStart)`. The master timeline `max(cellDurations)` should use the doubled duration for boomerang cells.
-
-**Confidence:** MEDIUM — frame-buffer approach is well-established in browser boomerang implementations (Paul Kinlan 2018, Cloudinary boomerang blog). Mediabunny VideoSampleSink integration inferred from Phase 15 architecture; no direct Mediabunny boomerang documentation found.
+**Swap cells by dragging (not in brief):** Multiple tools (BeFunky Grid mode, PicCollage, Fotor) support dragging a filled image from one cell to another to swap or rearrange. This is a natural follow-on to drag-to-fill and users discover it by trying it. The brief uses @dnd-kit which is capable of supporting this. Consider as a Phase 5 addition — low complexity given the DnD infrastructure.
 
 ---
 
-### 3. Video Trimming Per-Cell
+## Differentiators
 
-**Expected UX (grounded in CapCut mobile and DaVinci Resolve mobile conventions):**
+Features that set a product apart. Users do not expect these but value them when present.
 
-A trim panel appears in the sidebar when a video cell is selected. Elements:
-- A **mini timeline strip** (~200px wide, ~36px tall) showing the video's full duration as a colored region (thumbnails optional; solid accent color bar is simpler and sufficient).
-- **Two drag handles** — left = trim-in, right = trim-out. Handles are vertical bars with rounded caps, in the UI accent color. The active (trimmed) region between them is fully opaque; the inactive trimmed-out regions are dimmed (20–30% opacity).
-- **Time inputs** below each handle showing `0:00.0` format (seconds + tenths). Directly editable.
-- **Duration display**: "3.2s selected / 12.0s total" in small text below.
-- Minimum selectable duration: 0.5s (prevent zero-length clips).
-
-**Data model additions on `LeafNode`:**
-```typescript
-trimStart: number   // ms from start; default 0
-trimEnd:   number   // ms from start; default = video.duration * 1000
-```
-
-**Interaction with story timeline:** `effectiveDuration(cell) = trimEnd - trimStart`. The master playback `max(effectiveDurations)` drives the timeline length. During playback, each cell's `video.currentTime` is clamped to `[trimStart/1000, trimEnd/1000]`; on reaching `trimEnd`, the video seeks back to `trimStart`.
-
-**Interaction with boomerang:** `boomerangDuration(cell) = 2 × (trimEnd - trimStart)`. The cell contributes the doubled value to the master timeline max.
-
-**Interaction with export:** The Mediabunny encode loop already iterates over `VideoFrame[]` from `VideoSampleSink`. When trim is active, filter the frame array to frames with `timestamp >= trimStart * 1000` and `timestamp < trimEnd * 1000` (VideoFrame timestamps are in microseconds in some APIs — verify units against Mediabunny's actual output).
-
-**Drag handle implementation:** Use raw `pointerdown`/`pointermove`/`pointerup` on the handle elements — no @dnd-kit needed (no sortable/swap semantics). Clamp `trimStart <= trimEnd - 500` (0.5s minimum). Call `setPointerCapture` on `pointerdown` for smooth drag outside the element bounds.
-
-**Confidence:** MEDIUM — trim UI conventions drawn from CapCut observations and general NLE UX patterns; no public CapCut design spec. Data model additions are straightforward.
+| Feature | Value Proposition | Complexity | Brief Status | Notes |
+|---------|-------------------|------------|--------------|-------|
+| Recursive arbitrary-depth splitting (Figma model) | No other consumer Story tool offers freeform recursive layout; all competitors use preset grid slots | High | Core (Phase 1–2) | This IS the product's primary differentiator — validate it is surfaced clearly in UX |
+| Resizable dividers via drag | Users can tune cell proportions exactly; competitors only offer fixed ratio presets | Medium | Phase 2 | Strong differentiator — real-time drag feedback is essential |
+| Video cells with synchronized playback | Competitors either do video-only OR photo-only; mixed photo+video grid is rare | High | Phase 6 | Correct placement as v1 |
+| Per-cell CSS filters (brightness, contrast, etc.) | Adobe Express and Canva offer filters but not per-cell in a grid context | Medium | Phase 7 | Good differentiator; reasonable v1+ placement |
+| Multi-slide story (pages) with batch export | Unfold is the main tool offering multi-slide; most web tools are single-frame only | High | Phase 7 | High value for power users; correct deferral |
+| Save/load project as JSON file | No web-based Story collage tool offers portable project files; very rare | Low | Phase 7 | "Portability-first" angle; good for power users |
+| Gradient background on canvas | Most tools only offer solid background; gradients are on-trend (Canva 2026 trends report) | Low | Phase 5 | Brief includes this — good catch |
+| Zero accounts, zero watermarks, no paywall | Canva gates PNG export quality; many apps watermark free exports; users explicitly hate this | Low (business model) | By design | Make this a prominent headline in any landing copy |
+| Keyboard shortcuts for all actions | Professional tools (Figma, Canva pro) offer shortcuts; web Story tools do not | Low | Phase 5 | Brief has Ctrl+Z, E, H, V, F, Delete, Escape — solid set |
 
 ---
 
-### 4. Live Audio Preview
+## Anti-Features
 
-**How apps implement it:** During editor playback, route each unmuted video element's audio through the Web Audio API graph:
+Features that seem useful but add complexity without proportional value in this product context. Do not build.
 
-```
-AudioContext (single, shared, created lazily on first user gesture)
-  ├─ MediaElementAudioSourceNode (cell A's video element)
-  │    └─ GainNode (cell A, gain = 1.0)
-  │         └─ AudioContext.destination
-  ├─ MediaElementAudioSourceNode (cell B's video element)
-  │    └─ GainNode (cell B, gain = 1.0)
-  │         └─ AudioContext.destination
-  └─ ... (one per unmuted video cell)
-```
-
-**Critical pitfall — autoplay policy:** `AudioContext` created programmatically starts in `suspended` state in all major browsers. It can only transition to `running` after a direct user gesture. The correct pattern:
-
-```typescript
-// Inside the play button click handler (user gesture context):
-if (!audioCtx) audioCtx = new AudioContext();
-if (audioCtx.state === 'suspended') await audioCtx.resume();
-// Now wire up MediaElementAudioSourceNodes
-```
-
-Never create the `AudioContext` in a `useEffect`, module initializer, or outside a gesture handler — it will stay suspended and produce no audio.
-
-**Critical pitfall — single connection per element:** Chrome throws `InvalidStateError` if a `MediaElementAudioSourceNode` is created for a video element that already has one. Track which video elements have been connected and reuse the existing node across play/pause cycles. Do not disconnect and reconnect on every play — re-create only when the set of unmuted cells changes.
-
-**Relationship to export audio graph:** The export `buildAudioGraph()` in `videoExport.ts` uses an `OfflineAudioContext` (Phase 14). The live preview uses a standard `AudioContext`. These are entirely separate contexts with no shared state. The live context must be torn down (all source nodes disconnected; context closed or suspended) when the user stops playback, to prevent the hidden video elements' audio from leaking into the output.
-
-**Confidence:** HIGH — AudioContext autoplay policy from Chrome for Developers blog and MDN Web Audio API best practices. Single-connection constraint from MDN `MediaElementAudioSourceNode` docs and VideoJS issue tracker.
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| AI layout suggestion / auto-collage | Adds significant complexity (ML model or API call), introduces latency and cost, and the product's core value is manual creative control — auto-suggestions undermine that. Users in other tools report these prompts as "more annoying than helpful" | Offer preset templates in a sidebar — fast, predictable, no inference required |
+| Stickers, emoji overlays, decorative elements | Canva and Instagram's native editor already do this exhaustively; competing here adds scope without differentiation, and assets need ongoing curation | Let the user add text; everything else is out of scope |
+| Direct-to-Instagram publish / share API | Requires Meta App Review (2–4 week process), OAuth flow, and platform policy compliance; breaks the zero-backend constraint | Export PNG → user uploads natively. Friction is acceptable for MVP. |
+| Cloud storage / sync | Breaks zero-backend constraint; adds auth, storage cost, session management; Instagram Stories are ephemeral anyway | localStorage for save/load is correct; .storygrid.json export is the "cloud" escape hatch |
+| Real-time collaboration | Incompatible with the static-only architecture; massive scope addition | Single-user session only |
+| Social feed / gallery of user designs | Requires backend, moderation, storage — none of which this product can afford | Focus on creation; no discovery layer |
+| AI background removal / cutout | Adds a heavy ML dependency (WASM or API) for a feature users can do in Photos.app before uploading | Keep it out of MVP; revisit only if user feedback is overwhelming |
+| Color palette extraction from photos | Feels useful but adds complexity; users with a brand kit will handle this outside the tool | The background color picker is sufficient |
+| Undo history longer than ~50 steps | localStorage size constraints; history snapshots of a full tree can be large; very few users go beyond 20 steps | 50-step cap is reasonable; document it |
+| Animated GIF export | ffmpeg.wasm can do this but GIF has terrible compression; Story collages are meant for 9:16 video or static image | Stick to MP4 (H.264) for video and PNG for static |
+| Watermark / branding on export | Users immediately seek alternatives; primary reason users leave free tools per community feedback | No watermark, ever — this is the product's stated value |
 
 ---
 
-### 5. Playback UI Visual Redesign
+## UX Patterns and Conventions
 
-**Design conventions from modern story editors (CapCut, TikTok in-app editor, Canva):**
+Patterns observed across Canva, BeFunky, Unfold, Instagram Layout, TurboCollage, and PicCollage that should inform implementation decisions.
 
-Modern playback bars share these visual properties:
-- **Background strip:** Semi-transparent dark overlay (`rgba(0,0,0,0.70–0.80)`) — not opaque, so the canvas is partially visible behind. Height: 48–56px total.
-- **Scrubber track:** 2–3px thin horizontal line spanning the full width. Progress region filled in white or accent color; inactive region in `rgba(255,255,255,0.30)`. Track has 8–12px left/right padding.
-- **Scrubber thumb:** 10–14px solid circle in white with a subtle drop shadow. Scales to ~16px on active drag (`transform: scale(1.3)`). No visible label on the thumb.
-- **Time counter:** Small monospace text (10–12px). Left side = elapsed `0:00`, right side = total duration. Positioned directly below the scrubber track.
-- **Play/pause button:** 40–44px circle, either solid fill or frosted glass (`backdrop-filter: blur`). No text label. Icon (Play▶ / Pause⏸) centered. Smooth CSS transition (`transition: opacity 150ms, transform 150ms`) between states — NOT an instant swap.
-- **Overall bar height:** Aim for ≤56px. Compact matters — it should feel like a control strip, not a modal.
+### Canvas-First vs Template-First Entry
 
-**What NOT to change:** No new controls in the playback bar (no frame counter, speed control, or per-cell volume). Those would require separate feature research and user testing.
+**Convention:** Most consumer tools (Canva, Unfold, PicCollage) lead with template selection before showing the canvas. Professional tools (Figma) start blank.
 
-**Confidence:** MEDIUM — conventions from CapCut and TikTok visual observations; no authoritative public design spec. These are strongly converged conventions across multiple products.
+**Recommendation for StoryGrid:** Lead with the blank canvas (because the split-tree model is the hook) but show the presets panel open by default on first visit. The onboarding overlay (Phase 5) should demonstrate a split action within the first 3 seconds.
 
----
+### Cell Fill State Visual Language
 
-### 6. Auto-Mute Detection for No-Audio Video
+**Convention:** Empty cells show a dashed border with a plus icon or upload icon in the center. Filled cells show the image with a hover overlay revealing action buttons. This is consistent across BeFunky, Canva frames, Fotor, and Pixlr.
 
-**Detection at upload time:** Run after `loadedmetadata` fires on the video element. The most reliable cross-browser combined check:
+**Brief alignment:** Phase 2 describes "dashed border, upload prompt" for empty state and "blue border" for selected state. Correct. Add a subtle hover overlay with action icons (split, remove, replace) — the brief includes this in Phase 2 leaf hover actions.
 
-```typescript
-function hasAudio(video: HTMLVideoElement): boolean {
-  return (
-    Boolean((video as any).mozHasAudio) ||                     // Firefox — reliable
-    Boolean((video as any).webkitAudioDecodedByteCount) ||     // Chrome legacy — more reliable than audioTracks in some formats
-    Boolean(video.audioTracks?.length)                         // Standard W3C spec — reliable in Safari; partially reliable in Chrome/Firefox
-  );
-}
-```
+### Gap/Spacing as a Global Control
 
-**Timing:** Must be called after `loadedmetadata` (not `canplay` or `play`). Calling it synchronously after setting `src` returns false negatives on Chrome and Firefox because track data is not yet populated.
+**Convention:** All grid tools reviewed use a single global spacing slider rather than per-edge margins. BeFunky's spacing control is a single slider (0–30px). Canva's element spacing is also global.
 
-**Browser-specific behavior:**
-- Chrome: `audioTracks.length` may return 0 for some container formats even with audio. `webkitAudioDecodedByteCount` (legacy) is more reliable but requires a brief decode pass. Use the combined check as the safety net.
-- Firefox: `mozHasAudio` is reliable and authoritative.
-- Safari: `audioTracks.length` is reliable.
+**Brief alignment:** Phase 5 "global gap slider (0–20px)" is exactly correct. Do not add per-cell padding as a separate control — it will confuse users.
 
-**Recommended LeafNode additions:**
-```typescript
-hasAudio:    boolean   // detected at upload; true = video has audio track
-audioLocked: boolean   // true when hasAudio === false; toggle is disabled
-```
+### Pan/Zoom Within Cell Interaction
 
-**UI behavior when `audioLocked === true`:** Render the audio toggle as `VolumeX` icon, grayed out (`opacity: 0.4`), `cursor-not-allowed`, `pointer-events: none`. Do NOT show the toggle at all for image cells (already filtered by `mediaTypeMap` check in Phase 12).
+**Convention (critical):** The universal UX pattern is: double-click (or single-click on an already-selected cell) enters "pan mode" — then drag to reposition, scroll/pinch to zoom. A secondary "done / confirm" click exits pan mode. TurboCollage, BeFunky, Canva all use a variant of this.
 
-**Edge case:** If detection is ambiguous (false negative on a video that does have audio), default `hasAudio = true` — err toward allowing the toggle. The video may just be silently muted. Better to show a functional toggle than to lock a user out.
+**Brief gap:** The brief describes "drag to reposition, scroll to scale" (Phase 7) but does not specify the mode-entry interaction. Implement as: click selected cell again → enters pan mode with a visual indicator; Escape or click outside → exits. This prevents accidental repositioning while the user is selecting cells.
 
-**Confidence:** HIGH — sourced from MDN `HTMLMediaElement.audioTracks`, VideoJS GitHub issue #7096 (browser behavior differences discussed at length), and a widely-referenced GitHub Gist with cross-browser validation.
+### Template Application
+
+**Convention:** Applying a template replaces the current grid structure. Users expect a confirmation ("This will replace your current layout") if cells are filled. Canva shows a "replace" confirmation. BeFunky silently replaces.
+
+**Recommendation:** Show a brief toast or inline confirmation if any cells have media. Silent replacement is a common source of frustration.
+
+### Export Flow
+
+**Convention:** Export buttons are always in the top-right corner (Canva, Adobe Express, BeFunky). The flow is: click Export → format picker appears (or defaults) → download begins → progress indicator shown.
+
+**Brief alignment:** Phase 4 export settings (format/quality) before download is correct. Keep the export button in the toolbar top-right as the primary CTA.
+
+### Aspect Ratio and Safe Zones
+
+**Convention:** Instagram displays Stories with UI chrome (profile header, reply bar) covering approximately the top and bottom 250px of a 1920px canvas. Tools like Unfold show safe zone guides.
+
+**Brief alignment:** Safe zone toggle is in Phase 2/3 as a dashed overlay guide. Correct — make it ON by default for first-time users.
+
+### Responsive / Minimum Viewport
+
+**Convention:** Web-based collage editors are desktop-first. BeFunky, Canva, Fotor all require a minimum ~1024px wide viewport and show a "use desktop" message on mobile. No mobile web editing is expected.
+
+**Brief alignment:** Phase 5 specifies "desktop min 1024px, sidebar collapses on smaller." Correct — do not attempt a mobile web editor.
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Instagram Presets (new names + values)]
-    └──replaces──> [Existing 6 generic presets (B&W, Sepia, Vivid, Fade, Warm, Cool)]
-    └──requires──> [Extended preset definition: full CSS filter string, not 4-slider tuple]
-    └──uses──> [drawLeafToCanvas() ctx.filter path — already exists, unchanged]
-
-[Video Trimming]
-    └──requires──> [trimStart / trimEnd fields on LeafNode]
-    └──requires──> [Mediabunny VideoSampleSink frame array — already exists, Phase 15]
-    └──enhances──> [Boomerang — trimmed duration drives boomerang clip length]
-    └──enhances──> [Story timeline max-duration calculation]
-
-[Boomerang]
-    └──depends on──> [Video Trimming OR a hard clip-length guard]
-    └──requires──> [Frame decode mechanism — Mediabunny VideoSampleSink already available]
-    └──NOT using──> [playbackRate = -1 — not cross-browser; Chrome + Firefox don't support it]
-
-[Live Audio Preview]
-    └──requires──> [Per-cell audioEnabled — already exists, Phase 12]
-    └──SEPARATE from──> [Export OfflineAudioContext — different context type, no conflict]
-    └──requires──> [User gesture before AudioContext.resume()]
-
-[Auto-Mute Detection]
-    └──requires──> [Per-cell audioEnabled — already exists, Phase 12]
-    └──enhances──> [Audio toggle — adds disabled/locked visual state]
-    └──requires──> [hasAudio + audioLocked fields on LeafNode]
-
-[Breadth-First Drop]
-    └──replaces──> [Existing depth-first empty cell fill traversal]
-    └──no new state or data model changes]
-
-[Playback UI Polish]
-    └──enhances──> [Existing timeline bar — CSS/layout only]
-    └──no new dependencies]
+Phase 1 (tree engine) → Phase 2 (rendering) → Phase 3 (media upload)
+Phase 3 (media in cells) → Phase 4 (export — needs real content to test)
+Phase 3 + Phase 4 → Phase 5 (polish is meaningless without working core)
+Phase 5 (stable image pipeline) → Phase 6 (video cells)
+Phase 6 (video playback) → Phase 6 (video export via ffmpeg.wasm)
+Phase 7 (filters, text) → depends on Phase 3 media + Phase 2 rendering
+Phase 7 (save/load) → depends on Phase 1 tree serialization shape (design JSON schema early)
 ```
 
----
-
-## MVP Definition for v1.3
-
-### Launch With (high confidence, low risk)
-
-- [x] **Instagram-style named presets** — highest user-visible impact; no new pipeline; only preset definitions change
-- [x] **Auto-mute detection** — low complexity; prevents a confusing UX state
-- [x] **Breadth-first multi-file drop** — pure algorithm change; high UX impact on first-use flow
-- [x] **Playback UI visual redesign** — polish only; no new controls needed
-
-### Add After Validation (defer within v1.3 if timeline is tight)
-
-- [ ] **Live audio preview** — MEDIUM complexity; AudioContext lifecycle must be managed carefully; high user value once working
-- [ ] **Video trimming** — MEDIUM-HIGH complexity; requires LeafNode data model + sidebar UI + export integration; high value for video-heavy users
-
-### Future Consideration (v1.4+)
-
-- [ ] **Boomerang** — HIGH complexity; depends on trim or clip-length guard; memory-intensive for long clips; GPU memory management is non-trivial
-- [ ] Per-cell volume slider (alongside audio toggle)
-- [ ] Waveform visualization in trim timeline
-- [ ] Boomerang with live camera capture
+**JSON schema note:** The save/load feature (Phase 7) requires the GridNode tree to serialize cleanly. The tree type design in Phase 1 should explicitly consider JSON serialization — circular references and non-serializable values (File objects, Blob URLs) must be normalized before storage. Design this constraint into Phase 1 types even if save/load ships in Phase 7.
 
 ---
 
-## Feature Prioritization Matrix
+## MVP Recommendation
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Instagram presets (new names + CSS values) | HIGH | LOW | P1 |
-| Auto-mute detection + locked toggle | MEDIUM | LOW | P1 |
-| Breadth-first multi-file drop | MEDIUM | LOW | P1 |
-| Playback UI polish | MEDIUM | LOW | P1 |
-| Live audio preview | HIGH | MEDIUM | P2 |
-| Video trimming | HIGH | HIGH | P2 |
-| Boomerang | MEDIUM | HIGH | P3 |
+Phases 0–5 as specified in the brief constitute a solid, shippable MVP. Priority within that scope:
+
+1. Grid tree + rendering (Phases 1–2) — the core differentiator; nothing else matters without this
+2. Media upload + cell controls (Phase 3) — without this it is a wireframe tool
+3. Export (Phase 4) — the product's reason for existence
+4. Pan/zoom within cell — **promote from Phase 7**; strongly recommended as a Phase 5 item or late Phase 3 addition
+5. Preset templates + polish (Phase 5) — significantly reduces time-to-first-result for new users
+6. Swap cells by dragging — **add to Phase 5**; low complexity with @dnd-kit infrastructure already in place
+
+**Defer without regret:**
+- Video (Phase 6): high complexity, significant browser compatibility surface
+- Per-cell filters (Phase 7): nice-to-have, easy to add post-MVP
+- Multi-slide (Phase 7): correct deferral; most users will use single-frame Stories
 
 ---
 
 ## Sources
 
-- instagram.css CSS filter values (raw distributed file): https://raw.githubusercontent.com/picturepan2/instagram.css/master/dist/instagram.min.css
-- CSSgram library: https://github.com/una/CSSgram
-- Instagram filter visual characteristics: https://blog.depositphotos.com/a-closer-look-at-popular-instagram-filters.html
-- Instagram filter popularity and descriptions: https://www.animatron.com/blog/18-best-instagram-filters/
-- Canva Instagram filter popularity data: https://www.canva.com/learn/popular-instagram-filters/
-- Negative playbackRate — WHATWG spec issue: https://github.com/whatwg/html/issues/3754
-- Negative playbackRate — Firefox Bugzilla: https://bugzilla.mozilla.org/show_bug.cgi?id=1468019
-- Boomerang frame-buffer approach (Paul Kinlan): https://paul.kinlan.me/simple-boomerang-video/
-- Cloudinary boomerang approach: https://cloudinary.com/blog/introducing_boomerang_video_effect_with_cloudinary
-- WebCodecs VideoDecoder (Chrome for Developers): https://developer.chrome.com/en/articles/webcodecs/
-- AudioContext autoplay policy (Chrome blog): https://developer.chrome.com/blog/web-audio-autoplay
-- Web Audio API best practices (MDN): https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
-- Autoplay guide for media and Web Audio APIs (MDN): https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay
-- HTMLMediaElement.audioTracks (MDN): https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/audioTracks
-- VideoJS audioTracks browser compatibility discussion: https://github.com/videojs/video.js/issues/7096
-- Cross-browser audio detection gist: https://gist.github.com/spacedmonkey/4c60002ae41b272330395d4b78c814ec
-
----
-*Feature research for: StoryGrid v1.3 — Instagram filters, boomerang, trimming, audio preview, playback UI, auto-mute*
-*Researched: 2026-04-11*
+- [How to Make a Collage on Instagram Story (2026) — PhotoGrid Blog](https://www.photogrid.app/blog/how-to-make-a-collage-on-instagram-story/)
+- [Instagram Animated Collage Tool Launch — Threads/Lia Haberman](https://www.threads.com/@liahaberman/post/DPhLRN7krMO/)
+- [Unfold Review — Product London Design](https://productlondondesign.com/unfold-review/)
+- [Unfold App Store Reviews — Apple](https://apps.apple.com/us/app/unfold-reels-story-maker/id1247275033?see-all=reviews)
+- [BeFunky Collage Maker Feature Page](https://www.befunky.com/features/collage-maker/)
+- [BeFunky Customizing Your Collage — Help Center](https://support.befunky.com/hc/en-us/articles/360025107732-Customizing-Your-Collage)
+- [Canva Instagram Stories Guide](https://www.canva.com/learn/instagram-stories/)
+- [Adobe Express vs. Canva (2025) — Paperlike](https://paperlike.com/blogs/paperlikers-insights/adobe-express-vs-canva)
+- [TurboCollage Pan and Zoom UX](https://www.turbocollage.com/6-photo-collage.html)
+- [PhotoJoiner Collage Maker Features](https://www.photojoiner.com/features/collage-maker)
+- [Best Collage Maker Online for Free — PhotoGrid](https://www.photogrid.app/blog/best-photo-collage-maker-online-for-free/)
+- [14 Best Free Collage Makers — Icecream Apps (2025)](https://icecreamapps.com/learn/best-free-collage-makers.html)
+- [Instagram Story Tips & Tricks — Instagram Official](https://about.instagram.com/blog/tips-and-tricks/instagram-story-tips-tricks)
+- [Canva 2026 Design Trends Report](https://www.yoo.paris/en/blog/canva-unveils-the-7-design-trends-that-will-dominate-2026)
+- [Instagram Testing Undo Button for Stories — Social Barrel](https://socialbarrel.com/instagram-is-testing-an-undo-button-for-stories/134256/)

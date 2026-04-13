@@ -95,7 +95,11 @@ Plans:
   4. Dropping 4 files onto an empty canvas fills cells level by level (breadth-first) — a 2×2 grid is populated before any deeper cell is created
   5. When auto-fill must create new cells beyond existing empty ones, splits alternate H/V by node depth — even depth splits horizontal, odd depth splits vertical
   6. Dropping a single file directly onto a specific leaf cell continues to target that cell exactly
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ### Phase 20: Playback UI Polish
 **Goal**: The PlaybackTimeline has a visually polished appearance aligned with contemporary story editor conventions, with zero changes to playback logic
@@ -105,7 +109,11 @@ Plans:
   1. The PlaybackTimeline renders a semi-transparent dark background, a refined scrubber track (2–3px height), and a thumb that scales on drag
   2. The play/pause button, scrubber, and time display are visually cohesive and legible on the editor's dark background
   3. All changes are Tailwind class modifications only — no TypeScript, event handler, store subscription, or playback logic changes
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 **UI hint**: yes
 
 ### Phase 21: Live Audio Preview
@@ -118,7 +126,11 @@ Plans:
   3. Cells with `audioEnabled: false` or `hasAudioTrack: false` contribute no audio to the live preview mix
   4. The AudioContext is created synchronously inside the play button's click handler — audio is never silenced by the browser's autoplay policy
   5. Rapidly pausing and resuming playback does not throw `InvalidStateError` — each HTMLVideoElement is connected to at most one MediaElementAudioSourceNode per AudioContext lifetime; nodes are gated via gain rather than recreated
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ## Progress Table
 

@@ -3,7 +3,7 @@ import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { useShallow } from 'zustand/react/shallow';
 import { findNode } from '../lib/tree';
-import { autoFillCells } from '../lib/media';
+import { autoFillCells, detectAudioTrack } from '../lib/media';
 import type { LeafNode, ContainerNode, GridNode } from '../types';
 import { ImageIcon, Upload, ImageOff, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { EffectsPanel } from './EffectsPanel';
@@ -225,6 +225,7 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
+  const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const setSelectedNode = useEditorStore(s => s.setSelectedNode);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -259,6 +260,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           addMedia(newId, dataUri, 'image');
         }
         setMedia(nodeId, newId);
+        // Audio detection for single-file replacement
+        const hasAudio = file.type.startsWith('video/')
+          ? await detectAudioTrack(file)
+          : false;
+        setHasAudioTrack(nodeId, hasAudio);
       } else {
         // Multi-file or empty cell: use autoFillCells
         await autoFillCells(files, {
@@ -266,10 +272,11 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
           setMedia,
           split,
           getRoot: () => useGridStore.getState().root,
+          setHasAudioTrack,
         });
       }
     },
-    [node, nodeId, removeMedia, addMedia, setMedia, split],
+    [node, nodeId, removeMedia, addMedia, setMedia, split, setHasAudioTrack],
   );
 
   const handleClearMedia = useCallback(() => {

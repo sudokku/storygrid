@@ -13,6 +13,7 @@ export function CanvasArea() {
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
+  const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
 
   const [isFileDragOver, setIsFileDragOver] = useState(false);
   // D-16: counter pattern — increments on dragenter, decrements on dragleave.
@@ -72,9 +73,10 @@ export function CanvasArea() {
         setMedia,
         split,
         getRoot: () => useGridStore.getState().root,
+        setHasAudioTrack,
       });
     },
-    [addMedia, setMedia, split],
+    [addMedia, setMedia, split, setHasAudioTrack],
   );
 
   return (

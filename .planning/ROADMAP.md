@@ -49,7 +49,7 @@
 
 - [x] **Phase 17: Data Model Foundation** — Add `hasAudioTrack` to LeafNode; verify snapshot compatibility for all new v1.3 fields (completed 2026-04-11)
 - [x] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale (completed 2026-04-12)
-- [ ] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order
+- [x] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order (completed 2026-04-13)
 - [ ] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes
 - [ ] **Phase 21: Live Audio Preview** — Web Audio mix of unmuted video cells during editor playback via AudioContext + MediaElementAudioSourceNode
 
@@ -98,7 +98,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
-- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [x] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
 - [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ### Phase 20: Playback UI Polish
@@ -112,7 +112,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
-- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [x] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
 - [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 **UI hint**: yes
 
@@ -128,9 +128,9 @@ Plans:
   5. Rapidly pausing and resuming playback does not throw `InvalidStateError` — each HTMLVideoElement is connected to at most one MediaElementAudioSourceNode per AudioContext lifetime; nodes are gated via gain rather than recreated
 **Plans**: 3 plans
 Plans:
-- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
 - [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
-- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
+- [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ## Progress Table
 
@@ -138,6 +138,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
 | 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
-| 19. Auto-Mute Detection & Breadth-First Drop | 2/3 | In Progress|  |
+| 19. Auto-Mute Detection & Breadth-First Drop | 4/4 | Complete   | 2026-04-13 |
 | 20. Playback UI Polish | 0/? | Not started | - |
 | 21. Live Audio Preview | 0/? | Not started | - |

@@ -26,12 +26,8 @@ function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
       saturation: 0,
       blur: 0,
       preset: null,
-      sepia: 0,
-      hueRotate: 0,
-      grayscale: 0,
     },
     audioEnabled: true,
-    hasAudioTrack: true,
     ...overrides,
   };
 }

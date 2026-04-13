@@ -1,8 +1,13 @@
-# Preset Sample Photo
+# Preset thumbnails
 
-`sample.jpg` is a 192x192px bundled image used for live CSS-filter preview
-chips in the EffectsPanel. Each chip renders this same base image with a
-different `filter` CSS property computed from `effectsToFilterString()`.
+These six 96×96 PNGs are displayed in `src/Editor/EffectsPanel.tsx` as the visual preview chip strip for each photo preset (B&W, Sepia, Vivid, Fade, Warm, Cool). Rendered at 48×48 in the UI; bundled at 96×96 for HiDPI.
 
-The old static PNG approach (bw.png, sepia.png, etc.) was replaced in Phase 18
-with live CSS-filter previews for accuracy and zero maintenance overhead.
+The current set is **placeholder** — programmatically-generated HSL diagonal gradients tinted to match each preset's character. Replace with hand-curated photos in a follow-up quick task for stronger visual identity.
+
+Do **NOT** rename these files — `EffectsPanel.tsx` imports each by exact filename.
+
+Regenerate the placeholders via:
+
+```bash
+node scripts/generate-preset-thumbs.mjs
+```

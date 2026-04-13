@@ -2,18 +2,32 @@ import { useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
-import { DEFAULT_EFFECTS, type PresetName, effectsToFilterString, PRESET_VALUES } from '../lib/effects';
-import sampleThumb from '../assets/presets/sample.jpg';
+import { DEFAULT_EFFECTS, type PresetName } from '../lib/effects';
+import bwThumb from '../assets/presets/bw.png';
+import sepiaThumb from '../assets/presets/sepia.png';
+import vividThumb from '../assets/presets/vivid.png';
+import fadeThumb from '../assets/presets/fade.png';
+import warmThumb from '../assets/presets/warm.png';
+import coolThumb from '../assets/presets/cool.png';
 
-const PRESETS: PresetName[] = ['clarendon', 'lark', 'juno', 'reyes', 'moon', 'inkwell'];
+const PRESETS: PresetName[] = ['bw', 'sepia', 'vivid', 'fade', 'warm', 'cool'];
 
 const DISPLAY_NAMES: Record<PresetName, string> = {
-  clarendon: 'Clarendon',
-  lark: 'Lark',
-  juno: 'Juno',
-  reyes: 'Reyes',
-  moon: 'Moon',
-  inkwell: 'Inkwell',
+  bw: 'B&W',
+  sepia: 'Sepia',
+  vivid: 'Vivid',
+  fade: 'Fade',
+  warm: 'Warm',
+  cool: 'Cool',
+};
+
+const PRESET_THUMBS: Record<PresetName, string> = {
+  bw: bwThumb,
+  sepia: sepiaThumb,
+  vivid: vividThumb,
+  fade: fadeThumb,
+  warm: warmThumb,
+  cool: coolThumb,
 };
 
 const KEYBOARD_NUDGE_KEYS = new Set([
@@ -101,7 +115,6 @@ export function EffectsPanel({ nodeId }: { nodeId: string }) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {PRESETS.map((name) => {
           const isActive = effects.preset === name;
-          const chipFilterStr = effectsToFilterString({ ...PRESET_VALUES[name], preset: name });
           return (
             <button
               key={name}
@@ -117,10 +130,9 @@ export function EffectsPanel({ nodeId }: { nodeId: string }) {
                 }`}
               >
                 <img
-                  src={sampleThumb}
+                  src={PRESET_THUMBS[name]}
                   alt={DISPLAY_NAMES[name]}
                   className="w-full h-full object-cover"
-                  style={{ filter: chipFilterStr }}
                 />
               </div>
               <span className="text-[10px] font-normal text-neutral-400">

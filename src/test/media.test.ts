@@ -1,12 +1,13 @@
 /**
  * media.test.ts
  * Tests for fileToBase64 (MEDI-03) and autoFillCells (MEDI-04, MEDI-05).
- * Coverage: D-05 (overflow split), D-06 (shared fill logic), non-image rejection.
+ * Coverage: BFS order (D-13), depth-based overflow split (D-14),
+ * audio detection wiring (D-15), non-image rejection.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as mediaModule from '../lib/media';
 import { autoFillCells, fileToBase64 } from '../lib/media';
-import { buildInitialTree, getAllLeaves, splitNode } from '../lib/tree';
+import { buildInitialTree, getAllLeaves, splitNode, buildTemplate } from '../lib/tree';
 import type { GridNode, FillActions } from '../lib/media';
 
 // ---------------------------------------------------------------------------
@@ -50,7 +51,8 @@ function makeMockActions(initialRoot?: GridNode) {
     root = splitNode(root, nodeId, dir as 'horizontal' | 'vertical');
   });
   const getRoot = vi.fn(() => root);
-  return { addMedia, setMedia, split, getRoot };
+  const setHasAudioTrack = vi.fn((_nodeId: string, _hasAudio: boolean) => {});
+  return { addMedia, setMedia, split, getRoot, setHasAudioTrack };
 }
 
 // ---------------------------------------------------------------------------
@@ -134,6 +136,8 @@ describe('autoFillCells', () => {
   beforeEach(() => {
     // Mock fileToBase64 so autoFillCells tests don't need a real FileReader
     vi.spyOn(mediaModule, 'fileToBase64').mockResolvedValue('data:image/jpeg;base64,fakecontent');
+    // Mock detectAudioTrack to avoid AudioContext in jsdom
+    vi.spyOn(mediaModule, 'detectAudioTrack').mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -167,13 +171,62 @@ describe('autoFillCells', () => {
     expect(actions.split).not.toHaveBeenCalled();
   });
 
-  it('auto-splits last filled leaf for overflow files (D-05)', async () => {
-    const root = buildInitialTree(); // 2 empty leaves
+  it('auto-splits last filled leaf for overflow files (depth-based direction)', async () => {
+    const root = buildInitialTree(); // vertical container (depth 0) with 2 empty leaves at depth 1
     const actions = makeMockActions(root);
     // 3 files but only 2 empty cells → 3rd file should trigger a split
+    // The last filled leaf is at depth 1 (odd) → vertical split
     await autoFillCells([makeImageFile(), makeImageFile(), makeImageFile()], actions as FillActions);
-    expect(actions.split).toHaveBeenCalledWith(expect.any(String), 'horizontal');
+    expect(actions.split).toHaveBeenCalledTimes(1);
     expect(actions.addMedia).toHaveBeenCalledTimes(3);
+  });
+
+  it('fills a 2x2 grid (4 leaves) in BFS order (level-by-level)', async () => {
+    // buildTemplate('2x2'): vertical root → [horizontal(leaf0, leaf1), horizontal(leaf2, leaf3)]
+    // BFS order: leaf0 (depth 2), leaf1 (depth 2), leaf2 (depth 2), leaf3 (depth 2)
+    // All at same depth so left-to-right, top-to-bottom
+    const root = buildTemplate('2x2');
+    const actions = makeMockActions(root);
+    const allLeaves = getAllLeaves(root);
+    await autoFillCells([
+      makeImageFile('a.jpg'),
+      makeImageFile('b.jpg'),
+      makeImageFile('c.jpg'),
+      makeImageFile('d.jpg'),
+    ], actions as FillActions);
+    // All 4 leaves should be filled in BFS order (no splits needed)
+    expect(actions.split).not.toHaveBeenCalled();
+    expect(actions.setMedia).toHaveBeenNthCalledWith(1, allLeaves[0].id, expect.any(String));
+    expect(actions.setMedia).toHaveBeenNthCalledWith(2, allLeaves[1].id, expect.any(String));
+    expect(actions.setMedia).toHaveBeenNthCalledWith(3, allLeaves[2].id, expect.any(String));
+    expect(actions.setMedia).toHaveBeenNthCalledWith(4, allLeaves[3].id, expect.any(String));
+  });
+
+  it('calls setHasAudioTrack after each media assignment for video files', async () => {
+    // Mock URL.createObjectURL since jsdom doesn't support it
+    const origCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:fake-url');
+    try {
+      const root = buildInitialTree();
+      const actions = makeMockActions(root);
+      const leaves = getAllLeaves(actions.getRoot());
+      const videoFile = new File([''], 'clip.mp4', { type: 'video/mp4' });
+      await autoFillCells([videoFile], actions as FillActions);
+      // setHasAudioTrack must be called once — value comes from detectAudioTrack (mocked true)
+      expect(actions.setHasAudioTrack).toHaveBeenCalledTimes(1);
+      expect(actions.setHasAudioTrack).toHaveBeenCalledWith(leaves[0].id, true);
+    } finally {
+      URL.createObjectURL = origCreateObjectURL;
+    }
+  });
+
+  it('calls setHasAudioTrack(nodeId, false) for image files without calling detectAudioTrack', async () => {
+    const root = buildInitialTree();
+    const actions = makeMockActions(root);
+    const leaves = getAllLeaves(actions.getRoot());
+    await autoFillCells([makeImageFile()], actions as FillActions);
+    expect(actions.setHasAudioTrack).toHaveBeenCalledWith(leaves[0].id, false);
+    expect(mediaModule.detectAudioTrack).not.toHaveBeenCalled();
   });
 
   it('skips non-image files (text/plain)', async () => {

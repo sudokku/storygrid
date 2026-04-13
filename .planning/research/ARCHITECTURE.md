@@ -1,466 +1,635 @@
-# Architecture Research — v1.3 Integration Map
+# Architecture Patterns: StoryGrid
 
-**Domain:** v1.3 feature integration into existing StoryGrid codebase
-**Researched:** 2026-04-11
-**Confidence:** HIGH — all findings derived from reading the actual source files
-
----
-
-## System Overview (Current, post-v1.2)
-
-```
-+-----------------------------------------------------------------------------+
-|  React component tree (EditorShell -> CanvasArea / Sidebar / Toolbar)      |
-|                                                                             |
-|  LeafNodeComponent (React.memo)         PlaybackTimeline                   |
-|  +-- hidden HTMLVideoElement (videoElRef)  +-- setInterval 10fps sync      |
-|  +-- <canvas> (canvasRef) -- WYSIWYG       +-- videoElementRegistry (Map) |
-|  +-- rAF loop (isPlaying=true only)                                        |
-|  +-- drawRef.current() <- drawLeafToCanvas()                               |
-|                                                                             |
-|  SelectedCellPanel / EffectsPanel / ActionBar (portal)                     |
-|  +-- per-cell controls reading gridStore                                   |
-+-----------------------------------------------------------------------------+
-|  State stores (Zustand + Immer)                                            |
-|                                                                             |
-|  gridStore              editorStore           overlayStore                 |
-|  +-- root: GridNode     +-- isPlaying         +-- overlays[]               |
-|  +-- mediaRegistry      +-- playheadTime      +-- stickerRegistry          |
-|  +-- mediaTypeMap       +-- totalDuration     +-- 8 actions                |
-|  +-- thumbnailMap       +-- selectedNodeId                                 |
-|  +-- 20+ actions        +-- borderRadius...                                |
-|                                                                             |
-|  videoElementRegistry (module-level Map, NOT Zustand)                      |
-|  +-- nodeId -> HTMLVideoElement (playback & draw)                          |
-|  +-- nodeId -> draw() callback (rAF redraw without React re-render)        |
-+-----------------------------------------------------------------------------+
-|  Pure libs / pipelines                                                     |
-|                                                                             |
-|  src/lib/effects.ts          src/lib/export.ts                             |
-|  +-- EffectSettings type     +-- drawLeafToCanvas()  <- SINGLE DRAW PATH   |
-|  +-- PRESET_VALUES{}         +-- renderGridIntoContext()                   |
-|  +-- effectsToFilterString() +-- renderGridToCanvas()                     |
-|                                                                             |
-|  src/lib/videoExport.ts      src/lib/media.ts                              |
-|  +-- exportVideoGrid()       +-- autoFillCells()                           |
-|  +-- buildVideoStreams()      +-- fileToBase64()                           |
-|  +-- mixAudioForExport()                                                   |
-|  +-- Mediabunny pipeline                                                   |
-|                                                                             |
-|  src/lib/tree.ts                                                           |
-|  +-- getAllLeaves() -- DFS, document order                                 |
-+-----------------------------------------------------------------------------+
-```
+**Domain:** Browser-based recursive split-grid collage editor
+**Researched:** 2026-03-31
+**Overall confidence:** HIGH (stack pre-decided; patterns verified against official docs and authoritative sources)
 
 ---
 
-## 1. Instagram Presets -- Integration Map
+## Recommended Architecture
 
-### Where preset names map to filter values
-
-The entire preset system lives in **`src/lib/effects.ts`**. This is the only file to change for a preset redesign.
+StoryGrid is a tree-state editor with two render surfaces: a scaled DOM preview and a hidden full-resolution export div. The component tree mirrors the data tree. State flows down via Zustand selectors; mutations flow up via store actions.
 
 ```
-src/lib/effects.ts
-+-- type PresetName = 'bw' | 'sepia' | 'vivid' | 'fade' | 'warm' | 'cool'
-+-- PRESET_VALUES: Record<PresetName, {brightness, contrast, saturation, blur}>
-+-- effectsToFilterString(e: EffectSettings): string
-     +-- outputs CSS filter string used by ctx.filter in drawLeafToCanvas()
+App
+├── EditorLayout
+│   ├── Toolbar              (undo/redo, zoom, export, safe zone toggle)
+│   ├── CanvasArea
+│   │   ├── CanvasWrapper    (transform: scale; aspect-ratio container)
+│   │   │   └── GridNode     (recursive — root of the tree)
+│   │   │       ├── ContainerNode  (flex row/column + Divider)
+│   │   │       └── LeafNode       (media display + hover controls)
+│   │   └── SafeZoneOverlay  (pointer-events: none; dashed guides)
+│   └── Sidebar              (selection-aware cell controls)
+└── ExportSurface            (position: fixed; left: -9999px; 1080×1920px)
+    └── GridNode             (same tree, different render context)
 ```
 
-The `PresetName` union type is the **data model contract**. `gridStore.applyPreset()` writes `{ preset: presetName, ...PRESET_VALUES[presetName] }` into `leaf.effects`. The string value of `preset` is stored in every history snapshot.
+### Component Boundaries
 
-**Renaming/redesigning presets -- what to change:**
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| `GridNode` | Dispatches to Container or Leaf based on node type | Reads own node from store |
+| `ContainerNode` | Renders `display: flex` + children + Dividers | Reads children IDs; dispatches resize |
+| `LeafNode` | Renders media / empty state; shows hover actions | Reads leaf data; dispatches split/media/remove |
+| `Divider` | Captures pointer drag; updates sibling flex fractions | Dispatches `resizeSiblings` action |
+| `CanvasWrapper` | Applies `transform: scale()` to fit viewport | Reads zoom from editorStore |
+| `ExportSurface` | Hidden 1080×1920 div; targeted by html-to-image | Mounts same `<GridNode root>` |
+| `Toolbar` | Global actions: undo/redo, zoom, export | Reads/dispatches gridStore + editorStore |
+| `Sidebar` | Selection-scoped controls | Reads `selectedNodeId` from editorStore |
 
-1. `src/lib/effects.ts` -- update `PresetName` union, `PRESET_VALUES` entries, and optionally add hue-rotate or sepia to `effectsToFilterString` if the new presets need new CSS filter functions
-2. `src/Editor/EffectsPanel.tsx` -- display names and button labels (currently maps `'bw'` to `'B&W'`, etc.)
-3. `src/Grid/__tests__/ActionBar.test.tsx`, `src/Editor/__tests__/EffectsPanel.test.tsx` -- preset name references in tests
-4. `src/lib/effects.test.ts` -- contract-locked numeric tuples; update expected values
+### Data Flow
 
-**Data model safety rule:** The `preset` field on `LeafNode` stores the raw `PresetName` string, not a display name. As long as the union type and `PRESET_VALUES` keys stay consistent, history snapshots remain valid across the rename. Old snapshots with removed preset names will render with the slider values baked into them (the numeric tuple is always stored alongside the preset key), so no migration is needed for the preview path. Export calls `effectsToFilterString` which only reads the numeric sliders -- the `preset` string is cosmetic at draw time.
+```
+User gesture
+  → React event handler (Divider, LeafNode, Toolbar)
+    → Zustand action (gridStore / editorStore)
+      → Immer draft mutation
+        → New state snapshot pushed to history[]
+          → Zustand notifies all subscribers
+            → Memoized components with matching selectors re-render
+```
 
-**New CSS filter functions:** If Instagram presets require `hue-rotate()` or `sepia()`, add those fields to `EffectSettings` and extend `effectsToFilterString`. The `drawLeafToCanvas()` call site in `src/lib/export.ts` is transparent to the filter string -- it just calls `ctx.filter = filterStr`. No changes needed in the export or rAF paths.
+The export path is separate:
+
+```
+Export button click
+  → exportStore.startExport()
+    → React renders ExportSurface (or it is always mounted, visibility: hidden)
+      → html-to-image.toPng(exportRef.current, { pixelRatio: 1, width: 1080, height: 1920 })
+        → Promise resolves → trigger <a> download
+          → exportStore.finishExport()
+```
 
 ---
 
-## 2. Boomerang -- Integration Map
+## State Management: Zustand + Immer
 
-### Data model change
+### Store Structure
 
-Add one field to `LeafNode` in `src/types/index.ts`:
+Split into two stores to prevent unnecessary coupling:
+
+**gridStore** — owns the tree and mutation history:
 
 ```typescript
-boomerang: boolean;  // default: false
+import { create } from 'zustand'
+import { immer } from 'zustand/middleware/immer'
+import { devtools } from 'zustand/middleware'
+
+interface GridState {
+  root: GridNode
+  history: GridNode[]   // past states
+  future: GridNode[]    // redo stack
+}
+
+interface GridActions {
+  splitNode: (nodeId: string, direction: SplitDirection) => void
+  mergeNode: (nodeId: string) => void
+  removeNode: (nodeId: string) => void
+  resizeSiblings: (parentId: string, index: number, ratio: number) => void
+  setMedia: (nodeId: string, media: MediaItem) => void
+  updateCell: (nodeId: string, patch: Partial<LeafNode>) => void
+  undo: () => void
+  redo: () => void
+}
+
+export const useGridStore = create<GridState & GridActions>()(
+  devtools(
+    immer((set, get) => ({
+      root: createLeaf('root'),
+      history: [],
+      future: [],
+
+      splitNode: (nodeId, direction) =>
+        set((state) => {
+          // Push snapshot BEFORE mutation
+          state.history.push(structuredClone(state.root))
+          state.future = []
+          // Mutate draft directly — Immer handles immutability
+          const node = findNode(state.root, nodeId)
+          if (!node) return
+          const parent = findParent(state.root, nodeId)
+          // ... split logic using pure tree functions
+        }),
+
+      undo: () =>
+        set((state) => {
+          const prev = state.history.pop()
+          if (!prev) return
+          state.future.push(structuredClone(state.root))
+          state.root = prev
+        }),
+
+      redo: () =>
+        set((state) => {
+          const next = state.future.pop()
+          if (!next) return
+          state.history.push(structuredClone(state.root))
+          state.root = next
+        }),
+    })),
+  ),
+)
 ```
 
-Add the default in `createLeaf()` inside `src/lib/tree.ts`. Add a `toggleBoomerang(nodeId)` action in `gridStore.ts` (pattern-identical to `toggleAudioEnabled`).
-
-### rAF loop change (LeafNode.tsx)
-
-The current rAF loop (`useEffect` on `isPlaying, isVideo`) calls `drawRef.current()` which reads `videoElRef.current` directly as the draw source. The video element's `currentTime` is advanced by the browser's natural playback.
-
-For boomerang, the video element cannot be used in `loop=true` mode because the browser only plays forward. Instead:
-
-**Approach: manual frame stepping in the rAF loop.**
-
-1. Detect boomerang mode from the leaf's `boomerang` field inside the rAF tick (read from `useGridStore.getState()` -- same pattern as `findNode(useGridStore.getState().root, id)` already used in `drawRef`).
-2. Set `video.loop = false` when boomerang is active.
-3. Track a direction flag (`ref<'forward' | 'backward'>`) in the component.
-4. Each tick: advance or decrement `video.currentTime` manually by `1/fps * speedMultiplier`. At `duration`, flip direction to backward; at `0`, flip to forward.
-5. After setting `currentTime`, call `drawRef.current()` on the next rAF tick -- the seek is async so drawing immediately may produce the previous frame.
-
-**Alternative (more correct):** Use `video.onseeked` to call `drawRef.current()` and keep the rAF only for advancing time, not for drawing. This eliminates the stale-frame issue at the cost of added complexity.
-
-### Export pipeline change (videoExport.ts)
-
-The `buildVideoStreams()` / `makeTimestampGen()` pipeline generates timestamps for `samplesAtTimestamps`. For boomerang cells, the timestamp generator must emit forward-then-backward frame timestamps.
-
-**Strategy:**
-
-1. Add a `boomerang: boolean` field to the per-leaf data read inside `exportVideoGrid`. The leaf's `boomerang` state is available via `getAllLeaves(root)`.
-2. In `makeTimestampGen`, add a `boomerang` parameter. When true, the timestamp sequence should be: forward pass `0` to `effectiveDuration`, then backward pass back to `0`, cycling for the full export duration.
-3. `samplesAtTimestamps` handles backward jumps by re-seeking the decoder automatically (documented in the existing `makeTimestampGen` comment).
-
-Frame ordering for boomerang in export:
-
-```
-boomerangPeriod = 2 * effectiveDuration  // one forward+backward cycle
-
-for frame i:
-  cycleTime = (i / fps) % boomerangPeriod
-  if cycleTime <= effectiveDuration:
-    videoTimestamp = firstTimestamp + cycleTime
-  else:
-    videoTimestamp = firstTimestamp + (boomerangPeriod - cycleTime)
-```
-
-The existing `computeLoopedTime` function handles forward looping. For boomerang, a new `computeBoomerangTime(t, duration)` helper should be extracted alongside it with the same testability contract.
-
-**Components to modify:** `src/lib/videoExport.ts` (`makeTimestampGen`, new `computeBoomerangTime`), `src/Grid/LeafNode.tsx` (rAF tick), `src/types/index.ts` (field), `src/lib/tree.ts` (`createLeaf` default), `src/store/gridStore.ts` (action).
-
----
-
-## 3. Video Trimming -- Integration Map
-
-### Data model change
-
-Add two fields to `LeafNode`:
+**editorStore** — owns UI-only state (no undo/redo needed):
 
 ```typescript
-trimStart: number;  // seconds, default: 0
-trimEnd: number | null;  // seconds; null = use video's natural duration
-```
-
-Add defaults in `createLeaf()`. Add a `setTrimPoints(nodeId, trimStart, trimEnd)` store action. Use the `beginEffectsDrag` pattern (push snapshot on drag start, no snapshot on each slider move) to avoid history pollution during drag.
-
-### rAF loop / playback change (LeafNode.tsx)
-
-The `video.loop = true` approach does not respect trim points. For trimmed playback:
-
-1. Set `video.loop = false`.
-2. In the rAF loop, when `video.currentTime >= (leaf.trimEnd ?? video.duration)`, manually seek back to `leaf.trimStart` and call `video.play()`.
-3. The `seekAll(time)` function in `PlaybackTimeline.handleScrub` does not need changes -- the scrubber maps to global elapsed time, and each cell independently loops its trimmed window.
-
-### Duration calculation change
-
-`recomputeTotalDuration()` in `LeafNode.tsx` currently reads `video.duration` for each registered video element. For trimmed cells, the effective duration is `(trimEnd ?? video.duration) - trimStart`. The function must read trim values from the grid store:
-
-```typescript
-function recomputeTotalDuration() {
-  let maxDur = 0;
-  for (const [nodeId, video] of videoElementRegistry.entries()) {
-    if (!video.duration || !isFinite(video.duration)) continue;
-    const leaf = findNode(useGridStore.getState().root, nodeId) as LeafNode | null;
-    const start = leaf?.trimStart ?? 0;
-    const end = leaf?.trimEnd ?? video.duration;
-    maxDur = Math.max(maxDur, end - start);
-  }
-  useEditorStore.getState().setTotalDuration(maxDur);
+interface EditorState {
+  selectedNodeId: string | null
+  zoom: number
+  showSafeZone: boolean
+  tool: 'select' | 'split-h' | 'split-v'
+  isExporting: boolean
 }
 ```
 
-This is valid because `recomputeTotalDuration` already accesses `useEditorStore.getState()` directly (it is not a React hook), and `useGridStore.getState()` follows the same pattern.
+### Key Immer Rules
 
-### Export pipeline change (videoExport.ts)
+1. Mutate properties on the Immer draft directly — never reassign `state` itself.
+2. Use `structuredClone` (not spread) for the history snapshot to avoid shared references.
+3. All pure tree functions (`findNode`, `splitNode`, etc.) receive a mutable draft and return void, or receive plain objects and return new objects — pick one convention and stick to it. Recommendation: pure functions receive immutable objects and return new values; the Zustand action handler applies them to the draft.
 
-With trimming, the `makeTimestampGen` parameters change:
+Pattern for tree mutation with pure functions:
 
-- `effectiveDuration` becomes `trimEnd - trimStart`
-- `firstTimestamp` becomes `firstTimestamp + trimStart`
+```typescript
+splitNode: (nodeId, direction) =>
+  set((state) => {
+    state.history.push(structuredClone(state.root))
+    state.future = []
+    // splitNodePure returns a new root tree
+    state.root = splitNodePure(state.root, nodeId, direction)
+  }),
+```
 
-The existing `computeLoopedTime` logic works unchanged -- the trim offset is absorbed into the `firstTimestamp` and `effectiveDuration` parameters.
-
-**Per-mediaId vs per-leaf constraint:** `buildVideoStreams` creates one `Input` (Mediabunny decoder) per unique `mediaId`. If two cells reference the same video file, both cells get the same trim. This is a known limitation for v1.3. Full per-cell trim for shared mediaIds requires a per-leaf streaming pipeline refactor -- defer to a future milestone.
-
-**Components to modify:** `src/lib/videoExport.ts` (`buildVideoStreams`, `makeTimestampGen`), `src/Grid/LeafNode.tsx` (rAF loop, video setup), `recomputeTotalDuration()`, `src/types/index.ts`, `src/lib/tree.ts`, `src/store/gridStore.ts`, `src/Editor/Sidebar.tsx` (trim UI).
+This keeps tree logic testable outside of Zustand and avoids accidental draft-escape bugs.
 
 ---
 
-## 4. Live Audio Preview -- Integration Map
+## Memoization Strategy
 
-### Current audio architecture
+### Which Components to Memo
 
-Export uses `mixAudioForExport()` (offline `OfflineAudioContext`). During editor playback there is **no live audio** -- all hidden video elements are `muted: true` (LeafNode.tsx line 197). `buildAudioGraph` was removed with the Mediabunny migration (Phase 14).
+Every component in the recursive tree must be memoized. The tree can be 10–20 nodes deep; an un-memoized root re-render would cascade to all descendants.
 
-### Where live audio should live
+| Component | `React.memo` | Custom comparator | Reason |
+|-----------|-------------|-------------------|--------|
+| `GridNode` | YES | No (ID-based selector avoids prop churn) | Dispatches to Container/Leaf |
+| `ContainerNode` | YES | Compare `childrenIds` array (shallow) + `direction` | Children array changes only on split/remove |
+| `LeafNode` | YES | Compare `nodeId` + `mediaUrl` + `isSelected` + `fitMode` | Media swaps most frequent change |
+| `Divider` | YES | Compare `parentId` + `index` | Only identity needed; callbacks stable via `useCallback` |
+| `SafeZoneOverlay` | YES | Compare `showSafeZone` only | Pure presentational |
+| `Toolbar` | YES | No (reads shallow global flags) | Prevents re-render on tree change |
 
-A custom hook `usePlaybackAudio()` is the right shape. It should not live in `PlaybackTimeline` (which is a thin UI component) and must not live in `LeafNode` (which would attempt to create `MediaElementAudioSourceNode` more than once per element if the leaf re-mounts).
+### Selector Pattern: Nodes Subscribe to Their Own Slice
 
-**Mount location:** Call `usePlaybackAudio()` once from `EditorShell.tsx` or `CanvasArea.tsx`.
-
-### Hook design
+Each node component subscribes only to its own node data, not the whole tree:
 
 ```typescript
-// src/hooks/usePlaybackAudio.ts
-export function usePlaybackAudio(): void {
-  const isPlaying = useEditorStore(s => s.isPlaying);
+// ContainerNode.tsx
+const ContainerNode = React.memo(({ nodeId }: { nodeId: string }) => {
+  const direction = useGridStore(
+    useCallback((s) => findNode(s.root, nodeId)?.direction, [nodeId])
+  )
+  const childrenIds = useGridStore(
+    useCallback((s) => findNode(s.root, nodeId)?.children.map(c => c.id) ?? [], [nodeId]),
+    shallow   // shallow array compare — avoids re-render if IDs unchanged
+  )
+  // ...
+})
+```
+
+This achieves surgical re-renders: only nodes whose data actually changed will re-render, regardless of mutations elsewhere in the tree.
+
+### Stable Callbacks
+
+All event handlers passed to memoized children must be stabilized:
+
+```typescript
+const handleSplit = useCallback(
+  (direction: SplitDirection) => splitNode(nodeId, direction),
+  [nodeId, splitNode]
+)
+```
+
+`splitNode` from the store is already stable (Zustand actions never change identity).
+
+### React Compiler (React 19+) Note
+
+React Compiler (released stable in React 19 / announced Dec 2025) automatically memoizes components. If the project upgrades to React 19 during development, manual `React.memo` and `useCallback` can be removed. For React 18 (current project requirement), manual memoization is required.
+
+---
+
+## Recursive Tree Rendering
+
+### Node Type Dispatch
+
+`GridNode` is a thin dispatcher — it reads only the node type and renders either `ContainerNode` or `LeafNode`:
+
+```typescript
+const GridNode = React.memo(({ nodeId }: { nodeId: string }) => {
+  const type = useGridStore(
+    useCallback((s) => findNode(s.root, nodeId)?.type, [nodeId])
+  )
+  if (type === 'container') return <ContainerNode nodeId={nodeId} />
+  return <LeafNode nodeId={nodeId} />
+})
+```
+
+`ContainerNode` renders children recursively — each child is a `GridNode`:
+
+```typescript
+const ContainerNode = React.memo(({ nodeId }: { nodeId: string }) => {
+  const { direction, childrenIds, sizes } = useContainerNode(nodeId)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: direction, width: '100%', height: '100%' }}>
+      {childrenIds.map((childId, i) => (
+        <React.Fragment key={childId}>
+          <div style={{ flex: sizes[i] }}>
+            <GridNode nodeId={childId} />
+          </div>
+          {i < childrenIds.length - 1 && (
+            <Divider parentId={nodeId} index={i} direction={direction} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  )
+})
+```
+
+The `flex: sizes[i]` pattern (where `sizes` sums to 1.0 or uses arbitrary weights) drives proportional sizing. FlexLayout uses this same weight-based approach. No absolute pixel values — everything is fractional.
+
+### Tree Data Shape
+
+```typescript
+type SplitDirection = 'horizontal' | 'vertical'
+
+interface BaseNode {
+  id: string
+  type: 'container' | 'leaf'
+}
+
+interface ContainerNode extends BaseNode {
+  type: 'container'
+  direction: SplitDirection
+  children: GridNode[]   // always length >= 2
+  sizes: number[]        // parallel to children; values are flex weights (e.g., [0.5, 0.5])
+}
+
+interface LeafNode extends BaseNode {
+  type: 'leaf'
+  media: MediaItem | null
+  fitMode: 'cover' | 'contain'
+  backgroundColor: string
+}
+
+type GridNode = ContainerNode | LeafNode
+```
+
+---
+
+## Drag-to-Resize Dividers
+
+### Pointer Events Pattern
+
+Use the Pointer Events API (not mouse events) for cross-device consistency. The divider manages its own drag state via `useRef` to avoid triggering React re-renders during drag:
+
+```typescript
+const Divider = React.memo(({ parentId, index, direction }: DividerProps) => {
+  const dividerRef = useRef<HTMLDivElement>(null)
+  const dragState = useRef<{ startPos: number; startSizes: number[] } | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const resizeSiblings = useGridStore((s) => s.resizeSiblings)
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    const parent = dividerRef.current?.parentElement
+    if (!parent) return
+    containerRef.current = parent as HTMLDivElement
+    const currentSizes = /* read from store snapshot */ []
+    dragState.current = {
+      startPos: direction === 'horizontal' ? e.clientX : e.clientY,
+      startSizes: currentSizes,
+    }
+    dividerRef.current?.setPointerCapture(e.pointerId)
+  }, [direction])
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragState.current || !containerRef.current) return
+    const currentPos = direction === 'horizontal' ? e.clientX : e.clientY
+    const containerSize = direction === 'horizontal'
+      ? containerRef.current.offsetWidth
+      : containerRef.current.offsetHeight
+    const delta = (currentPos - dragState.current.startPos) / containerSize
+    // Compute new sizes, clamp to min (e.g., 0.1)
+    const newSizes = computeNewSizes(dragState.current.startSizes, index, delta)
+    resizeSiblings(parentId, newSizes)
+  }, [direction, index, parentId, resizeSiblings])
+
+  const onPointerUp = useCallback(() => {
+    dragState.current = null
+  }, [])
+
+  return (
+    <div
+      ref={dividerRef}
+      className={`divider ${direction === 'horizontal' ? 'cursor-col-resize w-2' : 'cursor-row-resize h-2'}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+    />
+  )
+})
+```
+
+Critical details:
+- `setPointerCapture` keeps events firing on the divider even when the pointer moves outside it — essential for fast drags.
+- `dragState` is a `useRef`, not `useState` — avoids a re-render on every pointer move tick. Only the final `resizeSiblings` dispatch triggers a React re-render.
+- During drag, consider throttling `resizeSiblings` dispatches via `requestAnimationFrame` if profiling shows jank. For 10–20 cells this is unlikely to be needed.
+- Minimum cell size should be enforced in `computeNewSizes` (e.g., floor at 10% / 0.1 weight).
+- Divider hit target: render a narrow visible line inside a wider invisible hit area (e.g., 2px visual, 12px click target via padding or pseudo-element).
+
+---
+
+## Dual-Render Strategy: Preview + Export
+
+### Architecture
+
+Two `<GridNode>` trees are mounted simultaneously sharing the same store state:
+
+```
+CanvasWrapper (transform: scale(zoom); will-change: transform)
+  └── GridNode (root)   ← PREVIEW — visible, scaled
+
+ExportSurface (position: fixed; left: -9999px; width: 1080px; height: 1920px; visibility: hidden)
+  └── GridNode (root)   ← EXPORT — hidden, actual pixel dimensions
+```
+
+Both trees read from the same Zustand store. The export surface uses `visibility: hidden` (not `display: none`) so that layout and image rendering is computed by the browser.
+
+### Scaling the Preview
+
+```typescript
+// CanvasWrapper.tsx
+const CanvasWrapper = () => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
 
   useEffect(() => {
-    if (!isPlaying) return;
-
-    const ctx = new AudioContext();
-
-    for (const [nodeId, video] of videoElementRegistry.entries()) {
-      const leaf = findNode(useGridStore.getState().root, nodeId) as LeafNode | null;
-      if (!leaf?.audioEnabled) continue;
-      if (!leaf.mediaId) continue;
-      if (useGridStore.getState().mediaTypeMap[leaf.mediaId] !== 'video') continue;
-
-      video.muted = false;
-      const source = ctx.createMediaElementSource(video);
-      source.connect(ctx.destination);
+    const update = () => {
+      if (!containerRef.current) return
+      const availH = containerRef.current.parentElement!.offsetHeight - 32 // padding
+      const availW = containerRef.current.parentElement!.offsetWidth - 32
+      const scaleByH = availH / 1920
+      const scaleByW = availW / 1080
+      setScale(Math.min(scaleByH, scaleByW, 1))
     }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
-    return () => {
-      for (const video of videoElementRegistry.values()) {
-        video.muted = true;
-      }
-      ctx.close();
-    };
-  }, [isPlaying]);
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: 1080,
+        height: 1920,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top left',
+        willChange: 'transform',
+      }}
+    >
+      <GridNode nodeId="root" />
+    </div>
+  )
 }
 ```
 
-**Critical constraint: `MediaElementAudioSourceNode` can only be created once per `HTMLMediaElement`.** The cleanup path must close the `AudioContext` entirely so the next play session creates a fresh one. If the hook re-renders and tries to create a source for the same element twice within one play session, it will throw. The `useEffect` dependency on `isPlaying` ensures cleanup runs on pause.
+This avoids the need for any `zoom` value in the store to be used by GridNode children — the transform is applied at the wrapper boundary only.
 
-**Interaction with rAF loop:** No conflict. The rAF loop calls `drawRef.current()` only -- it does not touch audio. The `video.play()` call in `PlaybackTimeline.handlePlayPause()` drives both the rAF draw and the `MediaElementAudioSourceNode` audio simultaneously.
-
----
-
-## 5. Auto-Mute Detection -- Integration Map
-
-### Data model change
-
-Add one field to `LeafNode`:
+### Export Trigger
 
 ```typescript
-hasAudioTrack: boolean;  // default: true (safe; detection runs async after upload)
-```
+// useExport.ts
+export const useExport = (exportRef: RefObject<HTMLDivElement>) => {
+  const setExporting = useEditorStore((s) => s.setExporting)
 
-Add default `true` in `createLeaf()`. The field is read-only from the UI perspective -- the user cannot set it. UI shows a grayed non-interactive `VolumeX` icon when `hasAudioTrack = false`, regardless of `audioEnabled`.
-
-### Detection integration point: addMedia in gridStore.ts
-
-`addMedia` (gridStore.ts line 321) already launches an async thumbnail capture via `_capture.fn(dataUri)` for video cells. Audio detection runs in the same async follow-up pattern:
-
-```typescript
-// After setting mediaRegistry/mediaTypeMap in addMedia:
-if (type === 'video') {
-  // existing thumbnail path ...
-  detectAudioTrack(dataUri).then(hasAudio => {
-    if (!get().mediaRegistry[mediaId]) return; // removed during detection
-    // set on all leaves referencing this mediaId at time of resolution
-    set(state => {
-      const leaves = getAllLeaves(current(state.root));
-      for (const leaf of leaves) {
-        if (leaf.mediaId === mediaId) {
-          state.root = updateLeaf(current(state.root), leaf.id, { hasAudioTrack: hasAudio });
-        }
-      }
-    });
-  });
-}
-```
-
-**Timing note:** `addMedia` runs before `setMedia` in `autoFillCells`. At the time `detectAudioTrack` resolves (async), the mediaId may already be assigned to a leaf. The async `.then()` runs after `setMedia` has completed in practice, so the leaf will be findable.
-
-### Detection implementation
-
-```typescript
-// src/lib/detectAudioTrack.ts
-export async function detectAudioTrack(blobUrl: string): Promise<boolean> {
-  return new Promise(resolve => {
-    const video = document.createElement('video');
-    video.muted = true;
-    video.src = blobUrl;
-    const onMetadata = () => {
-      const hasAudio =
-        (video as unknown as { mozHasAudio?: boolean }).mozHasAudio === true ||
-        (video.audioTracks?.length ?? 0) > 0;
-      cleanup();
-      resolve(hasAudio);
-    };
-    const onError = () => { cleanup(); resolve(true); }; // safe fallback
-    const cleanup = () => {
-      video.removeEventListener('loadedmetadata', onMetadata);
-      video.removeEventListener('error', onError);
-      video.src = '';
-    };
-    video.addEventListener('loadedmetadata', onMetadata);
-    video.addEventListener('error', onError);
-    video.load();
-  });
-}
-```
-
-`video.audioTracks` has limited cross-browser support. `mozHasAudio` works on Firefox. The fallback `resolve(true)` treats undetectable cells as having audio -- they show the interactive mute button rather than the grayed icon.
-
-**Components to modify:** `src/types/index.ts`, `src/lib/tree.ts`, `src/store/gridStore.ts`, `src/lib/detectAudioTrack.ts` (new), `src/Grid/ActionBar.tsx`, `src/Editor/Sidebar.tsx`.
-
----
-
-## 6. Breadth-First Drop -- Integration Map
-
-### Current logic location
-
-`src/lib/media.ts` -- `autoFillCells()` function, lines 34-93.
-
-**Current algorithm:**
-1. `getAllLeaves(root)` -- DFS document order
-2. Find first leaf where `mediaId === null`
-3. If no empty leaf: split `lastFilledNodeId` horizontally (always)
-
-This depth-first + always-horizontal approach produces a column-stacked layout for 3+ files.
-
-### BFS traversal
-
-`getAllLeaves` uses DFS (`root.children.flatMap(getAllLeaves)`). A new `getAllLeavesBFS` function is needed in `src/lib/tree.ts`:
-
-```typescript
-export function getAllLeavesBFS(root: GridNode): LeafNode[] {
-  const queue: GridNode[] = [root];
-  const leaves: LeafNode[] = [];
-  while (queue.length > 0) {
-    const node = queue.shift()!;
-    if (node.type === 'leaf') {
-      leaves.push(node);
-    } else {
-      queue.push(...node.children);
+  const exportPng = useCallback(async () => {
+    if (!exportRef.current) return
+    setExporting(true)
+    try {
+      const dataUrl = await toPng(exportRef.current, {
+        width: 1080,
+        height: 1920,
+        pixelRatio: 1,    // already at native resolution; no upscaling needed
+        style: {
+          visibility: 'visible',   // override hidden state for capture
+        },
+      })
+      const link = document.createElement('a')
+      link.download = `storygrid-${Date.now()}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Export failed:', err)
+      // Show error toast
+    } finally {
+      setExporting(false)
     }
-  }
-  return leaves;
+  }, [exportRef, setExporting])
+
+  return { exportPng }
 }
 ```
 
-### Alternating H/V split direction
+---
 
-When splitting an overflow leaf, the split direction alternates by depth. A `getNodeDepth(root, nodeId)` helper is needed:
+## Export Architecture: html-to-image vs Canvas API
+
+### Approach Comparison
+
+| Criterion | html-to-image | Canvas API (manual) |
+|-----------|--------------|---------------------|
+| Implementation effort | Low — 5 lines | High — rewrite all rendering logic |
+| CSS fidelity (object-fit) | MEDIUM — SVG serialization; object-fit rendered correctly in most browsers | HIGH — full control |
+| CSS transforms | MEDIUM — basic transforms work; complex stacking contexts can fail | HIGH |
+| Custom fonts | LOW-MEDIUM — requires font pre-loading; multiple bug reports (#534, #535) | HIGH — explicit font load |
+| Border-radius | MEDIUM — generally works; edge cases with overflow | HIGH |
+| Cross-origin images | LOW out-of-box — requires base64 pre-conversion of user images | HIGH |
+| CORS (user-uploaded files) | N/A — user uploads become object URLs; no CORS issue | N/A |
+| Safari compatibility | LOW — non-functional on some Safari versions (issue #569) | HIGH |
+| Performance at 1080×1920 | MEDIUM — Chrome handles well; issues reported with Chrome 138+ (issues #542, #544) | HIGH |
+| Maintenance | MEDIUM — active but with unresolved issues | N/A (bespoke) |
+
+### Recommendation: html-to-image for MVP with Canvas fallback
+
+Use `html-to-image.toPng()` as the default export path. It handles the use case correctly when:
+
+1. All images are user-uploaded files (object URLs — no CORS issue).
+2. The export div is at native resolution (no pixelRatio scaling needed).
+3. Fonts used are system fonts or pre-loaded web fonts (bundle them as base64 or use `fontEmbedCSS` option).
+
+Build the Canvas API fallback path as a Phase 4 option, triggered if html-to-image throws or produces a blank export. The Canvas fallback draws each `LeafNode` manually using `drawImage()` with `object-fit` logic replicated in JavaScript.
+
+### Known html-to-image Issues to Mitigate
+
+| Issue | Mitigation |
+|-------|------------|
+| Fonts not embedded | Call `toPng` twice in sequence — first call embeds fonts into the SVG, second call renders with them (known workaround) |
+| Chrome 138+ freezing on complex DOMs | Limit tree depth; test and fall back to Canvas API if hang detected via timeout |
+| Safari non-functional | Detect Safari via UA; show "Chrome/Firefox recommended for export" warning |
+| `visibility: hidden` on export div | Pass `style: { visibility: 'visible' }` in options to override |
+| Incomplete capture of off-screen content | Export div is `position: fixed` at negative left — still in layout flow, fully rendered |
+| Repeating gradients broken | Avoid `repeating-linear-gradient` in Phase 5 canvas background; use `linear-gradient` instead |
+
+### Double-Render Workaround for Fonts
 
 ```typescript
-export function getNodeDepth(root: GridNode, targetId: string, depth = 0): number {
-  if (root.id === targetId) return depth;
-  if (root.type === 'container') {
-    for (const child of root.children) {
-      const d = getNodeDepth(child, targetId, depth + 1);
-      if (d >= 0) return d;
-    }
-  }
-  return -1; // not found
+// Call toPng twice — first call forces font embedding
+const warmup = await toPng(exportRef.current, { width: 1080, height: 1920 })
+const final = await toPng(exportRef.current, { width: 1080, height: 1920 })
+// Use `final` for download
+```
+
+This is a documented community workaround for html-to-image font embedding failures. It doubles export time but ensures fonts render.
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Storing Pixel Dimensions in Tree Nodes
+**What:** Saving `{ width: 540, height: 1920 }` on each node instead of flex weights.
+**Why bad:** Pixel values break when tree structure changes; flex weights compose automatically.
+**Instead:** Store only `sizes: number[]` (flex weights) on container nodes. Pixel dimensions are derived at render time from the container's actual layout.
+
+### Anti-Pattern 2: Single Monolithic Store Subscription
+**What:** `const { root, selectedNodeId, zoom } = useGridStore()` in every component.
+**Why bad:** Any state change (even `zoom`) re-renders every component subscribed to the whole store.
+**Instead:** Each component subscribes to the minimum slice it needs. Use per-field selectors + `shallow` or `useShallow` hook.
+
+### Anti-Pattern 3: Mutations Inside the Recursive Component
+**What:** `LeafNode` calling `setMedia()` and updating tree structure directly inside render.
+**Why bad:** Causes render-time side effects, potential infinite loops, React Strict Mode violations.
+**Instead:** All mutations are triggered from event handlers only. Components are pure functions of state.
+
+### Anti-Pattern 4: Re-rendering ExportSurface on Every State Change
+**What:** ExportSurface always re-renders even when not exporting.
+**Why bad:** Doubles all render work. The export surface is 1080×1920px — expensive.
+**Instead:** ExportSurface renders conditionally when `isExporting` is true, OR is always mounted but uses `React.memo` aggressively so it only updates when tree data actually changes. Option B (always mounted) is preferred to avoid a layout + paint cycle at export time which would delay the capture.
+
+### Anti-Pattern 5: Calling `findNode` on Every Render
+**What:** `findNode(root, nodeId)` called in render body without memoization.
+**Why bad:** O(n) traversal on every render. In a 20-node tree this is negligible, but it's a smell.
+**Instead:** The Zustand selector already caches the result until state changes. Wrap in `useCallback` to stabilize the selector function identity.
+
+### Anti-Pattern 6: Using `display: none` on the Export Surface
+**What:** Hiding the export div with `display: none`.
+**Why bad:** Browser does not compute layout for `display: none` elements — images may not load, dimensions are 0.
+**Instead:** Use `visibility: hidden` + `position: fixed; left: -9999px`. This keeps the element in layout flow, fully rendered, just off-screen.
+
+---
+
+## Performance Optimization Patterns
+
+### Pattern 1: ID-Based Component Keys
+Always key recursive components by node ID, never by array index:
+```tsx
+{childrenIds.map((id) => <GridNode key={id} nodeId={id} />)}
+```
+This ensures React correctly reconciles the tree when nodes are split, merged, or reordered.
+
+### Pattern 2: Separate Read and Write Hooks
+```typescript
+// Read: subscribes to re-renders
+const media = useGridStore((s) => findNode(s.root, nodeId)?.media)
+// Write: stable reference, no re-render subscription
+const setMedia = useGridStore((s) => s.setMedia)
+```
+Never destructure both in one call — it creates a subscription to the whole state shape.
+
+### Pattern 3: Throttle Divider Dispatches
+During drag, dispatch at most once per animation frame:
+```typescript
+const rafId = useRef<number | null>(null)
+const onPointerMove = (e) => {
+  if (rafId.current) cancelAnimationFrame(rafId.current)
+  rafId.current = requestAnimationFrame(() => {
+    resizeSiblings(parentId, newSizes)
+  })
 }
 ```
 
-Split direction in `autoFillCells`:
-
+### Pattern 4: History Size Cap
+Cap undo history at 50 entries to prevent unbounded memory growth:
 ```typescript
-const depth = getNodeDepth(currentRoot, lastFilledNodeId);
-const direction = depth % 2 === 0 ? 'horizontal' : 'vertical';
-actions.split(lastFilledNodeId, direction);
+state.history.push(structuredClone(state.root))
+if (state.history.length > 50) state.history.shift()
 ```
 
-### Where to make changes
-
-`src/lib/media.ts` -- modify `autoFillCells` to use `getAllLeavesBFS` for finding the next empty leaf and the depth-based direction for splits. The `FillActions` interface and callers in `LeafNode.tsx` and `EditorShell.tsx` do not need changes -- function signature is identical.
-
-**Components to modify:** `src/lib/media.ts` (algorithm), `src/lib/tree.ts` (new `getAllLeavesBFS`, new `getNodeDepth`). Media lib tests will need updating.
+### Pattern 5: `will-change: transform` on Canvas Wrapper
+Promotes the scaled canvas to its own compositing layer, preventing the rest of the UI from repainting when only the canvas content changes.
 
 ---
 
-## 7. Playback UI Redesign -- Integration Map
+## Build Order Dependencies
 
-### Current component location and structure
+```
+Phase 1: Types + Pure Tree Functions
+  ↓ (required by everything)
+Phase 2a: gridStore + editorStore (Zustand + Immer)
+  ↓ (required before any rendering)
+Phase 2b: GridNode + ContainerNode + LeafNode (rendering shell, no media)
+  ↓
+Phase 2c: Divider (requires ContainerNode to exist)
+  ↓
+Phase 3a: LeafNode media upload + file drop (requires LeafNode)
+  ↓
+Phase 3b: Sidebar + Toolbar (requires store actions exist)
+  ↓
+Phase 4a: ExportSurface mount (requires tree rendering complete)
+  ↓
+Phase 4b: html-to-image integration (requires ExportSurface)
+  ↓
+Phase 4c: Canvas API fallback (requires Phase 4b to know failure modes)
+  ↓
+Phase 5: Polish — templates, gap, border-radius, bg (requires full tree + export)
+  ↓
+Phase 6 (v1): Video cells + ffmpeg.wasm (requires full image pipeline)
+```
 
-`src/Editor/PlaybackTimeline.tsx` -- 125 lines.
-
-**Current structure:**
-- `<div className="h-12 flex ...">` -- fixed-height bottom bar
-- Play/Pause button calls `videoElementRegistry` directly via `handlePlayPause()`
-- `<input type="range">` scrubber calls `seekAll()`
-- Time display reads `playheadTime` and `totalDuration` from `editorStore`
-- `useEffect` interval (100ms) syncs `playheadTime` from the first registered video element
-
-**No internal `useState`.** The component reads entirely from `editorStore` selectors. Event handlers are `handlePlayPause` and `handleScrub` -- both unchanged by a visual redesign.
-
-### What changes for visual redesign only
-
-Tailwind class replacement only. The event handlers, `seekAll` helper, `setInterval` sync loop, and store subscriptions are all unchanged.
-
-Hardcoded values that will change: `h-12` (bar height), `w-11 h-11 rounded-full` (button size), `[&::-webkit-slider-runnable-track]:bg-muted`, `[&::-webkit-slider-thumb]:bg-[#3b82f6]`.
-
-If the redesign adds new read-only display elements (waveform, time markers), those require new `editorStore` subscriptions but no new write actions.
-
-**Components to modify:** `src/Editor/PlaybackTimeline.tsx` -- Tailwind class changes. Check `src/Editor/MobileSheet.tsx` to determine if `PlaybackTimeline` is also rendered on mobile.
-
----
-
-## Component-Level Change Summary
-
-| Component / File | Type of Change | v1.3 Feature |
-|---|---|---|
-| `src/types/index.ts` | Add fields to `LeafNode` | boomerang, trimStart, trimEnd, hasAudioTrack |
-| `src/lib/tree.ts` | Update `createLeaf` defaults; add `getAllLeavesBFS`, `getNodeDepth` | all data model + breadth-first drop |
-| `src/lib/effects.ts` | Update `PresetName` union and `PRESET_VALUES` | Instagram presets |
-| `src/store/gridStore.ts` | Add actions: `toggleBoomerang`, `setTrimPoints`, `setAudioTrackDetected` | boomerang, trimming, auto-mute |
-| `src/lib/media.ts` | Rewrite `autoFillCells` to BFS + alternating splits | breadth-first drop |
-| `src/lib/detectAudioTrack.ts` | New file | auto-mute detection |
-| `src/Grid/LeafNode.tsx` | rAF loop boomerang direction; video setup trim loop point; `recomputeTotalDuration` trim-aware | boomerang, trimming |
-| `src/lib/videoExport.ts` | `makeTimestampGen` boomerang + trim params; new `computeBoomerangTime` | boomerang, trimming |
-| `src/Editor/PlaybackTimeline.tsx` | Tailwind class changes | playback UI |
-| `src/hooks/usePlaybackAudio.ts` | New file | live audio preview |
-| `src/Editor/EditorShell.tsx` | Call `usePlaybackAudio()` | live audio preview |
-| `src/Editor/EffectsPanel.tsx` | Update preset labels | Instagram presets |
-| `src/Grid/ActionBar.tsx` | Boomerang toggle; grayed VolumeX when `!hasAudioTrack` | boomerang, auto-mute |
-| `src/Editor/Sidebar.tsx` | Trim range UI; grayed audio icon | trimming, auto-mute |
+Key dependency constraints:
+- **Divider cannot be built before ContainerNode** — it is rendered inside ContainerNode's flex layout and needs a stable parent reference for dimension calculation.
+- **ExportSurface cannot be tested before LeafNode renders images** — an empty tree exports fine but won't validate object-fit, border-radius, or font rendering.
+- **undo/redo must be in the store from Phase 1** — retrofitting history onto an existing store requires restructuring all action signatures.
+- **Font pre-loading must happen before Phase 4** — html-to-image embeds fonts at capture time; if fonts are lazily loaded, the first export attempt will use fallback fonts.
 
 ---
 
-## Build Order (dependency-driven)
+## Scalability Considerations
 
-1. **Data model** (`src/types/index.ts`, `src/lib/tree.ts`) -- all other changes depend on the new fields
-2. **Store actions** (`src/store/gridStore.ts`) -- UI controls depend on store actions
-3. **Instagram presets** (`src/lib/effects.ts`, `src/Editor/EffectsPanel.tsx`) -- self-contained; no cross-feature deps
-4. **Auto-mute detection** (`src/lib/detectAudioTrack.ts`, store, `src/Grid/ActionBar.tsx`) -- depends on data model only
-5. **Breadth-first drop** (`src/lib/media.ts`, `src/lib/tree.ts`) -- self-contained; depends only on tree primitives
-6. **Playback UI redesign** (`src/Editor/PlaybackTimeline.tsx`) -- purely visual; no dependency order constraint
-7. **Boomerang** (`src/Grid/LeafNode.tsx`, `src/lib/videoExport.ts`) -- depends on data model and store action
-8. **Video trimming** (`src/Grid/LeafNode.tsx`, `src/lib/videoExport.ts`, sidebar UI) -- depends on boomerang rAF changes being stable; both touch the same rAF loop
-9. **Live audio preview** (`src/hooks/usePlaybackAudio.ts`, `src/Editor/EditorShell.tsx`) -- depends on auto-mute detection being correct so `audioEnabled` state is reliable
+| Concern | At 4–6 cells (MVP) | At 20–30 cells | At 50+ cells |
+|---------|-------------------|----------------|--------------|
+| Re-render performance | Negligible | Needs `React.memo` everywhere | Needs virtualization (not needed for this product) |
+| Tree traversal (`findNode`) | O(n) is fine | O(n) is fine | Consider node ID map (`Record<id, node>`) |
+| History memory | 50 snapshots × ~1KB JSON = ~50KB | 50 × ~5KB = ~250KB | Cap history |
+| Export time (html-to-image) | ~200ms | ~500ms | ~1–2s; show progress indicator |
+| Undo history clone cost | Negligible | `structuredClone` of 30-node tree is still <1ms | Still fast |
 
----
-
-## Critical Architectural Constraints
-
-**Single draw path invariant.** `drawLeafToCanvas()` in `src/lib/export.ts` is the single draw function for both preview and export. Any new per-cell visual property must be handled by what is loaded into the `CanvasImageSource` (which frame the video is at), not inside `drawLeafToCanvas`. The function receives a source and display settings only -- it has no concept of time.
-
-**videoElementRegistry is not Zustand.** `videoElementRegistry` and `videoDrawRegistry` are plain `Map`s in `src/lib/videoRegistry.ts`. Any code that needs the video element (audio hook, boomerang rAF, trim loop) reads from these maps directly. This is already the pattern in `PlaybackTimeline` and `recomputeTotalDuration`.
-
-**MediaElementAudioSourceNode single-creation constraint.** A `MediaElementAudioSourceNode` can only be created once per `HTMLMediaElement`. The live audio hook must create a new `AudioContext` on each play session and close it on pause. Creating it twice within one `AudioContext` lifecycle throws. The hook's `useEffect` cleanup must close the context entirely.
-
-**History snapshot scope.** `mediaRegistry`, `mediaTypeMap`, and `thumbnailMap` are excluded from undo history. If `hasAudioTrack` is stored on `LeafNode` (not in a parallel map), it IS included in snapshots -- this is acceptable since it is a read-only detection result from the user's perspective. On undo, the restored snapshot may have a stale detection value for newly uploaded media, but this is benign.
-
-**Export pipeline: per-mediaId streaming.** `buildVideoStreams` creates one `Input` per unique `mediaId`. Boomerang and trim parameters for a `mediaId` appearing in multiple cells apply uniformly to all cells sharing that file. Per-cell boomerang/trim for shared mediaIds requires a per-leaf streaming refactor. Document this as a v1.3 known limitation.
+A 50+ cell tree is not a use case StoryGrid needs to support (Instagram Story = 1–12 cells typically). The above patterns are sufficient for the foreseeable product scope without adding complexity.
 
 ---
 
-*Architecture research for: StoryGrid v1.3 -- Filters, Video Tools & Playback*
-*Researched: 2026-04-11*
-*Sources: direct codebase reading -- src/types/index.ts, src/store/gridStore.ts, src/store/editorStore.ts, src/lib/effects.ts, src/lib/export.ts, src/lib/videoExport.ts, src/lib/media.ts, src/lib/tree.ts, src/lib/videoRegistry.ts, src/Grid/LeafNode.tsx, src/Editor/PlaybackTimeline.tsx, .planning/PROJECT.md*
+## Sources
+
+- [React.memo — React official docs](https://react.dev/reference/react/memo) — HIGH confidence
+- [Zustand Immer middleware — official Zustand docs](https://zustand.docs.pmnd.rs/reference/integrations/immer-middleware) — HIGH confidence
+- [html-to-image GitHub repository and issues](https://github.com/bubkoo/html-to-image) — HIGH confidence
+- [FlexLayout tree model — caplin/FlexLayout GitHub](https://github.com/caplin/FlexLayout) — HIGH confidence (reference implementation of same architectural pattern)
+- [Zustand selectors and re-rendering — DeepWiki](https://deepwiki.com/pmndrs/zustand/2.3-selectors-and-re-rendering) — MEDIUM confidence
+- [html-to-image vs html2canvas comparison](https://npm-compare.com/dom-to-image,html-to-image,html2canvas) — MEDIUM confidence
+- [React Compiler 1.0 stable release — InfoQ](https://www.infoq.com/news/2025/12/react-compiler-meta/) — HIGH confidence (React 19 / compiler stable; project uses React 18)
+- [Zundo undo/redo middleware for Zustand](https://github.com/charkour/zundo) — MEDIUM confidence (considered but not recommended — adds dependency; snapshot approach is simpler for this use case)
+- Font double-render workaround — LOW confidence (community pattern from GitHub issues; not officially documented)

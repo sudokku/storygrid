@@ -21,7 +21,6 @@ function makeTestLeaf(overrides: Partial<LeafNode> & { id: string }): LeafNode {
     panScale: 1,
     effects: { ...DEFAULT_EFFECTS },
     audioEnabled: true,
-    hasAudioTrack: true,
     ...overrides,
   };
 }
@@ -371,7 +370,7 @@ describe('drawLeafToCanvas effects hook', () => {
     const { ctx, filterAssignments } = makeFilterCtx();
     const leaf = makeTestLeaf({
       id: 'l1',
-      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0, sepia: 0, hueRotate: 0, grayscale: 0 },
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0 },
     });
     drawLeafToCanvas(
       ctx as unknown as CanvasRenderingContext2D,
@@ -391,7 +390,7 @@ describe('drawLeafToCanvas effects hook', () => {
     const leaf = makeTestLeaf({
       id: 'l1',
       mediaId: 'm',
-      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 10, sepia: 0, hueRotate: 0, grayscale: 0 },
+      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 10 },
     });
     const fakeImg = { width: 100, height: 100 } as HTMLImageElement;
     drawLeafToCanvas(
@@ -419,7 +418,7 @@ describe('drawLeafToCanvas effects hook', () => {
     const leaf = makeTestLeaf({
       id: 'l1',
       mediaId: 'm',
-      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 5, sepia: 0, hueRotate: 0, grayscale: 0 },
+      effects: { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 5 },
     });
     drawLeafToCanvas(
       ctx as unknown as CanvasRenderingContext2D,
@@ -440,7 +439,7 @@ describe('drawLeafToCanvas effects hook', () => {
     const leaf = makeTestLeaf({
       id: 'l1',
       mediaId: 'm',
-      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 5, sepia: 0, hueRotate: 0, grayscale: 0 },
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 5 },
     });
     drawLeafToCanvas(
       ctx as unknown as CanvasRenderingContext2D,
@@ -460,7 +459,7 @@ describe('drawLeafToCanvas effects hook', () => {
     const leaf: LeafNode = makeTestLeaf({
       id: 'leaf-1',
       mediaId: 'm1',
-      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0, sepia: 0, hueRotate: 0, grayscale: 0 },
+      effects: { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0 },
     });
     // Provide a fake image cache so renderNode does NOT call loadImage.
     const imageCache = new Map<string, HTMLImageElement>();

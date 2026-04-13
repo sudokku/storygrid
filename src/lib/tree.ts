@@ -73,6 +73,30 @@ export function getAllLeaves(root: GridNode): LeafNode[] {
   return root.children.flatMap(getAllLeaves);
 }
 
+/**
+ * BFS traversal collecting leaf nodes with their depth in the tree.
+ * Root = depth 0. Used by autoFillCells for level-order fill.
+ */
+export function getBFSLeavesWithDepth(
+  root: GridNode,
+): Array<{ leaf: LeafNode; depth: number }> {
+  const result: Array<{ leaf: LeafNode; depth: number }> = [];
+  const queue: Array<{ node: GridNode; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (queue.length > 0) {
+    const { node, depth } = queue.shift()!;
+    if (node.type === 'leaf') {
+      result.push({ leaf: node, depth });
+    } else {
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Mutation functions (all pure — return new tree)
 // ---------------------------------------------------------------------------

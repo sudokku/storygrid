@@ -23,7 +23,32 @@ export type FillActions = {
   setMedia: (nodeId: string, mediaId: string) => void;
   split: (nodeId: string, direction: 'horizontal' | 'vertical') => void;
   getRoot: () => GridNode;
+  setHasAudioTrack: (nodeId: string, hasAudio: boolean) => void;
 };
+
+/**
+ * Detects whether a video file contains an audio track by attempting
+ * to decode its audio data via AudioContext.
+ *
+ * Returns true if audio channels are detected, false if none.
+ * On any error (no AudioContext, unsupported codec, no audio stream),
+ * returns true (fail-open per D-05) — a false positive is better
+ * than locking the toggle on a video that actually has audio.
+ */
+export async function detectAudioTrack(file: File): Promise<boolean> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const ctx = new AudioContext();
+    try {
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      return audioBuffer.numberOfChannels > 0;
+    } finally {
+      await ctx.close();
+    }
+  } catch {
+    return true;
+  }
+}
 
 /**
  * Fills empty cells with files in getAllLeaves() document order.

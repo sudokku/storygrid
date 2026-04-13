@@ -101,6 +101,7 @@ type GridStoreState = {
   setMedia: (nodeId: string, mediaId: string) => void;
   updateCell: (nodeId: string, updates: Partial<Omit<LeafNode, 'type' | 'id'>>) => void;
   toggleAudioEnabled: (nodeId: string) => void;
+  setHasAudioTrack: (nodeId: string, hasAudio: boolean) => void;
   setEffects: (nodeId: string, partial: Partial<EffectSettings>) => void;
   beginEffectsDrag: (nodeId: string) => void;
   applyPreset: (nodeId: string, presetName: PresetName) => void;
@@ -225,6 +226,17 @@ export const useGridStore = create<GridStoreState>()(
         pushSnapshot(state);
         state.root = updateLeaf(current(state.root), nodeId, {
           audioEnabled: !leaf.audioEnabled,
+        });
+      }),
+
+    // No pushSnapshot — audio detection is a consequence of media assignment,
+    // not an independent user action. setMedia already pushed a snapshot.
+    setHasAudioTrack: (nodeId: string, hasAudio: boolean) =>
+      set(state => {
+        const leaf = findNode(current(state.root), nodeId);
+        if (!leaf || leaf.type !== 'leaf') return;
+        state.root = updateLeaf(current(state.root), nodeId, {
+          hasAudioTrack: hasAudio,
         });
       }),
 

@@ -8,7 +8,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as mediaModule from '../lib/media';
 import { autoFillCells, fileToBase64 } from '../lib/media';
 import { buildInitialTree, getAllLeaves, splitNode, buildTemplate } from '../lib/tree';
-import type { GridNode, FillActions } from '../lib/media';
+import type { FillActions } from '../lib/media';
+import type { GridNode } from '../types';
 
 // ---------------------------------------------------------------------------
 // Helpers

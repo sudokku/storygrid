@@ -51,8 +51,8 @@ Two tightly scoped sub-features delivered together:
 - **D-13:** `autoFillCells()` replaces the `getAllLeaves(currentRoot)` call with `getBFSLeavesWithDepth(currentRoot)`. Fill order becomes level-by-level (breadth-first).
 
 ### BFS Fill Order — Overflow Split Direction
-- **D-14:** When all existing empty cells are exhausted and a new cell must be created via split, the split direction is determined by the **depth of the node being split**: `depth % 2 === 0 → 'horizontal'`, `depth % 2 === 1 → 'vertical'`. This matches the success criterion: "even depth splits horizontal, odd depth splits vertical".
-- **D-15:** The BFS queue entry for each leaf already carries depth, so when `autoFillCells` decides which node to split, it knows the depth without additional store queries. No `getDepth` addition to `FillActions` is needed.
+- **D-14:** ~~(Original: depth-based direction via `depth % 2`)~~ **CORRECTED (UAT diagnosis, Plan 19-04):** When all existing empty cells are exhausted and a new cell must be created via split, the split direction is controlled by an explicit `overflowCount` counter: `overflowCount % 2 === 0 → 'horizontal'`, `overflowCount % 2 === 1 → 'vertical'`. The counter starts at 0 and increments after each overflow split. The original depth-based approach (`depth % 2`) was found unreliable during UAT: when `splitNode` uses Case B (appending a sibling to an existing parent whose direction already matches), the new node is inserted at the same depth level, so `depth % 2` returns the same value on consecutive overflow splits instead of alternating.
+- **D-15:** ~~The BFS queue entry for each leaf already carries depth for overflow direction.~~ **Updated:** Depth is still carried for BFS ordering but is no longer used for overflow split direction. The `overflowCount` counter is local to `autoFillCells` and requires no additional store queries or `FillActions` additions.
 
 ### Claude's Discretion
 - Implementation of `detectAudioTrack()` internals: whether to use a temporary `AudioContext` or `OfflineAudioContext` for the decode call (reuse the `videoExport.ts` pattern with `AudioContext` + `decodeAudioData` is the natural choice).

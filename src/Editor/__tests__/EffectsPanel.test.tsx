@@ -27,7 +27,7 @@ beforeEach(() => {
 describe('EffectsPanel', () => {
   it('renders all 6 preset chips with correct display names', () => {
     render(<EffectsPanel nodeId={leafId} />);
-    for (const name of ['B&W', 'Sepia', 'Vivid', 'Fade', 'Warm', 'Cool']) {
+    for (const name of ['Clarendon', 'Lark', 'Juno', 'Reyes', 'Moon', 'Inkwell']) {
       expect(screen.getByRole('button', { name })).toBeTruthy();
     }
   });
@@ -39,18 +39,18 @@ describe('EffectsPanel', () => {
     }
   });
 
-  it("clicking the B&W chip applies the bw preset to the leaf", () => {
+  it("clicking the Clarendon chip applies the clarendon preset", () => {
     render(<EffectsPanel nodeId={leafId} />);
-    fireEvent.click(screen.getByRole('button', { name: 'B&W' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clarendon' }));
     const leaf = getLeaf(leafId);
-    expect(leaf.effects.preset).toBe('bw');
-    expect(leaf.effects.saturation).toBe(-100);
+    expect(leaf.effects.preset).toBe('clarendon');
+    expect(leaf.effects.brightness).toBe(25);
   });
 
   it('clicking Reset effects restores DEFAULT_EFFECTS', () => {
     render(<EffectsPanel nodeId={leafId} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Vivid' }));
-    expect(getLeaf(leafId).effects.preset).toBe('vivid');
+    fireEvent.click(screen.getByRole('button', { name: 'Juno' }));
+    expect(getLeaf(leafId).effects.preset).toBe('juno');
     fireEvent.click(screen.getByRole('button', { name: 'Reset effects' }));
     const leaf = getLeaf(leafId);
     expect(leaf.effects).toEqual({
@@ -59,12 +59,15 @@ describe('EffectsPanel', () => {
       contrast: 0,
       saturation: 0,
       blur: 0,
+      sepia: 0,
+      hueRotate: 0,
+      grayscale: 0,
     });
   });
 
   it('clicking Reset cell restores effects + pan/scale', () => {
     useGridStore.getState().updateCell(leafId, { panX: 30, panScale: 1.5 });
-    useGridStore.getState().applyPreset(leafId, 'sepia');
+    useGridStore.getState().applyPreset(leafId, 'lark');
     render(<EffectsPanel nodeId={leafId} />);
     fireEvent.click(screen.getByRole('button', { name: 'Reset cell' }));
     const leaf = getLeaf(leafId);
@@ -93,8 +96,8 @@ describe('EffectsPanel', () => {
 
   it('changing a slider after applying a preset clears the preset (D-15)', () => {
     render(<EffectsPanel nodeId={leafId} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Vivid' }));
-    expect(getLeaf(leafId).effects.preset).toBe('vivid');
+    fireEvent.click(screen.getByRole('button', { name: 'Clarendon' }));
+    expect(getLeaf(leafId).effects.preset).toBe('clarendon');
 
     const slider = screen.getByLabelText('Brightness') as HTMLInputElement;
     fireEvent.pointerDown(slider);
@@ -104,6 +107,30 @@ describe('EffectsPanel', () => {
     const leaf = getLeaf(leafId);
     expect(leaf.effects.preset).toBeNull();
     expect(leaf.effects.brightness).toBe(10);
+    expect(leaf.effects.sepia).toBe(0);
+    expect(leaf.effects.hueRotate).toBe(0);
+    expect(leaf.effects.grayscale).toBe(0);
+  });
+
+  it('clicking an already-active preset chip toggles it off (D-11)', () => {
+    render(<EffectsPanel nodeId={leafId} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Moon' }));
+    expect(getLeaf(leafId).effects.preset).toBe('moon');
+    expect(getLeaf(leafId).effects.grayscale).toBe(100);
+
+    // Click the same chip again to toggle off
+    fireEvent.click(screen.getByRole('button', { name: 'Moon' }));
+    const leaf = getLeaf(leafId);
+    expect(leaf.effects.preset).toBeNull();
+    expect(leaf.effects.sepia).toBe(0);
+    expect(leaf.effects.hueRotate).toBe(0);
+    expect(leaf.effects.grayscale).toBe(0);
+    // Toggle-off resets all slider values to neutral defaults (D-11)
+    // Scale is -100..+100 where 0 = neutral (brightness(1.0) = no change)
+    expect(leaf.effects.brightness).toBe(0);
+    expect(leaf.effects.contrast).toBe(0);
+    expect(leaf.effects.saturation).toBe(0);
+    expect(leaf.effects.blur).toBe(0);
   });
 
   it('renders disabled state when leaf has no media', () => {

@@ -7,56 +7,69 @@ import {
 } from './effects';
 
 describe('DEFAULT_EFFECTS', () => {
-  it('has preset null and all sliders at 0', () => {
+  it('has preset null and all 7 sliders at 0', () => {
     expect(DEFAULT_EFFECTS).toEqual({
       preset: null,
       brightness: 0,
       contrast: 0,
       saturation: 0,
       blur: 0,
+      sepia: 0,
+      hueRotate: 0,
+      grayscale: 0,
     });
   });
 });
 
 describe('PRESET_VALUES', () => {
-  it('has exactly the six documented preset keys', () => {
+  it('has exactly the six Instagram preset keys', () => {
     expect(Object.keys(PRESET_VALUES).sort()).toEqual(
-      ['bw', 'cool', 'fade', 'sepia', 'vivid', 'warm'],
+      ['clarendon', 'inkwell', 'juno', 'lark', 'moon', 'reyes'],
     );
   });
 
-  it('bw matches spec', () => {
-    expect(PRESET_VALUES.bw).toEqual({ brightness: 0, contrast: 0, saturation: -100, blur: 0 });
+  it('clarendon matches spec', () => {
+    expect(PRESET_VALUES.clarendon).toEqual({ brightness: 25, contrast: 25, saturation: 0, blur: 0, sepia: 15, hueRotate: 5, grayscale: 0 });
   });
 
-  it('sepia matches spec', () => {
-    expect(PRESET_VALUES.sepia).toEqual({ brightness: 5, contrast: 10, saturation: -80, blur: 0 });
+  it('lark matches spec', () => {
+    expect(PRESET_VALUES.lark).toEqual({ brightness: 30, contrast: 20, saturation: 25, blur: 0, sepia: 25, hueRotate: 0, grayscale: 0 });
   });
 
-  it('vivid matches spec', () => {
-    expect(PRESET_VALUES.vivid).toEqual({ brightness: 0, contrast: 15, saturation: 40, blur: 0 });
+  it('juno matches spec', () => {
+    expect(PRESET_VALUES.juno).toEqual({ brightness: 15, contrast: 15, saturation: 80, blur: 0, sepia: 35, hueRotate: 0, grayscale: 0 });
   });
 
-  it('fade matches spec', () => {
-    expect(PRESET_VALUES.fade).toEqual({ brightness: 10, contrast: -20, saturation: -15, blur: 0 });
+  it('reyes matches spec', () => {
+    expect(PRESET_VALUES.reyes).toEqual({ brightness: 10, contrast: -15, saturation: -25, blur: 0, sepia: 22, hueRotate: 0, grayscale: 0 });
   });
 
-  it('warm matches spec', () => {
-    expect(PRESET_VALUES.warm).toEqual({ brightness: 5, contrast: 0, saturation: 10, blur: 0 });
+  it('moon matches spec', () => {
+    expect(PRESET_VALUES.moon).toEqual({ brightness: 10, contrast: 10, saturation: 0, blur: 0, sepia: 0, hueRotate: 0, grayscale: 100 });
   });
 
-  it('cool matches spec', () => {
-    expect(PRESET_VALUES.cool).toEqual({ brightness: -5, contrast: 0, saturation: 10, blur: 0 });
+  it('inkwell matches spec', () => {
+    expect(PRESET_VALUES.inkwell).toEqual({ brightness: 10, contrast: 10, saturation: 0, blur: 0, sepia: 30, hueRotate: 0, grayscale: 100 });
   });
 
-  it('every entry has only the four numeric slider fields (no preset field)', () => {
+  it('every entry has exactly the seven numeric fields', () => {
     for (const key of Object.keys(PRESET_VALUES) as Array<keyof typeof PRESET_VALUES>) {
       const entry = PRESET_VALUES[key];
-      expect(Object.keys(entry).sort()).toEqual(['blur', 'brightness', 'contrast', 'saturation']);
+      expect(Object.keys(entry).sort()).toEqual(['blur', 'brightness', 'contrast', 'grayscale', 'hueRotate', 'saturation', 'sepia']);
       expect(typeof entry.brightness).toBe('number');
       expect(typeof entry.contrast).toBe('number');
       expect(typeof entry.saturation).toBe('number');
       expect(typeof entry.blur).toBe('number');
+      expect(typeof entry.sepia).toBe('number');
+      expect(typeof entry.hueRotate).toBe('number');
+      expect(typeof entry.grayscale).toBe('number');
+    }
+  });
+
+  it('every preset produces a non-none filter string', () => {
+    for (const key of Object.keys(PRESET_VALUES) as Array<keyof typeof PRESET_VALUES>) {
+      const effects: EffectSettings = { preset: key, ...PRESET_VALUES[key] };
+      expect(effectsToFilterString(effects)).not.toBe('none');
     }
   });
 });
@@ -67,34 +80,60 @@ describe('effectsToFilterString', () => {
   });
 
   it('composes a single brightness filter', () => {
-    const e: EffectSettings = { preset: null, brightness: 50, contrast: 0, saturation: 0, blur: 0 };
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, brightness: 50 };
     expect(effectsToFilterString(e)).toBe('brightness(1.5)');
   });
 
   it('composes brightness at the lower extreme', () => {
-    const e: EffectSettings = { preset: null, brightness: -100, contrast: 0, saturation: 0, blur: 0 };
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, brightness: -100 };
     expect(effectsToFilterString(e)).toBe('brightness(0)');
   });
 
-  it('composes brightness, contrast, saturate, blur in order', () => {
-    const e: EffectSettings = { preset: null, brightness: 50, contrast: -20, saturation: 40, blur: 5 };
-    expect(effectsToFilterString(e)).toBe('brightness(1.5) contrast(0.8) saturate(1.4) blur(5px)');
+  it('emits sepia(22%) when sepia=22', () => {
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, sepia: 22 };
+    expect(effectsToFilterString(e)).toBe('sepia(22%)');
   });
 
-  it('emits only blur when other sliders are zero', () => {
-    const e: EffectSettings = { preset: null, brightness: 0, contrast: 0, saturation: 0, blur: 12 };
-    expect(effectsToFilterString(e)).toBe('blur(12px)');
+  it('emits hue-rotate(5deg) when hueRotate=5', () => {
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, hueRotate: 5 };
+    expect(effectsToFilterString(e)).toBe('hue-rotate(5deg)');
   });
 
-  it('applies order: brightness → contrast → saturate → blur', () => {
-    const e: EffectSettings = { preset: null, brightness: 10, contrast: 10, saturation: 10, blur: 2 };
+  it('emits grayscale(100%) when grayscale=100', () => {
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, grayscale: 100 };
+    expect(effectsToFilterString(e)).toBe('grayscale(100%)');
+  });
+
+  it('omits sepia/hue-rotate/grayscale when zero — emits only blur(5px)', () => {
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, blur: 5 };
+    expect(effectsToFilterString(e)).toBe('blur(5px)');
+  });
+
+  it('full order: brightness, contrast, saturate, sepia, hue-rotate, grayscale, blur', () => {
+    const e: EffectSettings = { preset: null, brightness: 50, contrast: -20, saturation: 40, blur: 5, sepia: 22, hueRotate: 5, grayscale: 50 };
+    expect(effectsToFilterString(e)).toBe('brightness(1.5) contrast(0.8) saturate(1.4) sepia(22%) hue-rotate(5deg) grayscale(50%) blur(5px)');
+  });
+
+  it('applies order: brightness < contrast < saturate < sepia < hue-rotate < grayscale < blur', () => {
+    const e: EffectSettings = { preset: null, brightness: 10, contrast: 10, saturation: 10, blur: 2, sepia: 10, hueRotate: 10, grayscale: 10 };
     const result = effectsToFilterString(e);
     const bIdx = result.indexOf('brightness');
     const cIdx = result.indexOf('contrast');
     const sIdx = result.indexOf('saturate');
+    const sepIdx = result.indexOf('sepia');
+    const hrIdx = result.indexOf('hue-rotate');
+    const gIdx = result.indexOf('grayscale');
     const blIdx = result.indexOf('blur');
     expect(bIdx).toBeLessThan(cIdx);
     expect(cIdx).toBeLessThan(sIdx);
-    expect(sIdx).toBeLessThan(blIdx);
+    expect(sIdx).toBeLessThan(sepIdx);
+    expect(sepIdx).toBeLessThan(hrIdx);
+    expect(hrIdx).toBeLessThan(gIdx);
+    expect(gIdx).toBeLessThan(blIdx);
+  });
+
+  it('emits only blur when other sliders are zero', () => {
+    const e: EffectSettings = { ...DEFAULT_EFFECTS, blur: 12 };
+    expect(effectsToFilterString(e)).toBe('blur(12px)');
   });
 });

@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 19-auto-mute-detection-breadth-first-drop
 source: [19-01-SUMMARY.md, 19-02-SUMMARY.md, 19-03-SUMMARY.md]
 started: 2026-04-14T00:00:00Z
@@ -54,31 +54,47 @@ pending: 0
 
 ## Gaps
 
-- truth: "Dropping multiple files fills cells level-by-level (BFS order), with overflow splits alternating direction (horizontal/vertical) as the grid grows deeper"
-  status: failed
-  reason: "User reported: It keeps on making the same splits (horizontal if empty project, and vertical to the 2 last items if there are already some items). It's not really giving the BFS feel. Try alternating the direction of split."
+- truth: "Dropping multiple files fills cells level-by-level (BFS order), with overflow splits alternating direction (horizontal/vertical)"
+  status: diagnosed
+  reason: "User reported: It keeps on making the same splits (horizontal if empty project, and vertical to the 2 last items if there are already some items)."
   severity: major
   test: 1
-  artifacts: []
-  missing: []
+  root_cause: "lastFilledDepth % 2 approach fails because splitNode Case B (appending sibling to existing parent when parent.direction matches) does not increase depth — depth stays the same so % 2 returns the same value every iteration, direction never toggles."
+  artifacts:
+    - path: "src/lib/media.ts"
+      issue: "autoFillCells overflow split direction logic uses lastFilledDepth % 2 which stays constant when Case B splits are used"
+  missing:
+    - "Replace depth-based direction with an explicit alternation counter (overflowCount % 2)"
 - truth: "For video cells with NO audio track, the ActionBar shows a dimmed non-clickable VolumeX with 'No audio track' tooltip"
-  status: failed
+  status: diagnosed
   reason: "User reported: No-audio video does not show dimmed non-clickable VolumeX — the locked state is not working as intended for no-audio files"
   severity: major
   test: 4
-  artifacts: []
-  missing: []
+  root_cause: "AudioContext.decodeAudioData(arrayBuffer) cannot parse video container formats (MP4, WebM) — it only decodes audio formats. For ALL video files (audio or not), it throws, hitting the fail-open catch which returns true. So hasAudioTrack is always true."
+  artifacts:
+    - path: "src/lib/media.ts"
+      issue: "detectAudioTrack uses AudioContext.decodeAudioData which throws for video formats — needs HTMLVideoElement.audioTracks + mozHasAudio instead"
+  missing:
+    - "Rewrite detectAudioTrack using HTMLVideoElement: create blob URL, load metadata, check audioTracks.length (Chrome/Safari) or mozHasAudio (Firefox), revoke URL"
 - truth: "For no-audio video cells, the Sidebar audio toggle is disabled with label 'No audio track'"
-  status: failed
+  status: diagnosed
   reason: "User reported: Same issue - it does not understand that videos don't have audio"
   severity: major
   test: 5
-  artifacts: []
-  missing: []
+  root_cause: "Same as test 4 — detectAudioTrack always returns true; hasAudioTrack is never set to false."
+  artifacts:
+    - path: "src/lib/media.ts"
+      issue: "Same root cause as test 4"
+  missing:
+    - "Fixed by same fix as test 4"
 - truth: "Overflow splits when dropping more files than empty cells alternate direction (horizontal then vertical then horizontal)"
-  status: failed
+  status: diagnosed
   reason: "User reported: The split direction does not alternate - just like in a previous test we had."
   severity: major
   test: 6
-  artifacts: []
-  missing: []
+  root_cause: "Same root cause as test 1 — depth-based direction doesn't alternate."
+  artifacts:
+    - path: "src/lib/media.ts"
+      issue: "Same root cause as test 1"
+  missing:
+    - "Fixed by same fix as test 1"

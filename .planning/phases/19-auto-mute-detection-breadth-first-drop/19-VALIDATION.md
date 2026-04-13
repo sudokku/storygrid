@@ -2,7 +2,7 @@
 phase: 19
 slug: auto-mute-detection-breadth-first-drop
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-13
 ---
@@ -51,8 +51,8 @@ created: 2026-04-13
 
 ## Wave 0 Requirements
 
-- [ ] `src/__tests__/audioDetection.test.ts` — stubs for MUTE-01, MUTE-02, MUTE-03
-- [ ] `src/__tests__/breadthFirstDrop.test.ts` — stubs for DROP-01, DROP-02, DROP-03
+- [ ] `src/test/phase19-foundation.test.ts` — created by Plan 01 Task 1 (TDD) covering MUTE-01, DROP-01, DROP-02
+- [ ] `src/test/phase19-integration.test.ts` — created by Plan 02 Task 2 (TDD) covering DROP-01, DROP-02, DROP-03
 
 *Existing vitest infrastructure assumed present; Wave 0 adds new test files.*
 

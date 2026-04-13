@@ -97,9 +97,9 @@ Plans:
   6. Dropping a single file directly onto a specific leaf cell continues to target that cell exactly
 **Plans**: 3 plans
 Plans:
-- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
 - [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
-- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
+- [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ### Phase 20: Playback UI Polish
 **Goal**: The PlaybackTimeline has a visually polished appearance aligned with contemporary story editor conventions, with zero changes to playback logic
@@ -111,9 +111,9 @@ Plans:
   3. All changes are Tailwind class modifications only — no TypeScript, event handler, store subscription, or playback logic changes
 **Plans**: 3 plans
 Plans:
-- [ ] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
+- [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
 - [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
-- [ ] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
+- [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 **UI hint**: yes
 
 ### Phase 21: Live Audio Preview
@@ -138,6 +138,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
 | 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
-| 19. Auto-Mute Detection & Breadth-First Drop | 0/? | Not started | - |
+| 19. Auto-Mute Detection & Breadth-First Drop | 2/3 | In Progress|  |
 | 20. Playback UI Polish | 0/? | Not started | - |
 | 21. Live Audio Preview | 0/? | Not started | - |

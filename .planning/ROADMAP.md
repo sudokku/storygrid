@@ -129,7 +129,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
-- [ ] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
+- [x] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
 - [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
 
 ## Progress Table

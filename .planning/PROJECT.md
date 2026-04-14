@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
+**Current State:** v1.3 Filters, Video Tools & Playback shipped 2026-04-14 (5 phases, 10 plans, 98 commits, +11,012 LOC). Cumulative: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished editing UX (portal ActionBar, safe-zone overlay, cell MOVE semantics); v1.2 added per-cell effects, audio toggle, text/sticker overlays, Mediabunny direct MP4 pipeline, and VideoSampleSink decode pipeline; v1.3 added Instagram-named filter presets with live chip previews, auto-mute detection for no-audio videos, BFS multi-file drop, dark PlaybackTimeline restyle, and live audio preview via Web Audio API.
 
 ## Core Value
 
@@ -148,9 +148,38 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ Feature-flagged via `VITE_ENABLE_EXPORT_METRICS`; Vite tree-shaking = zero production cost — v1.2
 - ✓ Human-verified on 749-frame export — no memory leaks — v1.2
 
+**Phase 17 — Data Model Foundation** (v1.3)
+- ✓ `hasAudioTrack: boolean` required field on LeafNode, defaulting to `true` in `createLeaf()`; undo/redo via structuredClone (MUTE-04) — v1.3
+
+**Phase 18 — Instagram-Style Named Presets** (v1.3)
+- ✓ 6 named presets: Clarendon, Lark, Juno, Reyes, Moon, Inkwell — replacing generic labels (PRESET-01) — v1.3
+- ✓ Each preset uses `sepia`, `hue-rotate`, `grayscale` in addition to existing brightness/contrast/saturation/blur (PRESET-02) — v1.3
+- ✓ Live CSS-filter chip previews via `effectsToFilterString()` applied to bundled `sample.jpg` (PRESET-03) — v1.3
+- ✓ Toggle-off resets all 7 effect fields to neutral defaults and deselects the chip (PRESET-04) — v1.3
+
+**Phase 19 — Auto-Mute Detection & BFS Drop** (v1.3)
+- ✓ `detectAudioTrack()` sets `hasAudioTrack: false` on LeafNode for no-audio video uploads (MUTE-01) — v1.3
+- ✓ No-audio video cells show locked non-interactive VolumeX icon in ActionBar (MUTE-02) — v1.3
+- ✓ No-audio video cells show locked non-interactive audio toggle in SelectedCellPanel sidebar (MUTE-03) — v1.3
+- ✓ Multi-file drop fills cells breadth-first (level by level) via `getBFSLeavesWithDepth` (DROP-01) — v1.3
+- ✓ Overflow splits alternate H/V via `overflowCount` counter (DROP-02) — v1.3
+- ✓ Single-file drop onto a specific leaf continues to target that cell exactly (DROP-03) — v1.3
+
+**Phase 20 — Playback UI Polish** (v1.3)
+- ✓ PlaybackTimeline: `bg-black/80 backdrop-blur-sm` container, 3px scrubber track, `active:scale-150` thumb animation (PLAY-01) — v1.3
+- ✓ Play/pause button, scrubber, and time display visually cohesive on dark background (PLAY-02) — v1.3
+- ✓ All changes are Tailwind class modifications only — zero TypeScript/logic changes (PLAY-03) — v1.3
+
+**Phase 21 — Live Audio Preview** (v1.3)
+- ✓ Unmuted video cells with `hasAudioTrack: true` produce audible output during editor playback (LAUD-01) — v1.3
+- ✓ Audio stops on pause and at end of play (LAUD-02) — v1.3
+- ✓ Cells with `audioEnabled: false` or `hasAudioTrack: false` contribute no audio (LAUD-03) — v1.3
+- ✓ `AudioContext` created synchronously in click handler — autoplay-safe (LAUD-04) — v1.3
+- ✓ Gain-gated `MediaElementAudioSourceNode` reuse prevents `InvalidStateError` on rapid play/pause (LAUD-05) — v1.3
+
 ### Active
 
-*No active milestone requirements — v1.2 complete. Next: `/gsd-new-milestone` to define v1.3.*
+*No active milestone requirements — v1.3 complete. Next: `/gsd-new-milestone` to define v1.4.*
 
 ### Out of Scope
 
@@ -216,6 +245,10 @@ Current state (after v1.1):
 | Mediabunny VideoSampleSink for decode (Phase 15) | Used Mediabunny's higher-level decode API instead of raw WebCodecs VideoDecoder — simpler GPU memory management, no low-level codec configuration | ✓ Good — eliminated 99.4% of export time (seeking bottleneck); sequential decode bounds peak GPU memory |
 | PERS-01..PERS-12 dropped from v1.2 | Phase 14 slot repurposed for Mediabunny migration; persistence deferred to v1.3 | — Deferred — AUD-08 deferred alongside PERS block |
 | Export Metrics Panel feature-flagged (Phase 16) | `VITE_ENABLE_EXPORT_METRICS` + Vite tree-shaking = zero production cost; ref-based polling avoids React re-renders during export | ✓ Good — developer tool with no user-facing cost |
+| HTMLVideoElement for audio detection (Phase 19) | `AudioContext.decodeAudioData` cannot parse MP4/WebM container formats; `HTMLVideoElement` + `loadedmetadata` + `AudioTrackList`/`mozHasAudio` is the correct cross-browser path; fail-open with 5s timeout | ✓ Good — reliable detection across Chrome/Firefox/Safari |
+| `overflowCount` replaces `depth % 2` for BFS splits (Phase 19) | `depth` stays constant when `splitNode` uses Case B; `overflowCount` increments on every overflow split and reliably alternates H→V→H→V regardless of which case fires | ✓ Good — deterministic split direction |
+| Gain-gated node reuse for Web Audio (Phase 21) | Each `HTMLVideoElement` connects to at most one `MediaElementAudioSourceNode` per `AudioContext` lifetime; rapid play/pause uses gain 0/1 toggle — no `InvalidStateError` | ✓ Good — stable audio graph across rapid interactions |
+| `hasAudioTrack ?? false` in ActionBar display (Phase 21) | Old persisted state without the field should show locked VolumeX conservatively (fail-closed for display) — not `?? true` which would show an interactive button for an unknown audio state | ✓ Good — correct conservative default for legacy data |
 
 ## Evolution
 
@@ -235,4 +268,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 — v1.2 milestone complete. 6 phases / 17 plans shipped. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.3. Next milestone: `/gsd-new-milestone`.*
+*Last updated: 2026-04-14 — v1.3 milestone complete. 5 phases / 10 plans shipped. detectAudioTrack video.load() fix and PERS-01..PERS-12 deferred to v1.4. Next milestone: `/gsd-new-milestone`.*

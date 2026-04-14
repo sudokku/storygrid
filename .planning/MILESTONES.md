@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.3 Filters, Video Tools & Playback (Shipped: 2026-04-14)
+
+**Phases completed:** 5 phases (17–21), 10 plans
+**Timeline:** 2026-04-11 → 2026-04-14 (4 days)
+**Git range:** `v1.2..HEAD` (98 commits, 156 files changed, +11,012 / −219)
+
+**Key accomplishments:**
+
+1. **hasAudioTrack data model foundation** — required `hasAudioTrack: boolean` on LeafNode with `true` default; undo/redo via `structuredClone` in `pushSnapshot` — no store changes needed; defensive `?? false` reads for display correctness with legacy persisted state
+2. **Instagram-aesthetic named presets with live CSS-filter chip previews** — Clarendon, Lark, Juno, Reyes, Moon, Inkwell; each chip applies `effectsToFilterString()` live to bundled `sample.jpg`; toggle-off resets all 7 effect fields to neutral defaults
+3. **Auto-mute detection + BFS multi-file drop** — `HTMLVideoElement` + `loadedmetadata` + `AudioTrackList`/`mozHasAudio` for audio detection; `overflowCount` alternation for reliable H/V splits; locked non-interactive VolumeX icon in ActionBar + Sidebar; fail-open with 5s timeout
+4. **Dark PlaybackTimeline restyle** — `bg-black/80 backdrop-blur-sm`, white controls, 3px scrubber track, `active:scale-150` thumb animation; zero TypeScript changes (Tailwind-class-only)
+5. **Live audio preview via Web Audio API** — `useAudioMix` hook; synchronous `AudioContext` creation in click handler (autoplay-safe); gain-gated `MediaElementAudioSourceNode` reuse prevents `InvalidStateError`; mute toggle reactive during playback
+
+**Deferred:** detectAudioTrack `video.load()` fix (quick task), PERS-01..PERS-12 (still deferred), boomerang/trim/timeline scrub (out of scope for v1.3)
+
+**Archived:** `.planning/milestones/v1.3-ROADMAP.md`, `.planning/milestones/v1.3-phases/`
+
+---
+
 ## v1.2 Effects, Overlays & Persistence (Shipped: 2026-04-11)
 
 **Phases completed:** 6 phases (11–16), 17 plans

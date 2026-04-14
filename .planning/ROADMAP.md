@@ -124,7 +124,10 @@ Plans:
   3. Cells with `audioEnabled: false` or `hasAudioTrack: false` contribute no audio to the live preview mix
   4. The AudioContext is created synchronously inside the play button's click handler — audio is never silenced by the browser's autoplay policy
   5. Rapidly pausing and resuming playback does not throw `InvalidStateError` — each HTMLVideoElement is connected to at most one MediaElementAudioSourceNode per AudioContext lifetime; nodes are gated via gain rather than recreated
-**Plans**: [To be planned]
+**Plans:** 2 plans
+Plans:
+- [ ] 21-01-PLAN.md — TDD useAudioMix hook + PlaybackTimeline integration (test stubs, hook implementation, wiring)
+- [ ] 21-02-PLAN.md — Human verification of live audio preview in browser
 
 ## Progress Table
 
@@ -134,4 +137,4 @@ Plans:
 | 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
 | 19. Auto-Mute Detection & Breadth-First Drop | 4/4 | Complete   | 2026-04-13 |
 | 20. Playback UI Polish | 1/1 | Complete    | 2026-04-14 |
-| 21. Live Audio Preview | 0/? | Not started | - |
+| 21. Live Audio Preview | 0/2 | Not started | - |

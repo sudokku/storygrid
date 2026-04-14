@@ -51,7 +51,7 @@
 - [x] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale (completed 2026-04-12)
 - [x] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order (completed 2026-04-13)
 - [ ] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes
-- [ ] **Phase 21: Live Audio Preview** — Web Audio mix of unmuted video cells during editor playback via AudioContext + MediaElementAudioSourceNode
+- [x] **Phase 21: Live Audio Preview** — Web Audio mix of unmuted video cells during editor playback via AudioContext + MediaElementAudioSourceNode (completed 2026-04-14)
 
 ## Phase Details
 
@@ -140,4 +140,4 @@ Plans:
 | 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
 | 19. Auto-Mute Detection & Breadth-First Drop | 4/4 | Complete   | 2026-04-13 |
 | 20. Playback UI Polish | 0/? | Not started | - |
-| 21. Live Audio Preview | 0/? | Not started | - |
+| 21. Live Audio Preview | 2/2 | Complete   | 2026-04-14 |

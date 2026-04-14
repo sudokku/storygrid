@@ -50,7 +50,7 @@
 - [x] **Phase 17: Data Model Foundation** — Add `hasAudioTrack` to LeafNode; verify snapshot compatibility for all new v1.3 fields (completed 2026-04-11)
 - [x] **Phase 18: Instagram-Style Named Presets** — Replace 6 generic presets with named Instagram-aesthetic filters; extend filter pipeline for sepia/hue-rotate/grayscale (completed 2026-04-12)
 - [x] **Phase 19: Auto-Mute Detection & Breadth-First Drop** — Detect no-audio videos at upload; lock toggle UI; rewrite multi-file drop to BFS order (completed 2026-04-13)
-- [ ] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes
+- [x] **Phase 20: Playback UI Polish** — Tailwind-class-only visual redesign of PlaybackTimeline; no logic changes (completed 2026-04-14)
 - [x] **Phase 21: Live Audio Preview** — Web Audio mix of unmuted video cells during editor playback via AudioContext + MediaElementAudioSourceNode (completed 2026-04-14)
 
 ## Phase Details
@@ -109,11 +109,9 @@ Plans:
   1. The PlaybackTimeline renders a semi-transparent dark background, a refined scrubber track (2–3px height), and a thumb that scales on drag
   2. The play/pause button, scrubber, and time display are visually cohesive and legible on the editor's dark background
   3. All changes are Tailwind class modifications only — no TypeScript, event handler, store subscription, or playback logic changes
-**Plans**: 3 plans
+**Plans**: 1/1 plans complete
 Plans:
-- [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
-- [x] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
-- [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
+- [x] 20-01-PLAN.md — Dark IG/TikTok-style restyle of PlaybackTimeline — bg-black/80 backdrop-blur-sm, white controls, 3px track, active:scale-150 thumb animation
 **UI hint**: yes
 
 ### Phase 21: Live Audio Preview
@@ -126,18 +124,17 @@ Plans:
   3. Cells with `audioEnabled: false` or `hasAudioTrack: false` contribute no audio to the live preview mix
   4. The AudioContext is created synchronously inside the play button's click handler — audio is never silenced by the browser's autoplay policy
   5. Rapidly pausing and resuming playback does not throw `InvalidStateError` — each HTMLVideoElement is connected to at most one MediaElementAudioSourceNode per AudioContext lifetime; nodes are gated via gain rather than recreated
-**Plans**: 3 plans
+**Plans**: 2/2 plans complete
 Plans:
-- [x] 19-01-PLAN.md — Foundation: getBFSLeavesWithDepth tree helper, detectAudioTrack utility, setHasAudioTrack store action, FillActions extension
-- [x] 19-02-PLAN.md — Integration: autoFillCells BFS rewrite, LeafNode targeted single-file drop, FillActions call site updates
-- [x] 19-03-PLAN.md — Locked UI: ActionBar + Sidebar locked VolumeX for no-audio video cells
+- [x] 21-01-PLAN.md — useAudioMix hook: AudioContext + MediaElementAudioSourceNode graph wired to playback state
+- [x] 21-02-PLAN.md — Verification + bug fixes: captureStream audio detection, gain-gated node reuse, InvalidStateError guard
 
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Data Model Foundation | 1/1 | Complete   | 2026-04-11 |
-| 18. Instagram-Style Named Presets | 2/2 | Complete   | 2026-04-12 |
-| 19. Auto-Mute Detection & Breadth-First Drop | 4/4 | Complete   | 2026-04-13 |
-| 20. Playback UI Polish | 0/? | Not started | - |
-| 21. Live Audio Preview | 2/2 | Complete   | 2026-04-14 |
+| 17. Data Model Foundation | 1/1 | Complete | 2026-04-11 |
+| 18. Instagram-Style Named Presets | 2/2 | Complete | 2026-04-12 |
+| 19. Auto-Mute Detection & Breadth-First Drop | 4/4 | Complete | 2026-04-13 |
+| 20. Playback UI Polish | 1/1 | Complete | 2026-04-14 |
+| 21. Live Audio Preview | 2/2 | Complete | 2026-04-14 |

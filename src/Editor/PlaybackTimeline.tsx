@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 import { videoElementRegistry, videoDrawRegistry } from '../lib/videoRegistry';
+import { useAudioMix } from '../hooks/useAudioMix';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,6 +37,8 @@ export function PlaybackTimeline() {
   const setIsPlaying = useEditorStore(s => s.setIsPlaying);
   const setPlayheadTime = useEditorStore(s => s.setPlayheadTime);
 
+  const { startAudio, stopAudio } = useAudioMix();
+
   // Playhead update loop — reads from first registered video at 10fps
   useEffect(() => {
     if (!isPlaying) return;
@@ -47,21 +50,25 @@ export function PlaybackTimeline() {
         if (time >= totalDuration - 0.05) {
           // Playback complete — pause all
           for (const video of videoElementRegistry.values()) video.pause();
+          stopAudio();
           setIsPlaying(false);
         }
       }
     }, 100);
     return () => clearInterval(id);
-  }, [isPlaying, totalDuration, setPlayheadTime, setIsPlaying]);
+  }, [isPlaying, totalDuration, setPlayheadTime, setIsPlaying, stopAudio]);
 
   function handlePlayPause() {
     const store = useEditorStore.getState();
     if (store.isPlaying) {
       // Pause all
       for (const video of videoElementRegistry.values()) video.pause();
+      stopAudio();
       store.setIsPlaying(false);
     } else {
-      // Play all
+      // startAudio MUST be first — AudioContext construction requires
+      // synchronous user gesture callstack (D-06, LAUD-04)
+      startAudio();
       for (const video of videoElementRegistry.values()) video.play();
       store.setIsPlaying(true);
     }

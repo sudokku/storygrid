@@ -67,8 +67,26 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
           // Firefox: mozHasAudio available, audioTracks not
           resolve(mozHasAudio === true);
         } else {
-          // Neither API available — fail-open, browser doesn't support detection
-          resolve(true);
+          // Chrome: neither audioTracks nor mozHasAudio — try captureStream()
+          // Chrome supports captureStream() and getAudioTracks() reflects the
+          // video's actual audio track structure before playback starts.
+          const captureStream =
+            (video as unknown as { captureStream?: () => MediaStream }).captureStream ??
+            (video as unknown as { mozCaptureStream?: () => MediaStream }).mozCaptureStream;
+          if (captureStream) {
+            try {
+              const stream = captureStream.call(video);
+              const hasAudio = stream.getAudioTracks().length > 0;
+              stream.getTracks().forEach(t => t.stop());
+              resolve(hasAudio);
+            } catch {
+              // captureStream failed — fail-open
+              resolve(true);
+            }
+          } else {
+            // No detection API available — fail-open
+            resolve(true);
+          }
         }
       });
 
@@ -78,6 +96,7 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
       });
 
       video.src = url;
+      video.load(); // explicit load() required — setting .src alone does not guarantee loadedmetadata fires in all browsers
     });
   } catch {
     return true; // fail-open on any unexpected error

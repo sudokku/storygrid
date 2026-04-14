@@ -97,19 +97,6 @@ export function getBFSLeavesWithDepth(
   return result;
 }
 
-/**
- * Returns the direction of a node's parent container, or null if the node is
- * the root (no parent). Used by autoFillCells to pick the cross-direction for
- * BFS-balanced overflow splits.
- */
-export function getParentDirection(
-  root: GridNode,
-  nodeId: string,
-): 'horizontal' | 'vertical' | null {
-  const parent = findParent(root, nodeId);
-  return parent ? parent.direction : null;
-}
-
 // ---------------------------------------------------------------------------
 // Mutation functions (all pure — return new tree)
 // ---------------------------------------------------------------------------

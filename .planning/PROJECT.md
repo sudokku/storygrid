@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.3 in progress — Phase 20 (playback-ui-polish) complete 2026-04-14. PlaybackTimeline restyled with dark IG/TikTok aesthetic (bg-black/80, white controls, 3px track, scale-on-drag thumb). v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
+**Current State:** v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
 
 ## Core Value
 
@@ -235,4 +235,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 — v1.3 in progress. Phase 20 (playback-ui-polish) complete. Next: Phase 21 (live-audio-preview).*
+*Last updated: 2026-04-11 — v1.2 milestone complete. 6 phases / 17 plans shipped. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.3. Next milestone: `/gsd-new-milestone`.*

@@ -208,6 +208,7 @@ None yet.
 | 260410-7sa | Fix video export stuttering/freeze when clips have audio enabled — prefer quality over speed | 2026-04-10 | 1e90ebd | Verified | [260410-7sa-fix-video-export-stuttering-freeze-when-](./quick/260410-7sa-fix-video-export-stuttering-freeze-when-/) |
 | 260410-aay | Fix avc1 codec description change warning during video recording — switch to avc3 or handle resolution change edge case | 2026-04-10 | b4b029a | [260410-aay-fix-avc1-codec-description-change-warnin](./quick/260410-aay-fix-avc1-codec-description-change-warnin/) |
 | 260410-obm | Replace MediaRecorder MP4 variants with WebM-only + ffmpeg.wasm transcode to QuickTime-compatible MP4 | 2026-04-10 | 863dd79 | Verified | [260410-obm-webm-mediarecorder-ffmpeg-transcode-to-q](./quick/260410-obm-webm-mediarecorder-ffmpeg-transcode-to-q/) |
+| 260414-rv0 | Fix audio detection for videos without audio tracks using captureStream API for Chrome | 2026-04-14 | 10a380c | [260414-rv0-fix-audio-detection-for-videos-without-a](./quick/260414-rv0-fix-audio-detection-for-videos-without-a/) |
 
 ### Roadmap Evolution
 

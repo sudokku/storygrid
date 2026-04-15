@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { CanvasSettingsPanel, SelectedCellPanel } from './Sidebar';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -25,9 +25,12 @@ export const MobileSheet = React.memo(function MobileSheet() {
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
 
-  // Auto-expand sheet to full when a cell is selected
+  // Auto-expand sheet to full only on null → non-null transitions (cell newly selected)
+  const prevSelectedRef = useRef(selectedNodeId);
   useEffect(() => {
-    if (selectedNodeId) setSheetSnapState('full');
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = selectedNodeId;
+    if (!prev && selectedNodeId) setSheetSnapState('full');
   }, [selectedNodeId, setSheetSnapState]);
 
   return (

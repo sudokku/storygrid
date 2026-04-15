@@ -67,7 +67,7 @@ export function Toolbar() {
 
         {/* Templates */}
         <div className="w-11 h-11 flex items-center justify-center">
-          <TemplatesPopover />
+          <TemplatesPopover key="mobile-templates" />
         </div>
 
         {/* Export (mobile icon-only form) */}
@@ -76,7 +76,7 @@ export function Toolbar() {
         {/* Clear */}
         <button
           className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--foreground)]"
-          onClick={clearGrid}
+          onClick={handleClearGrid}
           aria-label="Clear canvas"
           data-testid="mobile-clear"
         >

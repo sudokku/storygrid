@@ -141,13 +141,13 @@ export function TemplatesPopover() {
     <div className="relative">
       <button
         ref={buttonRef}
-        className="flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors text-neutral-300"
+        className="flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors"
         aria-label="Templates"
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
       >
-        <LayoutGrid size={16} className="text-white" />
+        <LayoutGrid size={16} className="text-[var(--foreground)]" />
       </button>
 
       {open && (

@@ -1,7 +1,7 @@
 ---
 phase: 23
 slug: bottom-sheet-redesign
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-nova
 created: 2026-04-15

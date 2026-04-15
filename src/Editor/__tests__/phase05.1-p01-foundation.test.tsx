@@ -1,7 +1,8 @@
 /**
  * phase05.1-p01-foundation.test.tsx
  * Foundation tests for Phase 05.1 Plan 01.
- * Covers: MobileSheet snap states, drag gestures, sheet header buttons,
+ * Updated in Phase 23 to reflect toggle/tab-strip contract (drag gesture removed).
+ * Covers: MobileSheet snap states, toggle button, tab strip, auto-expand,
  *         responsive layout, mobile toolbar, canvas area padding, divider hit area.
  */
 import React from 'react';
@@ -92,13 +93,6 @@ describe('MobileSheet', () => {
     expect(sheet.style.transform).toContain('calc(100% - 60px)');
   });
 
-  it('has sheet-drag-handle with touch-none class', () => {
-    render(<MobileSheet />);
-    const handle = screen.getByTestId('sheet-drag-handle');
-    expect(handle).toBeInTheDocument();
-    expect(handle.className).toContain('touch-none');
-  });
-
   it('has md:hidden class to be hidden on desktop', () => {
     render(<MobileSheet />);
     const sheet = screen.getByTestId('mobile-sheet');
@@ -111,47 +105,6 @@ describe('MobileSheet', () => {
     expect(sheet.style.transition).toContain('cubic-bezier(0.32, 0.72, 0, 1)');
   });
 
-  it('renders sheet-undo, sheet-redo, sheet-clear buttons', () => {
-    render(<MobileSheet />);
-    expect(screen.getByTestId('sheet-undo')).toBeInTheDocument();
-    expect(screen.getByTestId('sheet-redo')).toBeInTheDocument();
-    expect(screen.getByTestId('sheet-clear')).toBeInTheDocument();
-  });
-
-  it('snap state transitions upward on drag up > 50px (collapsed -> half)', () => {
-    render(<MobileSheet />);
-    const handle = screen.getByTestId('sheet-drag-handle');
-    const mockSetPointerCapture = vi.fn();
-    handle.setPointerCapture = mockSetPointerCapture;
-
-    // Simulate drag up
-    fireEvent.pointerDown(handle, { pointerId: 1, clientY: 300 });
-    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 200 }); // dy = -100 < -50
-
-    const sheet = screen.getByTestId('mobile-sheet');
-    expect(sheet.style.transform).toContain('60vh');
-  });
-
-  it('snap state transitions downward on drag down > 50px (half -> collapsed)', () => {
-    // Set initial state to half
-    useEditorStore.setState({ sheetSnapState: 'half' });
-    render(<MobileSheet />);
-
-    const handle = screen.getByTestId('sheet-drag-handle');
-    const mockSetPointerCapture = vi.fn();
-    handle.setPointerCapture = mockSetPointerCapture;
-
-    const sheet = screen.getByTestId('mobile-sheet');
-    // Initially half
-    expect(sheet.style.transform).toContain('60vh');
-
-    // Drag down
-    fireEvent.pointerDown(handle, { pointerId: 1, clientY: 200 });
-    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 350 }); // dy = 150 > 50
-
-    expect(sheet.style.transform).toContain('calc(100% - 60px)');
-  });
-
   it('shows CanvasSettingsPanel when no cell selected', () => {
     render(<MobileSheet />);
     // Canvas settings panel renders "Canvas" heading
@@ -159,7 +112,7 @@ describe('MobileSheet', () => {
   });
 
   it('shows SelectedCellPanel when a cell is selected', () => {
-    useEditorStore.setState({ selectedNodeId: 'leaf-1', sheetSnapState: 'half' });
+    useEditorStore.setState({ selectedNodeId: 'leaf-1', sheetSnapState: 'full' });
     render(<MobileSheet />);
     // SelectedCellPanel renders "Cell" heading
     expect(screen.getByText('Cell')).toBeInTheDocument();
@@ -179,17 +132,67 @@ describe('MobileSheet', () => {
     fireEvent.click(screen.getByTestId('exit-pan-mode'));
     expect(setPanModeNodeId).toHaveBeenCalledWith(null);
   });
+});
 
-  it('undo button is disabled when historyIndex is 0', () => {
+// ---------------------------------------------------------------------------
+// Phase 23 — toggle + tab strip
+// ---------------------------------------------------------------------------
+
+describe('Phase 23 — toggle + tab strip', () => {
+  it('toggle button renders ChevronUp icon (aria-label "Open panel") when collapsed', () => {
     render(<MobileSheet />);
-    const undoBtn = screen.getByTestId('sheet-undo');
-    expect(undoBtn).toBeDisabled();
+    const btn = screen.getByRole('button', { name: 'Open panel' });
+    expect(btn).toBeInTheDocument();
   });
 
-  it('redo button is disabled at latest history state', () => {
+  it('toggle button renders ChevronDown icon (aria-label "Close panel") when full', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
     render(<MobileSheet />);
-    const redoBtn = screen.getByTestId('sheet-redo');
-    expect(redoBtn).toBeDisabled();
+    const btn = screen.getByRole('button', { name: 'Close panel' });
+    expect(btn).toBeInTheDocument();
+  });
+
+  it('clicking toggle when collapsed sets sheetSnapState to "full"', () => {
+    render(<MobileSheet />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open panel' }));
+    expect(useEditorStore.getState().sheetSnapState).toBe('full');
+  });
+
+  it('clicking toggle when full sets sheetSnapState to "collapsed"', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    render(<MobileSheet />);
+    fireEvent.click(screen.getByRole('button', { name: 'Close panel' }));
+    expect(useEditorStore.getState().sheetSnapState).toBe('collapsed');
+  });
+
+  it('tab strip shows "Canvas Settings" when no cell selected', () => {
+    render(<MobileSheet />);
+    expect(screen.getByText('Canvas Settings')).toBeInTheDocument();
+  });
+
+  it('tab strip shows "Cell Settings" when a cell is selected', () => {
+    useEditorStore.setState({ selectedNodeId: 'leaf-1' });
+    render(<MobileSheet />);
+    expect(screen.getByText('Cell Settings')).toBeInTheDocument();
+  });
+
+  it('auto-expand: selecting a node triggers setSheetSnapState("full")', () => {
+    render(<MobileSheet />);
+    expect(useEditorStore.getState().sheetSnapState).toBe('collapsed');
+    act(() => {
+      useEditorStore.setState({ selectedNodeId: 'leaf-1' });
+    });
+    expect(useEditorStore.getState().sheetSnapState).toBe('full');
+  });
+
+  it('data-sheet-snap attribute reflects the current store state', () => {
+    render(<MobileSheet />);
+    const sheet = screen.getByTestId('mobile-sheet');
+    expect(sheet.getAttribute('data-sheet-snap')).toBe('collapsed');
+    act(() => {
+      useEditorStore.setState({ sheetSnapState: 'full' });
+    });
+    expect(sheet.getAttribute('data-sheet-snap')).toBe('full');
   });
 });
 

@@ -28,7 +28,7 @@ type EditorState = {
   backgroundGradientTo: string;
   backgroundGradientDir: GradientDir;
   // Phase 05.1 mobile sheet
-  sheetSnapState: 'collapsed' | 'half' | 'full';
+  sheetSnapState: 'collapsed' | 'full';
   // Phase 06 video playback state
   isPlaying: boolean;
   playheadTime: number;
@@ -55,7 +55,7 @@ type EditorState = {
   setBackgroundGradientTo: (v: string) => void;
   setBackgroundGradientDir: (v: GradientDir) => void;
   // Phase 05.1 setters
-  setSheetSnapState: (v: 'collapsed' | 'half' | 'full') => void;
+  setSheetSnapState: (v: 'collapsed' | 'full') => void;
   // Phase 06 video setters
   setIsPlaying: (v: boolean) => void;
   // Phase 13 overlay selection setter

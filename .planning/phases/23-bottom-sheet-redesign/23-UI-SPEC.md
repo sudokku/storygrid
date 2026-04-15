@@ -141,9 +141,10 @@ Source: CONTEXT.md § "Snap States"
 
 - Button dimensions: 44×44px minimum tap target (`min-w-[44px] h-11`).
 - Button position: left edge of the 60px strip, `px-4` from the sheet left edge.
+- Focus ring: `focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:outline-none` — visible on keyboard/assistive-tech focus, suppressed on tap.
 - No tooltip needed on mobile.
 
-Source: CONTEXT.md § "Toggle Button"
+Source: CONTEXT.md § "Toggle Button". Focus ring: UI-INTELLIGENCE HIGH severity rule.
 
 ### Tab Strip Layout (both states)
 
@@ -168,6 +169,14 @@ Implemented via `useEffect([selectedNodeId])`. Existing `useEffect` body changes
 
 Source: CONTEXT.md § "Auto-Expand"
 
+### Sheet Height
+
+The sheet wrapper uses `height: 100dvh` (not `100vh`) to account for mobile browser chrome shrinking/expanding the viewport. This prevents layout overflow on iOS Safari when the address bar is visible.
+
+Class: `h-dvh` (Tailwind v3.4 supports `h-dvh` natively via `dvh` unit support).
+
+Source: UI-INTELLIGENCE MEDIUM severity rule — "Use `dvh` or account for mobile browser chrome."
+
 ### Scrollable Content Area
 
 The content area below the 60px strip remains `overflow-y-auto` with `height: calc(100% - 60px)` and `overscrollBehavior: contain`. No change from existing implementation.
@@ -179,12 +188,15 @@ The content area below the 60px strip remains `overflow-y-auto` with `height: ca
 | Transition | Value | Trigger |
 |------------|-------|---------|
 | Sheet position | `transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)` | Any snap state change |
+| Sheet position (reduced motion) | `transform 0ms` (instant) | `prefers-reduced-motion: reduce` |
 
-The transition is **unconditional** — the `isDragging ? 'none' : '...'` conditional is removed. The spring cubic-bezier (`0.32, 0.72, 0, 1`) matches Apple's standard sheet spring curve.
+The transition is **unconditional** during normal operation — the `isDragging ? 'none' : '...'` conditional is removed. The spring cubic-bezier (`0.32, 0.72, 0, 1`) matches Apple's standard sheet spring curve.
+
+**Reduced motion:** Apply `@media (prefers-reduced-motion: reduce)` to override `transition` to `none` on the sheet wrapper. Implementation: add a CSS class `motion-reduce:transition-none` to the sheet wrapper element, which Tailwind v3.4 expands to `@media (prefers-reduced-motion: reduce) { transition: none }`.
 
 No enter/exit animation is needed for the toggle chevron swap — the icon change is instantaneous (state flip on tap).
 
-Source: CONTEXT.md § "Drag Gesture Removal" — "existing `0.3s cubic-bezier(0.32, 0.72, 0, 1)` — no change needed".
+Source: CONTEXT.md § "Drag Gesture Removal". Reduced motion: UI-INTELLIGENCE HIGH severity rule.
 
 ---
 
@@ -210,9 +222,11 @@ Source: CONTEXT.md § "Tab Strip Content" and § "Toggle Button"
 
 - Toggle button: `aria-label` changes dynamically between `"Open panel"` (collapsed) and `"Close panel"` (full). Do NOT use `aria-expanded` — the label already communicates state.
 - Toggle button: 44×44px minimum tap target per WCAG 2.5.5 (`min-w-[44px] h-11`).
+- Toggle button: `focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:outline-none` — visible focus ring on keyboard/AX navigation, suppressed on pointer tap. Do NOT use bare `outline-none` without this replacement.
 - Sheet wrapper: retain `data-testid="mobile-sheet"` and `data-sheet-snap={sheetSnapState}` for Playwright test selectors.
 - Strip container: retain `data-testid="sheet-drag-handle"` on the 60px strip div for Playwright backward compatibility. Drag behavior is removed but the testid selector must remain — tests referencing this element by testid should not break.
 - `touch-action: manipulation` is already applied globally via `src/index.css` `button` rule — no per-element override needed inside the sheet.
+- Reduced motion: `motion-reduce:transition-none` on the sheet wrapper — see Animation Contract above.
 
 ---
 

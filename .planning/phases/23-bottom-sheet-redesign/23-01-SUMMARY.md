@@ -35,9 +35,9 @@ decisions:
 metrics:
   duration_minutes: 10
   completed_date: "2026-04-15T13:38:28Z"
-  tasks_completed: 2
+  tasks_completed: 3
   tasks_total: 3
-  files_modified: 3
+  files_modified: 5
 ---
 
 # Phase 23 Plan 01: Bottom Sheet Drag→Toggle Refactor Summary
@@ -50,12 +50,7 @@ metrics:
 |------|------|--------|-------|
 | 1 | Refactor MobileSheet.tsx + narrow SheetSnapState | 3a31e06 | src/Editor/MobileSheet.tsx, src/store/editorStore.ts |
 | 2 | Update foundation tests + toggle/auto-expand/label coverage | 3177c6b | src/Editor/__tests__/phase05.1-p01-foundation.test.tsx |
-
-## Tasks Pending
-
-| Task | Name | Type | Reason |
-|------|------|------|--------|
-| 3 | Mobile device visual verification | checkpoint:human-verify | Requires manual mobile/DevTools testing |
+| 3 | Mobile device visual verification | cde88cb, 2c4b777 | src/Editor/MobileSheet.tsx, src/Editor/Toolbar.tsx, src/components/TemplatesPopover.tsx |
 
 ## What Was Built
 

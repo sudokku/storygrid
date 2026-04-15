@@ -52,13 +52,16 @@ Exceptions:
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Body | 14px | 400 | 1.5 |
-| Label (tab strip) | 14px | 500 | 1.2 |
-| Section heading (inside sheet) | 16px | 600 | 1.2 |
-| Button/action text | 14px | 500 | 1.0 |
+| Body | 14px | 400 (`font-normal`) | 1.5 |
+| Label (tab strip) | 14px | 500 (`font-medium`) | 1.2 |
+| Section heading (inside sheet) | 16px | 500 (`font-medium`) | 1.2 |
+| Button/action text | 14px | 500 (`font-medium`) | 1.0 |
+
+Declared weights: **400** (body) and **500** (label, heading, button). Maximum 2 weights.
 
 Notes:
 - Font family is Geist Variable for all text — inherited from `--font-sans` CSS variable.
+- Section headings use `font-medium` (500) rather than `font-semibold` (600). The heading/label distinction is carried by size difference (16px vs 14px), not by weight difference — sufficient in a utility panel context.
 - The tab strip label ("Canvas Settings" / "Cell Settings") uses 14px weight 500 — readable at 60px strip height without competing visually with content below.
 - No Display size needed in this phase — sheet is a utility panel, not a marketing surface.
 

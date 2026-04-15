@@ -1,37 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Filters, Video Tools & Playback
-status: executing
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-04-13T21:44:15.506Z"
-last_activity: 2026-04-13
+milestone: v1.4
+milestone_name: Mobile-First Overhaul & Instagram Fonts
+status: in_progress
+stopped_at: —
+last_updated: "2026-04-15T14:30:00Z"
+last_activity: 2026-04-15
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-11)
+See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.3 Filters, Video Tools & Playback — IN PROGRESS (started 2026-04-11)
-**Current focus:** Phase 19 — auto-mute-detection-breadth-first-drop
+**Current milestone:** v1.4 Mobile-First Overhaul & Instagram Fonts — IN PROGRESS (started 2026-04-15)
+**Current focus:** Phase 22 complete — ready to plan Phase 23
 
 ## Current Position
 
-Phase: 19 (auto-mute-detection-breadth-first-drop) — EXECUTING
-Plan: 2 of 4
-Status: Ready to execute
-Last activity: 2026-04-13
+Phase: 22 complete
+Plan: —
+Status: Phase 22 verified — ready to plan Phase 23
+Last activity: 2026-04-15 — Phase 22 mobile header & touch polish completed
 
-Progress: [          ] 0% (0/5 phases, 0/? plans)
+Progress: [██░░░░░░░░] 20% (1/5 phases complete)
 
 ## Performance Metrics
 
@@ -181,6 +181,10 @@ Recent decisions affecting current work:
 - [Roadmap v1.3]: Phase 21 LAUD depends on Phase 19 because hasAudioTrack must be reliable before AudioContext wiring — MUTE-01 is the prerequisite for LAUD-03
 - [Phase 19]: D-14 revised: overflowCount counter replaces depth % 2 for overflow split direction — reliably alternates H/V regardless of splitNode case
 - [Phase 19]: detectAudioTrack uses HTMLVideoElement + loadedmetadata + AudioTrackList/mozHasAudio instead of AudioContext — AudioContext cannot parse video containers
+- [Roadmap v1.4]: HEADER + SCROLL grouped in Phase 22 — quick-win UI changes with no shared code; scroll/touch polish is a pre-condition for all remaining mobile phases
+- [Roadmap v1.4]: Phase 25 (touch drag-and-drop) depends on Phase 24 (cell tray) — tray provides the selection state context that touch drag initiates from
+- [Roadmap v1.4]: Phase 26 (fonts) depends only on Phase 22 — font loading is independent of sheet/tray/drag work; could parallelize but standard granularity keeps it serial
+- [Roadmap v1.4]: ActionBar stays desktop-only (hover-gated) — mobile gets the new CELL tray (Phase 24) as a separate component; no changes to portal ActionBar
 
 ### Pending Todos
 
@@ -208,6 +212,7 @@ None yet.
 | 260410-7sa | Fix video export stuttering/freeze when clips have audio enabled — prefer quality over speed | 2026-04-10 | 1e90ebd | Verified | [260410-7sa-fix-video-export-stuttering-freeze-when-](./quick/260410-7sa-fix-video-export-stuttering-freeze-when-/) |
 | 260410-aay | Fix avc1 codec description change warning during video recording — switch to avc3 or handle resolution change edge case | 2026-04-10 | b4b029a | [260410-aay-fix-avc1-codec-description-change-warnin](./quick/260410-aay-fix-avc1-codec-description-change-warnin/) |
 | 260410-obm | Replace MediaRecorder MP4 variants with WebM-only + ffmpeg.wasm transcode to QuickTime-compatible MP4 | 2026-04-10 | 863dd79 | Verified | [260410-obm-webm-mediarecorder-ffmpeg-transcode-to-q](./quick/260410-obm-webm-mediarecorder-ffmpeg-transcode-to-q/) |
+| 260414-rv0 | Fix audio detection for videos without audio tracks using captureStream API for Chrome | 2026-04-14 | 10a380c | [260414-rv0-fix-audio-detection-for-videos-without-a](./quick/260414-rv0-fix-audio-detection-for-videos-without-a/) |
 
 ### Roadmap Evolution
 
@@ -217,15 +222,16 @@ None yet.
 - Phase 14 added: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
 - Phase 15 added: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
 - v1.3 phases 17–21 added: Filters, Video Tools & Playback (2026-04-11)
+- v1.4 phases 22–26 added: Mobile-First Overhaul & Instagram Fonts (2026-04-15)
 
 ### Blockers/Concerns
 
-None active. Phase 17 ready to plan.
+None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-13T21:44:15.504Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-04-15T00:00:00.000Z
+Stopped at: v1.4 roadmap created
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

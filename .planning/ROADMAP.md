@@ -92,7 +92,7 @@ Plans:
   4. When the sheet is closed, a minimal tab strip remains visible at the bottom of the screen so the user knows the sheet exists
 **Plans**: 1 plan
 Plans:
-- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
+- [ ] 23-01-PLAN.md — MobileSheet drag→toggle refactor + SheetSnapState narrowing + test updates
 **UI hint**: yes
 
 ### Phase 24: Mobile Cell Action Tray

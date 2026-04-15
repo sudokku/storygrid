@@ -89,16 +89,18 @@ export function useAudioMix(): { startAudio: () => void; stopAudio: () => void }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       audioCtxRef.current = new (window as any).AudioContext();
     }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const ctx = audioCtxRef.current!;
 
     // D-03: idempotent wiring of new video elements
-    buildNodeGraph(audioCtxRef.current);
+    buildNodeGraph(ctx);
 
     // D-04: normalize gains
     updateGains();
 
     // Resume if suspended (e.g. after stopAudio)
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
     }
   }, [buildNodeGraph, updateGains]);
 

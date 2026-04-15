@@ -18,7 +18,7 @@ export type ExportFormat = 'png' | 'jpeg';
  * HTMLVideoElement IS a CanvasImageSource, so existing callers passing
  * HTMLVideoElement continue to compile without changes.
  */
-export type DrawableSource = HTMLImageElement | HTMLVideoElement | ImageBitmap | VideoFrame | OffscreenCanvas;
+export type DrawableSource = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageBitmap | VideoFrame | OffscreenCanvas;
 
 type Rect = { x: number; y: number; w: number; h: number };
 type ObjPos = { x: number; y: number };
@@ -122,7 +122,7 @@ function roundedRect(
 // ---------------------------------------------------------------------------
 
 export function getSourceDimensions(
-  src: DrawableSource,
+  src: DrawableSource | CanvasImageSource,
 ): { w: number; h: number } {
   if (src instanceof HTMLVideoElement) {
     return { w: src.videoWidth, h: src.videoHeight };
@@ -141,6 +141,9 @@ export function getSourceDimensions(
   if (typeof ImageBitmap !== 'undefined' && src instanceof ImageBitmap) {
     return { w: src.width, h: src.height };
   }
+  if (src instanceof HTMLCanvasElement) {
+    return { w: src.width, h: src.height };
+  }
   return { w: (src as HTMLImageElement).naturalWidth, h: (src as HTMLImageElement).naturalHeight };
 }
 
@@ -154,7 +157,7 @@ export function drawCoverImage(
   rect: Rect,
   objPos: ObjPos,
 ): void {
-  const { w: srcW, h: srcH } = getSourceDimensions(img);
+  const { w: srcW, h: srcH } = getSourceDimensions(img as DrawableSource);
   const imgAspect = srcW / srcH;
   const cellAspect = rect.w / rect.h;
 

@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { videoElementRegistry } from '../lib/videoRegistry';
 import { useGridStore } from '../store/gridStore';
-import { createLeaf, buildInitialTree } from '../lib/tree';
+import { createLeaf } from '../lib/tree';
 import type { GridNode } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -53,48 +53,6 @@ afterEach(() => {
 
 function makeMockVideo(): HTMLVideoElement {
   return { currentTime: 0, muted: true } as unknown as HTMLVideoElement;
-}
-
-// ---------------------------------------------------------------------------
-// Helper: build a root tree with specific leaf audio settings
-// ---------------------------------------------------------------------------
-
-function buildTreeWithLeaves(
-  leaves: Array<{ id: string; audioEnabled: boolean; hasAudioTrack: boolean }>,
-): GridNode {
-  if (leaves.length === 0) return buildInitialTree();
-
-  if (leaves.length === 1) {
-    const leaf = createLeaf();
-    return { ...leaf, id: leaves[0].id, audioEnabled: leaves[0].audioEnabled, hasAudioTrack: leaves[0].hasAudioTrack };
-  }
-
-  // Build a container with two leaves for simple 2-leaf cases
-  const leafNodes = leaves.map(({ id, audioEnabled, hasAudioTrack }) => ({
-    ...createLeaf(),
-    id,
-    audioEnabled,
-    hasAudioTrack,
-  }));
-
-  if (leaves.length === 2) {
-    return {
-      type: 'container' as const,
-      id: 'root',
-      direction: 'horizontal' as const,
-      sizes: [0.5, 0.5],
-      children: leafNodes,
-    };
-  }
-
-  // For 3+ leaves, nest the first two then add more
-  return {
-    type: 'container' as const,
-    id: 'root',
-    direction: 'horizontal' as const,
-    sizes: leafNodes.map(() => 1 / leafNodes.length),
-    children: leafNodes,
-  };
 }
 
 // ---------------------------------------------------------------------------

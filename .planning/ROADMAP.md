@@ -76,7 +76,9 @@
   2. Every header toolbar button has a minimum 44×44px tap target with at least 8px spacing to neighboring controls
   3. Pulling down on the canvas area does not trigger the browser's pull-to-refresh gesture
   4. Tapping any interactive element produces an immediate response — no 300ms delay perceptible by the user
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
 **UI hint**: yes
 
 ### Phase 23: Bottom Sheet Redesign
@@ -88,7 +90,9 @@
   2. When the user taps/selects a cell, the bottom sheet automatically expands to full height without any manual interaction
   3. Every control inside the bottom sheet is reachable by scrolling — nothing is cut off at the "half" snap position or at full height
   4. When the sheet is closed, a minimal tab strip remains visible at the bottom of the screen so the user knows the sheet exists
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
 **UI hint**: yes
 
 ### Phase 24: Mobile Cell Action Tray
@@ -99,7 +103,9 @@
   1. Tapping any cell on mobile causes a compact action tray to appear above the bottom sheet
   2. The tray contains exactly Upload, Split Horizontal, Split Vertical, Fit toggle, and Clear buttons
   3. Every tray button has a minimum 44×44px tap target with at least 8px gaps between buttons
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
 **UI hint**: yes
 
 ### Phase 25: Touch Drag-and-Drop
@@ -111,7 +117,9 @@
   2. While a cell is being dragged, all other cells show 5-zone drop targets: a center zone and four edge zones
   3. Releasing over a center zone swaps the dragged cell's content with the target cell's content
   4. Releasing over an edge zone inserts the dragged cell at that edge position in the grid tree
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
 
 ### Phase 26: Instagram-Style Fonts
 **Goal**: Text overlays can use 8 Instagram-aesthetic Google Fonts, each identifiable at a glance in the font picker
@@ -121,14 +129,16 @@
   1. The text overlay font picker lists all 8 fonts: Bebas Neue, Oswald, Dancing Script, Playfair Display, Space Mono, Pacifico, Barlow Condensed, and Caveat
   2. After a font is applied, text in the overlay renders in that typeface immediately — no invisible-text flash occurs during font load
   3. Each font name in the picker is rendered in its own typeface so the user can visually distinguish styles before selecting
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
 **UI hint**: yes
 
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Mobile Header & Touch Polish | 0/? | Not started | - |
+| 22. Mobile Header & Touch Polish | 0/1 | Planned | - |
 | 23. Bottom Sheet Redesign | 0/? | Not started | - |
 | 24. Mobile Cell Action Tray | 0/? | Not started | - |
 | 25. Touch Drag-and-Drop | 0/? | Not started | - |

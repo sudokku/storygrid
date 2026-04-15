@@ -85,7 +85,7 @@ export function CanvasArea() {
         'relative flex flex-col flex-1 items-center overflow-hidden bg-[#0f0f0f] p-0 pt-2 md:p-8' +
         (isFileDragOver ? ' ring-4 ring-[#3b82f6] ring-inset' : '')
       }
-      style={sheetOpen ? { touchAction: 'none' } : undefined}
+      style={{ overscrollBehavior: 'contain', ...(sheetOpen ? { touchAction: 'none' } : {}) }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

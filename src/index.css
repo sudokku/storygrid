@@ -88,8 +88,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: contain;
   }
   html {
     @apply font-sans;
+  }
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  a {
+    touch-action: manipulation;
   }
 }

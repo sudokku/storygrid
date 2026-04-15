@@ -177,9 +177,30 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ `AudioContext` created synchronously in click handler — autoplay-safe (LAUD-04) — v1.3
 - ✓ Gain-gated `MediaElementAudioSourceNode` reuse prevents `InvalidStateError` on rapid play/pause (LAUD-05) — v1.3
 
+## Current Milestone: v1.4 Mobile-First Overhaul & Instagram Fonts
+
+**Goal:** Make StoryGrid fully usable on mobile by fixing the broken bottom sheet, adding touch drag-and-drop, surfacing cell controls without hover, and adding Instagram-style fonts to text overlays.
+
+**Target features:**
+- Mobile header toolbar with all primary actions accessible at ≥44×44px touch targets
+- Bottom sheet redesign: toggle button replaces drag-pill; auto-expand on cell select; full inner scroll
+- Mobile cell action tray: persistent strip showing Upload, Split H/V, Fit, Clear when a cell is selected
+- Touch drag-and-drop for cells: long-press → lift → drag → 5-zone drop targets
+- Instagram-style Google Fonts in text overlay (8 fonts: Bebas Neue, Oswald, Dancing Script, Playfair Display, Space Mono, Pacifico, Barlow Condensed, Caveat)
+- Canvas area: no scroll; `overscroll-behavior: contain` app-wide
+
 ### Active
 
-*No active milestone requirements — v1.3 complete. Next: `/gsd-new-milestone` to define v1.4.*
+<!-- Current scope. Building toward these. -->
+
+- [ ] Mobile header toolbar with Export, Undo/Redo, Templates, Clear (all ≥44×44px)
+- [ ] Bottom sheet toggle replaces drag-pill; sheet auto-expands to full when cell selected
+- [ ] All bottom sheet content scrollable in any snap state
+- [ ] Mobile cell action tray visible on tap/selection (Upload, Split H/V, Fit, Clear)
+- [ ] Touch drag-and-drop: long-press to initiate, 5-zone drop targets, visual lift feedback
+- [ ] Canvas area and app body have `overscroll-behavior: contain` (no pull-to-refresh)
+- [ ] Instagram-style Google Fonts available in text overlay font picker (8 fonts)
+- [ ] All touch targets meet ≥44×44px minimum; ≥8px gaps between targets
 
 ### Out of Scope
 
@@ -268,4 +289,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 — v1.3 milestone complete. 5 phases / 10 plans shipped. detectAudioTrack video.load() fix and PERS-01..PERS-12 deferred to v1.4. Next milestone: `/gsd-new-milestone`.*
+*Last updated: 2026-04-15 — v1.4 milestone started. Mobile-First Overhaul & Instagram Fonts. Playwright audit confirmed: ActionBar hover-only (broken on mobile), bottom sheet inaccessible at half state, no touch drag-and-drop. PERS-01..PERS-12 deferred again.*

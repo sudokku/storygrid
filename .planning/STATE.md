@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Filters, Video Tools & Playback
-status: shipped
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-04-14T00:00:00.000Z"
-last_activity: 2026-04-14
+milestone: v1.4
+milestone_name: Mobile-First Overhaul & Instagram Fonts
+status: in_progress
+stopped_at: —
+last_updated: "2026-04-15T00:00:00.000Z"
+last_activity: 2026-04-15
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -26,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 ## Current Position
 
-Phase: 21 (live-audio-preview) — COMPLETE
-Plan: 2 of 2
-Status: All 5 phases complete — milestone ready for `/gsd-complete-milestone v1.3`
-Last activity: 2026-04-14
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.4
+Last activity: 2026-04-15 — Milestone v1.4 started
 
-Progress: [██████████] 100% (5/5 phases complete)
+Progress: [░░░░░░░░░░] 0% (0/? phases complete)
 
 ## Performance Metrics
 

@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 import { videoElementRegistry, videoDrawRegistry } from '../lib/videoRegistry';
-import { useAudioMix } from '../hooks/useAudioMix';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,8 +36,6 @@ export function PlaybackTimeline() {
   const setIsPlaying = useEditorStore(s => s.setIsPlaying);
   const setPlayheadTime = useEditorStore(s => s.setPlayheadTime);
 
-  const { startAudio, stopAudio } = useAudioMix();
-
   // Playhead update loop — reads from first registered video at 10fps
   useEffect(() => {
     if (!isPlaying) return;
@@ -50,25 +47,21 @@ export function PlaybackTimeline() {
         if (time >= totalDuration - 0.05) {
           // Playback complete — pause all
           for (const video of videoElementRegistry.values()) video.pause();
-          stopAudio();
           setIsPlaying(false);
         }
       }
     }, 100);
     return () => clearInterval(id);
-  }, [isPlaying, totalDuration, setPlayheadTime, setIsPlaying, stopAudio]);
+  }, [isPlaying, totalDuration, setPlayheadTime, setIsPlaying]);
 
   function handlePlayPause() {
     const store = useEditorStore.getState();
     if (store.isPlaying) {
       // Pause all
       for (const video of videoElementRegistry.values()) video.pause();
-      stopAudio();
       store.setIsPlaying(false);
     } else {
-      // startAudio MUST be first — AudioContext construction requires
-      // synchronous user gesture callstack (D-06, LAUD-04)
-      startAudio();
+      // Play all
       for (const video of videoElementRegistry.values()) video.play();
       store.setIsPlaying(true);
     }
@@ -81,13 +74,13 @@ export function PlaybackTimeline() {
   }
 
   return (
-    <div className="h-12 flex flex-row items-center w-full shrink-0 bg-black/80 backdrop-blur-sm px-4 gap-3">
+    <div className="h-12 flex flex-row items-center w-full shrink-0 bg-card border-t border-border px-4 gap-3">
       {/* Play/Pause button */}
       <button
         type="button"
         onClick={handlePlayPause}
         aria-label={isPlaying ? 'Pause' : 'Play'}
-        className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-white/10 text-white"
+        className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-muted text-foreground"
       >
         {isPlaying ? <Pause size={16} /> : <Play size={16} />}
       </button>
@@ -102,36 +95,28 @@ export function PlaybackTimeline() {
         onChange={handleScrub}
         className={[
           'flex-1 appearance-none bg-transparent cursor-pointer',
-          '[&::-webkit-slider-runnable-track]:h-[3px]',
+          '[&::-webkit-slider-runnable-track]:h-1',
           '[&::-webkit-slider-runnable-track]:rounded-full',
-          '[&::-webkit-slider-runnable-track]:bg-white/20',
+          '[&::-webkit-slider-runnable-track]:bg-muted',
           '[&::-webkit-slider-thumb]:w-4',
           '[&::-webkit-slider-thumb]:h-4',
           '[&::-webkit-slider-thumb]:rounded-full',
-          '[&::-webkit-slider-thumb]:bg-white',
+          '[&::-webkit-slider-thumb]:bg-[#3b82f6]',
           '[&::-webkit-slider-thumb]:appearance-none',
-          '[&::-webkit-slider-thumb]:-mt-[6.5px]',
-          '[&::-webkit-slider-thumb]:transition-transform',
-          '[&::-webkit-slider-thumb]:duration-100',
-          '[&::-webkit-slider-thumb]:active:scale-150',
-          '[&::-webkit-slider-thumb]:cursor-grab',
-          '[&::-webkit-slider-thumb]:active:cursor-grabbing',
-          '[&::-moz-range-track]:h-[3px]',
+          '[&::-webkit-slider-thumb]:-mt-1.5',
+          '[&::-moz-range-track]:h-1',
           '[&::-moz-range-track]:rounded-full',
-          '[&::-moz-range-track]:bg-white/20',
+          '[&::-moz-range-track]:bg-muted',
           '[&::-moz-range-thumb]:w-4',
           '[&::-moz-range-thumb]:h-4',
           '[&::-moz-range-thumb]:rounded-full',
-          '[&::-moz-range-thumb]:bg-white',
+          '[&::-moz-range-thumb]:bg-[#3b82f6]',
           '[&::-moz-range-thumb]:border-none',
-          '[&::-moz-range-thumb]:transition-transform',
-          '[&::-moz-range-thumb]:duration-100',
-          '[&::-moz-range-thumb]:active:scale-150',
         ].join(' ')}
       />
 
       {/* Time display */}
-      <span className="text-white/70 text-xs tabular-nums min-w-[5rem] text-right">
+      <span className="text-muted-foreground text-xs tabular-nums min-w-[5rem] text-right">
         {formatTime(playheadTime)} / {formatTime(totalDuration)}
       </span>
     </div>

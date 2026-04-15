@@ -88,50 +88,6 @@
 
 ---
 
-## Milestone: v1.2 — Effects, Overlays & Persistence
-
-**Shipped:** 2026-04-11
-**Phases:** 6 (11–16) | **Plans:** 17 | **Timeline:** 3 days (2026-04-09 → 2026-04-11)
-
-### What Was Built
-- Per-cell visual effects layer — `effectsToFilterString()` single draw path through `drawLeafToCanvas()`, guaranteeing preview ≡ PNG ≡ MP4 parity; drag-to-one-undo via `beginEffectsDrag`
-- Per-cell audio toggle with Web Audio mixing — `audioEnabled` on LeafNode; `buildAudioGraph` (→ deleted) + `mixAudioForExport()` OfflineAudioContext pipeline; zero-audio MP4 skip path when all cells muted
-- Text/emoji/sticker overlay system — `overlayStore` with 8 actions; `stickerRegistry` side-channel; `contenteditable` inline editor; `OverlayLayer` drag/resize/rotate; export in PNG and MP4
-- Mediabunny direct MP4 pipeline — removed `@ffmpeg/ffmpeg`; no COOP/COEP; CanvasSource + AudioBufferSource + OfflineAudioContext; VP9/AVC codec selection; non-fatal AAC fallback toast
-- VideoSampleSink decode-then-encode — all video frames decoded upfront via Mediabunny's higher-level API; `findSampleForTime()` O(log n) lookup; sequential decode bounds peak GPU memory; eliminated 99.4% of export seek time
-- Export Metrics Panel — 17-field `ExportMetrics` interface; ref-based 250ms polling (no React re-renders); Shift+M toggle; `VITE_ENABLE_EXPORT_METRICS` feature flag; zero production cost via Vite tree-shaking
-
-### What Worked
-- **Single draw path discipline** — `effectsToFilterString()` called only inside `drawLeafToCanvas()`; no inline filter string construction anywhere in the codebase meant preview and export were always in sync without testing every code path
-- **Decision-helper extraction for testability** — `hasAudioEnabledVideoLeaf()` and `buildExportVideoElements()` as exported pure helpers gave unit test points for the most complex export logic without driving the full MediaRecorder/Mediabunny pipeline in jsdom
-- **OfflineAudioContext over real-time audio mixing** — rendering offline (not real-time) was fast and eliminated timing hazards with the video encode loop; audio mixed *after* the video loop, cleanly separable
-- **ref-based polling for metrics panel** — `metricsRef.current` written by the export callback, read by 250ms `setInterval` into state; zero React re-renders per frame during export (correct architectural choice for a high-throughput overlay)
-- **Sequential decode for GPU memory bounding** — one video decoded at a time; peak GPU footprint bounded to one video's frames, not all videos simultaneously; `disposeAllSamples` in `finally` ensures cleanup on success and error paths
-
-### What Was Inefficient
-- **Audio pipeline was rewritten twice** — Phase 12 built a `buildAudioGraph()` using `MediaElementAudioSourceNode` (compatible with MediaRecorder). Phase 14 switched to Mediabunny, making `MediaElementAudioSourceNode` unusable in that context (Pitfall 1: incompatible with OfflineAudioContext). `buildAudioGraph` was deleted; `mixAudioForExport()` with `AudioBufferSource` was built from scratch. The Mediabunny migration decision should have come before the audio mixing design, not after.
-- **Persistence (PERS-01..PERS-12) planned but then dropped** — Phase 14 slot was repurposed for the Mediabunny migration mid-milestone. Late scope changes of this magnitude create planning artifacts that are out of date before they're used.
-- **Retrospective not written in the same session** — v1.2 was declared shipped on 2026-04-11 but the retrospective entry was missing at the time `/gsd-complete-milestone v1.2` was first called in the following session.
-
-### Patterns Established
-- **`beginEffectsDrag` + `setEffects(no snapshot)` = drag-to-one-undo** — `pointerdown` opens the undo slot; every `onChange` event updates without pushing to history; releases collapse to a single undo entry. Generalizable to any slider that produces many intermediate values.
-- **Decision-helper extraction for hot-path export code** — pure functions like `hasAudioEnabledVideoLeaf()` and `findSampleForTime()` enable unit testing of complex boolean logic without running the full export pipeline in jsdom.
-- **`VITE_ENABLE_EXPORT_METRICS` + `.env.development`** — dev-only `.env.development` file, never loaded by `npm run build`; Vite tree-shakes the entire metrics code path out of production bundles. Use this pattern for any developer diagnostic tool.
-- **OfflineAudioContext looped scheduling** — `while(offset < totalDuration) { create AudioBufferSourceNode; start(offset); stop(min(offset+duration, total)); offset += duration }` — standard pattern for looping audio at export time.
-- **Sequential decode-then-encode** — decode all video frames into memory, then encode with zero seeking. Any GPU-heavy decode step should be separated from the encode loop and done sequentially to bound peak memory.
-
-### Key Lessons
-1. **Sequence technology decisions before designing the pipeline around them.** The Mediabunny migration decision (Phase 14) invalidated the Web Audio mixing approach from Phase 12. Locking in the export transport layer first would have prevented the double implementation.
-2. **Late scope drops create ghost artifacts.** When PERS-01..PERS-12 were dropped, the Phase 14 roadmap entry and some AUD-08 references had already been written referencing persistence. A clean scope drop at the start of the milestone (not mid-way through) avoids this drift.
-3. **GPU memory at export time is a first-class concern.** Sequential decode was the right call, but it wasn't obvious until the VideoSampleSink API was explored. For future video-heavy phases, treat GPU peak memory as an explicit success criterion, not an afterthought.
-
-### Cost Observations
-- Model mix: primarily Sonnet 4.6 (balanced profile)
-- Sessions: ~5-6 estimated
-- Notable: Phase 13 (overlays) was the most complex — 5 plans across distinct subsystems (data model, rendering, editing UX, emoji/sticker, export). Breaking it into 5 atomic plans kept each plan's test scope manageable.
-
----
-
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -140,7 +96,6 @@
 |-----------|--------|-------|------------|
 | v1.0 | 8 | 23 | Baseline — first milestone |
 | v1.1 | 4 | 11 | Audit-driven gap closure introduced (Phase 10); human verification caught a plan-level mistake |
-| v1.2 | 6 | 17 | Technology sequencing lesson: Mediabunny migration should have preceded audio pipeline design; drag-to-one-undo pattern established |
 
 ### Cumulative Quality
 
@@ -148,7 +103,6 @@
 |-----------|------------|-------------------|
 | v1.0 | 60+ passing | Canvas API export, MediaRecorder video export |
 | v1.1 | 489 passing (43 files) | `SafeZoneOverlay`, `moveLeafToEdge` primitive, portal-based ActionBar |
-| v1.2 | 628 passing (54 files) | Per-cell effects, overlays, Mediabunny pipeline, VideoSampleSink decode-then-encode, Export Metrics Panel |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -157,11 +111,8 @@
 3. **Audit gap-closure plans must read the commit message, not just the diff** (v1.1) — a revert may be deliberate
 4. **Portal in viewport space beats scale-compensation math** when a UI element must overflow a transformed container (v1.1)
 5. **Human verification is load-bearing even for "all automated checks pass" phases** (v1.1)
-6. **Sequence technology decisions before designing the pipeline around them** (v1.2) — Mediabunny migration invalidated the Phase 12 audio mixing approach; decide transport layer first
-7. **GPU peak memory is a first-class export success criterion** (v1.2) — sequential decode (one video at a time) was right; make it explicit in phase success criteria
 
 ### Recurring Anti-Patterns (Not Yet Fixed)
 
-- **SUMMARY.md one-liner drift** — gsd-tools extracts accomplishments from SUMMARY files but the format is not enforced; noise polluted v1.0, v1.1, and v1.2 milestone entries at archive time
-- **ROADMAP progress table drift** — phase completion status in the Progress table is not auto-updated on plan completion; stale rows recurred in v1.0, v1.1, and v1.2
-- **Late scope drops create ghost artifacts** (v1.2 new) — PERS-01..PERS-12 dropped mid-milestone left dangling references in roadmap entries and AUD-08 dependency chains; scope changes should be decided at milestone start, not mid-way through
+- **SUMMARY.md one-liner drift** — gsd-tools extracts accomplishments from SUMMARY files but the format is not enforced; noise polluted both v1.0 and v1.1 milestone entries at archive time
+- **ROADMAP progress table drift** — phase completion status in the Progress table is not auto-updated on plan completion; stale rows recurred in v1.0 and v1.1

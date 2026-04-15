@@ -7,7 +7,7 @@ stopped_at: —
 last_updated: "2026-04-15T00:00:00.000Z"
 last_activity: 2026-04-15
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,20 +18,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-11)
+See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.3 Filters, Video Tools & Playback — IN PROGRESS (started 2026-04-11)
-**Current focus:** v1.3 milestone complete — all 5 phases shipped
+**Current milestone:** v1.4 Mobile-First Overhaul & Instagram Fonts — IN PROGRESS (started 2026-04-15)
+**Current focus:** Roadmap defined — ready to plan Phase 22
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined)
 Plan: —
-Status: Defining requirements for v1.4
-Last activity: 2026-04-15 — Milestone v1.4 started
+Status: Ready to plan Phase 22
+Last activity: 2026-04-15 — v1.4 roadmap created (5 phases, 18 requirements)
 
-Progress: [░░░░░░░░░░] 0% (0/? phases complete)
+Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 
 ## Performance Metrics
 
@@ -181,6 +181,10 @@ Recent decisions affecting current work:
 - [Roadmap v1.3]: Phase 21 LAUD depends on Phase 19 because hasAudioTrack must be reliable before AudioContext wiring — MUTE-01 is the prerequisite for LAUD-03
 - [Phase 19]: D-14 revised: overflowCount counter replaces depth % 2 for overflow split direction — reliably alternates H/V regardless of splitNode case
 - [Phase 19]: detectAudioTrack uses HTMLVideoElement + loadedmetadata + AudioTrackList/mozHasAudio instead of AudioContext — AudioContext cannot parse video containers
+- [Roadmap v1.4]: HEADER + SCROLL grouped in Phase 22 — quick-win UI changes with no shared code; scroll/touch polish is a pre-condition for all remaining mobile phases
+- [Roadmap v1.4]: Phase 25 (touch drag-and-drop) depends on Phase 24 (cell tray) — tray provides the selection state context that touch drag initiates from
+- [Roadmap v1.4]: Phase 26 (fonts) depends only on Phase 22 — font loading is independent of sheet/tray/drag work; could parallelize but standard granularity keeps it serial
+- [Roadmap v1.4]: ActionBar stays desktop-only (hover-gated) — mobile gets the new CELL tray (Phase 24) as a separate component; no changes to portal ActionBar
 
 ### Pending Todos
 
@@ -218,15 +222,16 @@ None yet.
 - Phase 14 added: Migrate video export from MediaRecorder+ffmpeg.wasm to Mediabunny direct MP4 encoding
 - Phase 15 added: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
 - v1.3 phases 17–21 added: Filters, Video Tools & Playback (2026-04-11)
+- v1.4 phases 22–26 added: Mobile-First Overhaul & Instagram Fonts (2026-04-15)
 
 ### Blockers/Concerns
 
-None active. Phase 17 ready to plan.
+None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-13T21:44:15.504Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-04-15T00:00:00.000Z
+Stopped at: v1.4 roadmap created
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

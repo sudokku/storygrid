@@ -69,30 +69,30 @@ Requirements for the Mobile-First Overhaul & Instagram Fonts milestone. Informed
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HEADER-01 | — | Pending |
-| HEADER-02 | — | Pending |
-| SHEET-01 | — | Pending |
-| SHEET-02 | — | Pending |
-| SHEET-03 | — | Pending |
-| SHEET-04 | — | Pending |
-| CELL-01 | — | Pending |
-| CELL-02 | — | Pending |
-| CELL-03 | — | Pending |
-| DRAG-01 | — | Pending |
-| DRAG-02 | — | Pending |
-| DRAG-03 | — | Pending |
-| DRAG-04 | — | Pending |
-| FONT-01 | — | Pending |
-| FONT-02 | — | Pending |
-| FONT-03 | — | Pending |
-| SCROLL-01 | — | Pending |
-| SCROLL-02 | — | Pending |
+| HEADER-01 | Phase 22 | Pending |
+| HEADER-02 | Phase 22 | Pending |
+| SCROLL-01 | Phase 22 | Pending |
+| SCROLL-02 | Phase 22 | Pending |
+| SHEET-01 | Phase 23 | Pending |
+| SHEET-02 | Phase 23 | Pending |
+| SHEET-03 | Phase 23 | Pending |
+| SHEET-04 | Phase 23 | Pending |
+| CELL-01 | Phase 24 | Pending |
+| CELL-02 | Phase 24 | Pending |
+| CELL-03 | Phase 24 | Pending |
+| DRAG-01 | Phase 25 | Pending |
+| DRAG-02 | Phase 25 | Pending |
+| DRAG-03 | Phase 25 | Pending |
+| DRAG-04 | Phase 25 | Pending |
+| FONT-01 | Phase 26 | Pending |
+| FONT-02 | Phase 26 | Pending |
+| FONT-03 | Phase 26 | Pending |
 
 **Coverage:**
 - v1.4 requirements: 18 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-15*
-*Last updated: 2026-04-15 — initial definition, informed by Playwright audit + ui-ux-pro-max*
+*Last updated: 2026-04-15 — traceability complete, all 18 requirements mapped to phases 22–26*

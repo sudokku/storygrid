@@ -193,8 +193,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
 
     // Create a programmatic video element — never inserted into the DOM
+    // NOTE: do NOT set video.muted here. The Web Audio API wires this element
+    // as a MediaElementAudioSourceNode source; muting it silences audio before
+    // it can reach the GainNode graph (Bug: phase-21-no-audio-preview).
     const video = document.createElement('video');
-    video.muted = true;
     video.playsInline = true;
     video.loop = true;
     video.src = mediaUrl;

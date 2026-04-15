@@ -45,7 +45,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
   });
   const hasAudioTrack = useGridStore(s => {
     const leaf = findNode(s.root, nodeId) as LeafNode | null;
-    return leaf && leaf.type === 'leaf' ? (leaf.hasAudioTrack ?? true) : true;
+    return leaf && leaf.type === 'leaf' ? (leaf.hasAudioTrack ?? false) : false;
   });
   const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
 

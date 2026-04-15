@@ -23,6 +23,7 @@ function makeLeaf(overrides: Partial<LeafNode> = {}): LeafNode {
     objectPosition: 'center center',
     backgroundColor: null,
     audioEnabled: true,
+    hasAudioTrack: false,
     ...overrides,
   };
 }
@@ -70,7 +71,7 @@ describe('ActionBar audio button (12-02)', () => {
   });
 
   it('Test 3: DOES render audio button when cell mediaType is video', () => {
-    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    const leaf = makeLeaf({ mediaId: 'vid-1', hasAudioTrack: true });
     useGridStore.setState({
       root: leaf,
       mediaRegistry: { 'vid-1': 'blob:video' },
@@ -83,7 +84,7 @@ describe('ActionBar audio button (12-02)', () => {
   });
 
   it('Test 4: when audioEnabled=true shows Volume2 icon and aria-label "Mute cell audio"', () => {
-    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: true });
+    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: true, hasAudioTrack: true });
     useGridStore.setState({
       root: leaf,
       mediaRegistry: { 'vid-1': 'blob:video' },
@@ -99,7 +100,7 @@ describe('ActionBar audio button (12-02)', () => {
   });
 
   it('Test 5: when audioEnabled=false shows VolumeX icon with text-red-500 and aria-label "Unmute cell audio"', () => {
-    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: false });
+    const leaf = makeLeaf({ mediaId: 'vid-1', audioEnabled: false, hasAudioTrack: true });
     useGridStore.setState({
       root: leaf,
       mediaRegistry: { 'vid-1': 'blob:video' },
@@ -117,7 +118,7 @@ describe('ActionBar audio button (12-02)', () => {
   });
 
   it('Test 6: clicking the audio button calls toggleAudioEnabled with nodeId', () => {
-    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    const leaf = makeLeaf({ mediaId: 'vid-1', hasAudioTrack: true });
     const toggleAudioEnabled = vi.fn();
     useGridStore.setState({
       root: leaf,
@@ -133,7 +134,7 @@ describe('ActionBar audio button (12-02)', () => {
   });
 
   it('Test 7: audio button renders after fit toggle and before clear media button in DOM order', () => {
-    const leaf = makeLeaf({ mediaId: 'vid-1' });
+    const leaf = makeLeaf({ mediaId: 'vid-1', hasAudioTrack: true });
     useGridStore.setState({
       root: leaf,
       mediaRegistry: { 'vid-1': 'blob:video' },

@@ -105,6 +105,7 @@ describe('detectAudioTrack', () => {
       src: '',
       audioTracks: opts.audioTracks,
       mozHasAudio: opts.mozHasAudio,
+      load: vi.fn(),
       addEventListener: vi.fn((event: string, handler: () => void) => {
         handlers[event] = handler;
         // Auto-fire the requested event after src is set (via set src accessor)

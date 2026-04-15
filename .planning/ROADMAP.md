@@ -60,7 +60,7 @@
 ### v1.4 Mobile-First Overhaul & Instagram Fonts (Phases 22–26)
 
 - [x] **Phase 22: Mobile Header & Touch Polish** — All primary actions in the mobile header toolbar; eliminate 300ms tap delay and pull-to-refresh interference app-wide (completed 2026-04-15)
-- [ ] **Phase 23: Bottom Sheet Redesign** — Replace drag-pill with a toggle button; auto-expand on cell select; full inner scroll in all snap states
+- [x] **Phase 23: Bottom Sheet Redesign** — Replace drag-pill with a toggle button; auto-expand on cell select; full inner scroll in all snap states (completed 2026-04-15)
 - [ ] **Phase 24: Mobile Cell Action Tray** — Persistent action strip above the sheet when a cell is selected; Upload, Split H/V, Fit, Clear at ≥44×44px touch targets
 - [ ] **Phase 25: Touch Drag-and-Drop** — Long-press initiation, visual lift, 5-zone drop targets (swap + 4 edges) on mobile
 - [ ] **Phase 26: Instagram-Style Fonts** — 8 Google Fonts loaded async with font-display: swap; font picker renders names in their own typeface
@@ -92,7 +92,7 @@ Plans:
   4. When the sheet is closed, a minimal tab strip remains visible at the bottom of the screen so the user knows the sheet exists
 **Plans**: 1 plan
 Plans:
-- [ ] 23-01-PLAN.md — MobileSheet drag→toggle refactor + SheetSnapState narrowing + test updates
+- [x] 23-01-PLAN.md — MobileSheet drag→toggle refactor + SheetSnapState narrowing + test updates
 **UI hint**: yes
 
 ### Phase 24: Mobile Cell Action Tray
@@ -139,7 +139,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Mobile Header & Touch Polish | 1/1 | Complete   | 2026-04-15 |
-| 23. Bottom Sheet Redesign | 0/? | Not started | - |
+| 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
 | 24. Mobile Cell Action Tray | 0/? | Not started | - |
 | 25. Touch Drag-and-Drop | 0/? | Not started | - |
 | 26. Instagram-Style Fonts | 0/? | Not started | - |

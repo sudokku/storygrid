@@ -17,7 +17,7 @@ const METRICS_ENABLED = import.meta.env.VITE_ENABLE_EXPORT_METRICS === 'true';
 // ExportSplitButton component
 // ---------------------------------------------------------------------------
 
-export function ExportSplitButton() {
+export function ExportSplitButton({ isMobile = false }: { isMobile?: boolean }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [toastState, setToastState] = useState<ToastState>(null);
   const [encodingPercent, setEncodingPercent] = useState(0);
@@ -259,6 +259,134 @@ export function ExportSplitButton() {
     ? 'Export Video'
     : `Export ${exportFormat === 'jpeg' ? 'JPEG' : 'PNG'}`;
 
+  // Shared popover content for both mobile and desktop renders
+  const popoverContent = popoverOpen && (
+    <div
+      ref={popoverRef}
+      className="absolute top-full right-0 mt-1 w-56 bg-[#1c1c1c] border border-white/10 rounded-md shadow-lg p-2 z-50"
+      role="dialog"
+      aria-label="Export settings"
+    >
+      {hasVideos ? (
+        <>
+          {/* Video mode — no format/quality controls */}
+          <div className="text-xs text-neutral-400 py-2">
+            Exports as MP4 (H.264)
+          </div>
+
+          {/* Download button */}
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="w-full h-8 mt-1 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Export Video
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Image mode — format toggle and quality slider */}
+          <span className="text-xs text-neutral-400 mb-2 block">Format</span>
+          <div className="flex rounded border border-white/10 overflow-hidden" role="radiogroup">
+            <button
+              onClick={() => setExportFormat('png')}
+              className={`flex-1 h-7 text-xs rounded transition-colors ${exportFormat === 'png' ? 'bg-white/15 text-white' : 'text-neutral-400 hover:text-neutral-300'}`}
+              role="radio"
+              aria-checked={exportFormat === 'png'}
+            >
+              PNG
+            </button>
+            <button
+              onClick={() => setExportFormat('jpeg')}
+              className={`flex-1 h-7 text-xs rounded transition-colors ${exportFormat === 'jpeg' ? 'bg-white/15 text-white' : 'text-neutral-400 hover:text-neutral-300'}`}
+              role="radio"
+              aria-checked={exportFormat === 'jpeg'}
+            >
+              JPEG
+            </button>
+          </div>
+
+          {/* Quality slider — visible only when JPEG */}
+          <div className={exportFormat === 'jpeg' ? 'mt-3' : 'hidden'}>
+            <span className="text-xs text-neutral-400">
+              Quality: {Math.round(exportQuality * 100)}%
+            </span>
+            <input
+              type="range"
+              min={0.7}
+              max={1.0}
+              step={0.05}
+              value={exportQuality}
+              onChange={(e) => setExportQuality(parseFloat(e.target.value))}
+              className="w-full accent-white mt-2"
+              aria-label="Export quality"
+              aria-valuetext={`${Math.round(exportQuality * 100)} percent`}
+            />
+          </div>
+
+          {/* Download button */}
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="w-full h-8 mt-3 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Download {exportFormat === 'jpeg' ? 'JPEG' : 'PNG'}
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <div ref={containerRef} className="relative flex items-center w-11 h-11">
+          {/* Left: export trigger */}
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            aria-label={exportLabel}
+            data-testid="export-button"
+            className="flex items-center justify-center h-11 flex-1 rounded-l-lg text-neutral-300 disabled:opacity-40"
+          >
+            <Download size={20} />
+          </button>
+          {/* Divider */}
+          <div className="w-px h-5 bg-white/20 self-center" />
+          {/* Right: dropdown toggle */}
+          <button
+            onClick={() => !isExporting && setPopoverOpen(!popoverOpen)}
+            disabled={isExporting}
+            aria-label="Export settings"
+            aria-expanded={popoverOpen}
+            className="flex items-center justify-center w-4 h-11 rounded-r-lg text-neutral-400 disabled:opacity-40"
+          >
+            <ChevronDown size={12} />
+          </button>
+          {popoverContent}
+        </div>
+
+        {/* Toast notification */}
+        <Toast
+          state={toastState}
+          encodingPercent={encodingPercent}
+          onRetry={handleExport}
+          onDismiss={() => setToastState(null)}
+        />
+
+        {/* Export metrics overlay (development only, D-07) */}
+        {METRICS_ENABLED && (
+          <ExportMetricsPanel
+            metrics={metricsSnapshot}
+            visible={metricsVisible}
+            collapsed={metricsCollapsed}
+            onToggleCollapse={() => setMetricsCollapsed(c => !c)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <div ref={containerRef} className="relative flex items-center border border-white/10 rounded">
@@ -291,82 +419,7 @@ export function ExportSplitButton() {
         </button>
 
         {/* Popover */}
-        {popoverOpen && (
-          <div
-            ref={popoverRef}
-            className="absolute top-full right-0 mt-1 w-56 bg-[#1c1c1c] border border-white/10 rounded-md shadow-lg p-2 z-50"
-            role="dialog"
-            aria-label="Export settings"
-          >
-            {hasVideos ? (
-              <>
-                {/* Video mode — no format/quality controls */}
-                <div className="text-xs text-neutral-400 py-2">
-                  Exports as MP4 (H.264)
-                </div>
-
-                {/* Download button */}
-                <button
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  className="w-full h-8 mt-1 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Export Video
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Image mode — format toggle and quality slider */}
-                <span className="text-xs text-neutral-400 mb-2 block">Format</span>
-                <div className="flex rounded border border-white/10 overflow-hidden" role="radiogroup">
-                  <button
-                    onClick={() => setExportFormat('png')}
-                    className={`flex-1 h-7 text-xs rounded transition-colors ${exportFormat === 'png' ? 'bg-white/15 text-white' : 'text-neutral-400 hover:text-neutral-300'}`}
-                    role="radio"
-                    aria-checked={exportFormat === 'png'}
-                  >
-                    PNG
-                  </button>
-                  <button
-                    onClick={() => setExportFormat('jpeg')}
-                    className={`flex-1 h-7 text-xs rounded transition-colors ${exportFormat === 'jpeg' ? 'bg-white/15 text-white' : 'text-neutral-400 hover:text-neutral-300'}`}
-                    role="radio"
-                    aria-checked={exportFormat === 'jpeg'}
-                  >
-                    JPEG
-                  </button>
-                </div>
-
-                {/* Quality slider — visible only when JPEG */}
-                <div className={exportFormat === 'jpeg' ? 'mt-3' : 'hidden'}>
-                  <span className="text-xs text-neutral-400">
-                    Quality: {Math.round(exportQuality * 100)}%
-                  </span>
-                  <input
-                    type="range"
-                    min={0.7}
-                    max={1.0}
-                    step={0.05}
-                    value={exportQuality}
-                    onChange={(e) => setExportQuality(parseFloat(e.target.value))}
-                    className="w-full accent-white mt-2"
-                    aria-label="Export quality"
-                    aria-valuetext={`${Math.round(exportQuality * 100)} percent`}
-                  />
-                </div>
-
-                {/* Download button */}
-                <button
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  className="w-full h-8 mt-3 rounded text-xs font-medium bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Download {exportFormat === 'jpeg' ? 'JPEG' : 'PNG'}
-                </button>
-              </>
-            )}
-          </div>
-        )}
+        {popoverContent}
       </div>
 
       {/* Toast notification */}

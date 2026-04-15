@@ -12,8 +12,6 @@ import { ExportSplitButton } from './ExportSplitButton';
 import { TemplatesPopover } from '../components/TemplatesPopover';
 import { AddOverlayMenu } from './AddOverlayMenu';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { exportGrid, downloadDataUrl, hasVideoCell } from '../lib/export';
-import type { CanvasSettings } from '../lib/export';
 
 const btnClass =
   'flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 transition-colors text-neutral-300';
@@ -30,8 +28,6 @@ export function Toolbar() {
   const toggleSafeZone = useEditorStore(s => s.toggleSafeZone);
   const showOverlays = useEditorStore(s => s.showOverlays);
   const toggleOverlayVisibility = useEditorStore(s => s.toggleOverlayVisibility);
-  const isExporting = useEditorStore(s => s.isExporting);
-  const setIsExporting = useEditorStore(s => s.setIsExporting);
 
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -44,67 +40,48 @@ export function Toolbar() {
     }
   }, [clearGrid]);
 
-  const handleExport = useCallback(async () => {
-    if (isExporting) return;
-    const { root, mediaRegistry, mediaTypeMap } = useGridStore.getState();
-
-    if (hasVideoCell(root, mediaTypeMap)) return;
-
-    setIsExporting(true);
-    try {
-      const {
-        exportFormat,
-        exportQuality,
-        gap,
-        borderRadius,
-        backgroundMode,
-        backgroundColor,
-        backgroundGradientFrom,
-        backgroundGradientTo,
-        backgroundGradientDir,
-      } = useEditorStore.getState();
-
-      const canvasSettings: CanvasSettings = {
-        gap,
-        borderRadius,
-        backgroundMode,
-        backgroundColor,
-        backgroundGradientFrom,
-        backgroundGradientTo,
-        backgroundGradientDir,
-      };
-      const dataUrl = await exportGrid(
-        root,
-        mediaRegistry,
-        exportFormat,
-        exportQuality,
-        () => {},
-        canvasSettings,
-      );
-      const ext = exportFormat === 'jpeg' ? 'jpg' : 'png';
-      const filename = `storygrid-${Date.now()}.${ext}`;
-      downloadDataUrl(dataUrl, filename);
-    } catch {
-      // silent on mobile — no toast in this minimal toolbar
-    } finally {
-      setIsExporting(false);
-    }
-  }, [isExporting, setIsExporting]);
-
   if (isMobile) {
     return (
-      <header className="flex items-center h-12 px-4 bg-[var(--card)] border-b border-[var(--border)] shrink-0">
-        <span className="font-semibold text-white text-base">StoryGrid</span>
-        <div className="ml-auto">
-          <button
-            className="px-3 py-1.5 rounded-md text-sm font-medium bg-[var(--sidebar-primary)] text-white"
-            data-testid="export-button"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            Export
-          </button>
+      <header className="flex items-center justify-around h-12 px-2 gap-2 bg-[var(--card)] border-b border-[var(--border)] shrink-0">
+        {/* Undo */}
+        <button
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300 disabled:opacity-40"
+          onClick={undo}
+          disabled={!canUndo}
+          aria-label="Undo"
+          data-testid="mobile-undo"
+        >
+          <Undo2 size={20} />
+        </button>
+
+        {/* Redo */}
+        <button
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300 disabled:opacity-40"
+          onClick={redo}
+          disabled={!canRedo}
+          aria-label="Redo"
+          data-testid="mobile-redo"
+        >
+          <Redo2 size={20} />
+        </button>
+
+        {/* Templates */}
+        <div className="w-11 h-11 flex items-center justify-center">
+          <TemplatesPopover />
         </div>
+
+        {/* Export (mobile icon-only form) */}
+        <ExportSplitButton isMobile />
+
+        {/* Clear */}
+        <button
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300"
+          onClick={clearGrid}
+          aria-label="Clear canvas"
+          data-testid="mobile-clear"
+        >
+          <Trash2 size={20} />
+        </button>
       </header>
     );
   }

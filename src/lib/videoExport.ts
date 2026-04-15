@@ -11,6 +11,7 @@ import {
   VideoSampleSink,
   ALL_FORMATS,
   type VideoSample,
+  type Rotation,
 } from 'mediabunny';
 // DecodedFrame — ImageBitmap obtained during decode phase (not VideoSample).
 // Converting VideoSamples to ImageBitmaps immediately during decode releases
@@ -197,7 +198,39 @@ type VideoStreamEntry = {
   input: Input;
   iter: AsyncGenerator<VideoSample | null, void, unknown>;
   duration: number;
+  rotation: Rotation;
 };
+
+// ---------------------------------------------------------------------------
+// applyBitmapRotation — rotate a raw ImageBitmap to match display orientation
+//
+// Mobile-shot videos often have a clockwise rotation tag in MP4 metadata.
+// Browsers apply this automatically in <video> elements, but raw decoded
+// VideoSamples/ImageBitmaps come out un-rotated. This function draws the
+// bitmap onto a temporary canvas with the correct transform so the resulting
+// CanvasImageSource has the expected display dimensions.
+//
+// rotation is clockwise degrees (0 | 90 | 180 | 270).
+// ---------------------------------------------------------------------------
+
+export function applyBitmapRotation(bitmap: ImageBitmap, rotation: Rotation): CanvasImageSource {
+  if (rotation === 0) return bitmap;
+
+  const sw = bitmap.width;
+  const sh = bitmap.height;
+  const outW = rotation === 90 || rotation === 270 ? sh : sw;
+  const outH = rotation === 90 || rotation === 270 ? sw : sh;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d')!;
+  ctx.translate(outW / 2, outH / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(bitmap, -sw / 2, -sh / 2);
+
+  return canvas;
+}
 
 // ---------------------------------------------------------------------------
 // buildVideoStreams — sets up one Input + samplesAtTimestamps iterator per video
@@ -233,7 +266,7 @@ async function buildVideoStreams(
     const iter = sink.samplesAtTimestamps(
       makeTimestampGen(FPS, totalDuration, effectiveDuration, firstTimestamp),
     );
-    streams.set(mediaId, { input, iter, duration: effectiveDuration });
+    streams.set(mediaId, { input, iter, duration: effectiveDuration, rotation: track.rotation });
     built++;
     onProgress('decoding', Math.round((built / videoMediaIds.size) * 100));
   }
@@ -549,7 +582,7 @@ export async function exportVideoGrid(
       if (METRICS_ENABLED) performance.mark('frame-encode-start');
 
       // Advance each video's iterator by one step — decodes exactly one frame per video.
-      for (const [mediaId, { iter }] of videoStreams) {
+      for (const [mediaId, { iter, rotation }] of videoStreams) {
         const result = await iter.next();
         if (result.done) continue;
         if (!result.value) {
@@ -565,7 +598,10 @@ export async function exportVideoGrid(
         videoFrame.close(); // free the cloned VideoFrame immediately
         activeVideoFrames--;
         sample.close();     // release VTDecoder / hardware decoder frame buffer NOW
-        frameMap.set(mediaId, bitmap);
+        // applyBitmapRotation corrects for MP4 rotation metadata that <video> elements
+        // apply automatically but raw decoded frames do not.
+        const source = applyBitmapRotation(bitmap, rotation);
+        frameMap.set(mediaId, source);
         bitmapsToClose.push(bitmap);
       }
 

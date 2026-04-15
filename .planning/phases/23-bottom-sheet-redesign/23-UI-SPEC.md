@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: true
 preset: base-nova
 created: 2026-04-15
+updated: 2026-04-15
 ---
 
 # Phase 23 — UI Design Contract
@@ -35,16 +36,18 @@ Declared values (must be multiples of 4):
 |-------|-------|-------|
 | xs | 4px | Icon gaps, inline padding |
 | sm | 8px | Gap between strip elements |
-| md | 16px | Horizontal padding inside the 60px strip |
+| md | 16px | Horizontal padding inside the 60px strip (`px-4`) |
 | lg | 24px | Section padding inside scrollable sheet content |
 | xl | 32px | — |
 | 2xl | 48px | — |
 | 3xl | 64px | — |
 
 Exceptions:
-- **Touch target minimum**: 44×44px for the toggle chevron button (matches Apple HIG and WCAG 2.5.5). This is a fixed size constraint, not a spacing token.
+- **Touch target minimum**: 44×44px for the toggle chevron button (`min-w-[44px] h-11`). This is a fixed size constraint, not a spacing token.
 - **Tab strip height**: 60px — exact value inherited from existing `MobileSheet.tsx` layout contract. Not a spacing token; it is a fixed layout dimension.
 - **Sheet top clearance**: `max(calc(env(safe-area-inset-top) + 56px), 72px)` — the `translateY` value for `full` state. Retained from existing implementation to respect iOS notch safe area.
+
+Source: Existing `MobileSheet.tsx` layout and CONTEXT.md § "Tab Strip Content".
 
 ---
 
@@ -61,11 +64,11 @@ Declared weights: **400** (body) and **500** (label, heading, button). Maximum 2
 
 Notes:
 - Font family is Geist Variable for all text — inherited from `--font-sans` CSS variable.
-- Section headings use `font-medium` (500) rather than `font-semibold` (600). The heading/label distinction is carried by size difference (16px vs 14px), not by weight difference — sufficient in a utility panel context.
+- Section headings use `font-medium` (500) rather than `font-semibold` (600). The heading/label distinction is carried by size difference (16px vs 14px), not weight — sufficient in a utility panel context.
 - The tab strip label ("Canvas Settings" / "Cell Settings") uses 14px weight 500 — readable at 60px strip height without competing visually with content below.
-- No Display size needed in this phase — sheet is a utility panel, not a marketing surface.
+- No Display size is needed in this phase — sheet is a utility panel, not a marketing surface.
 
-Source: Inferred from existing component patterns (`text-sm font-medium` is the dominant class in MobileSheet.tsx and Sidebar components).
+Source: Inferred from existing component patterns (`text-sm font-medium` is the dominant class in `MobileSheet.tsx` and Sidebar components).
 
 ---
 
@@ -74,7 +77,7 @@ Source: Inferred from existing component patterns (`text-sm font-medium` is the 
 | Role | Value | Usage |
 |------|-------|-------|
 | Dominant (60%) | `var(--background)` = `oklch(1 0 0)` light / `oklch(0.145 0 0)` dark | App background behind the sheet |
-| Secondary (30%) | `var(--card)` = `oklch(1 0 0)` light / `oklch(0.205 0 0)` dark | Sheet surface (`bg-[var(--card)]`) — already applied in existing MobileSheet |
+| Secondary (30%) | `var(--card)` = `oklch(1 0 0)` light / `oklch(0.205 0 0)` dark | Sheet surface (`bg-[var(--card)]`) — already applied on the sheet wrapper |
 | Accent (10%) | `var(--sidebar-primary)` = `oklch(0.205 0 0)` light / `oklch(0.488 0.243 264.376)` dark | Reserved for: active/pressed state of the toggle chevron button only |
 | Destructive | `var(--destructive)` = `oklch(0.577 0.245 27.325)` light | Not used in this phase — no destructive actions in the tab strip |
 
@@ -82,7 +85,7 @@ Accent reserved for: **toggle chevron button active/pressed state only** — no 
 
 Additional color notes:
 - Tab strip border-top: `var(--border)` = `oklch(0.922 0 0)` — already applied as `border-t border-[var(--border)]` on the sheet wrapper.
-- Toggle chevron icon default color: `var(--muted-foreground)` = `oklch(0.556 0 0)` — consistent with the existing disabled-state icon style in the old header row.
+- Toggle chevron icon default color: `var(--muted-foreground)` = `oklch(0.556 0 0)` — consistent with existing disabled-state icon style in the old header row.
 - Toggle chevron icon on press: `var(--foreground)` — matches existing `active:text-[var(--foreground)]` pattern on sheet buttons.
 - Sheet content area background: `var(--card)` — no new surface color introduced.
 
@@ -96,13 +99,23 @@ Components touched or created in this phase:
 
 | Component | Action | Location |
 |-----------|--------|----------|
-| `MobileSheet` | Refactor (remove drag, add toggle) | `src/Editor/MobileSheet.tsx` |
+| `MobileSheet` | Refactor (remove drag, add toggle button + tab strip) | `src/Editor/MobileSheet.tsx` |
 | `SheetSnapState` type | Remove `'half'` variant | `src/store/editorStore.ts` |
 | `SNAP_TRANSLATE` | Remove `half` key | `src/Editor/MobileSheet.tsx` |
-| Toggle button | New element inside the 60px strip | Inline in `MobileSheet.tsx` |
-| Tab strip label | New text element | Inline in `MobileSheet.tsx` |
+| Toggle button | New `<button>` element inside the 60px strip | Inline in `MobileSheet.tsx` |
+| Tab strip label | New `<span>` text element | Inline in `MobileSheet.tsx` |
 
-No new shadcn components are needed — the toggle button is a plain `<button>` with lucide-react icons, consistent with the existing pattern.
+Removed elements (not replaced):
+- `isDragging` state and setter
+- `dragStartRef` ref
+- `handlePointerDown` / `handlePointerUp` callbacks
+- `DRAG_THRESHOLD` constant
+- Visual drag-pill `<div>` (`h-1 w-8 rounded-full bg-[#555]`)
+- Sheet header row containing `TemplatesPopover`, Undo, Redo, Clear buttons (moved to Phase 22 header toolbar)
+- `touch-none cursor-grab select-none` classes from the drag area div
+- `isDragging ? 'none' : '...'` transition conditional
+
+No new shadcn components are needed — the toggle button is a plain `<button>` with lucide-react icons, consistent with the existing pattern in the sheet.
 
 ---
 
@@ -121,28 +134,28 @@ Source: CONTEXT.md § "Snap States"
 
 ### Toggle Button Behavior
 
-| Sheet state | Icon | Aria label | Tap action |
-|-------------|------|------------|-----------|
-| `collapsed` | `ChevronUp` (20px) | `"Open panel"` | `setSheetSnapState('full')` |
-| `full` | `ChevronDown` (20px) | `"Close panel"` | `setSheetSnapState('collapsed')` |
+| Sheet state | Icon | Icon size | Aria label | Tap action |
+|-------------|------|-----------|------------|------------|
+| `collapsed` | `ChevronUp` | 20px | `"Open panel"` | `setSheetSnapState('full')` |
+| `full` | `ChevronDown` | 20px | `"Close panel"` | `setSheetSnapState('collapsed')` |
 
-- Button dimensions: 44×44px minimum tap target (use `min-w-[44px] h-11` = 44px, consistent with existing sheet button classes).
+- Button dimensions: 44×44px minimum tap target (`min-w-[44px] h-11`).
 - Button position: left edge of the 60px strip, `px-4` from the sheet left edge.
 - No tooltip needed on mobile.
 
 Source: CONTEXT.md § "Toggle Button"
 
-### Tab Strip Layout (collapsed state)
+### Tab Strip Layout (both states)
 
 ```
-[ ChevronUp/Down 44×44px ] [ "Canvas Settings" or "Cell Settings" text ]
+[ ChevronUp/Down  44×44px ] [ "Canvas Settings" or "Cell Settings"  text ]
 ```
 
 - Flex row, `items-center`, `px-4`, height exactly 60px.
 - Label text: 14px weight 500, `var(--foreground)` color.
 - Label updates based on `selectedNodeId`: null → `"Canvas Settings"`, non-null → `"Cell Settings"`.
 - The strip is NOT tappable as a whole — only the button triggers the toggle.
-- No TemplatesPopover, Undo, Redo, or Clear buttons in the strip (moved to Phase 22 header toolbar).
+- No `TemplatesPopover`, Undo, Redo, or Clear buttons in the strip (moved to Phase 22 header toolbar).
 - No visual drag-pill bar.
 
 Source: CONTEXT.md § "Tab Strip Content"
@@ -155,17 +168,23 @@ Implemented via `useEffect([selectedNodeId])`. Existing `useEffect` body changes
 
 Source: CONTEXT.md § "Auto-Expand"
 
-### Transition
-
-Always animated: `transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)`.
-
-The `isDragging ? 'none' : '...'` conditional is removed. Transition is unconditional because drag gesture is removed.
-
-Source: CONTEXT.md § "Drag Gesture Removal"
-
 ### Scrollable Content Area
 
 The content area below the 60px strip remains `overflow-y-auto` with `height: calc(100% - 60px)` and `overscrollBehavior: contain`. No change from existing implementation.
+
+---
+
+## Animation Contract
+
+| Transition | Value | Trigger |
+|------------|-------|---------|
+| Sheet position | `transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)` | Any snap state change |
+
+The transition is **unconditional** — the `isDragging ? 'none' : '...'` conditional is removed. The spring cubic-bezier (`0.32, 0.72, 0, 1`) matches Apple's standard sheet spring curve.
+
+No enter/exit animation is needed for the toggle chevron swap — the icon change is instantaneous (state flip on tap).
+
+Source: CONTEXT.md § "Drag Gesture Removal" — "existing `0.3s cubic-bezier(0.32, 0.72, 0, 1)` — no change needed".
 
 ---
 
@@ -189,11 +208,11 @@ Source: CONTEXT.md § "Tab Strip Content" and § "Toggle Button"
 
 ## Accessibility Contract
 
-- Toggle button: `aria-label` changes dynamically between `"Open panel"` (collapsed) and `"Close panel"` (full). Do NOT use `aria-expanded` as the button text equivalence already communicates state.
-- Toggle button: 44×44px minimum tap target per WCAG 2.5.5.
+- Toggle button: `aria-label` changes dynamically between `"Open panel"` (collapsed) and `"Close panel"` (full). Do NOT use `aria-expanded` — the label already communicates state.
+- Toggle button: 44×44px minimum tap target per WCAG 2.5.5 (`min-w-[44px] h-11`).
 - Sheet wrapper: retain `data-testid="mobile-sheet"` and `data-sheet-snap={sheetSnapState}` for Playwright test selectors.
-- Strip drag handle: retain `data-testid="sheet-drag-handle"` on the 60px strip div for Playwright backward compatibility (even though drag behavior is removed, tests may still reference this element by testid).
-- `touch-action: manipulation` is already applied globally via `src/index.css` `button` rule — no per-element override needed.
+- Strip container: retain `data-testid="sheet-drag-handle"` on the 60px strip div for Playwright backward compatibility. Drag behavior is removed but the testid selector must remain — tests referencing this element by testid should not break.
+- `touch-action: manipulation` is already applied globally via `src/index.css` `button` rule — no per-element override needed inside the sheet.
 
 ---
 

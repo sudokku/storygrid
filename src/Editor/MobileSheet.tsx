@@ -66,7 +66,7 @@ export const MobileSheet = React.memo(function MobileSheet() {
       <div
         className="overflow-y-auto"
         style={{
-          height: 'calc(100% - 60px)',
+          height: 'calc(100dvh - 60px - max(calc(env(safe-area-inset-top) + 56px), 72px))',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
         }}

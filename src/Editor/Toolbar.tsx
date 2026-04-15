@@ -45,7 +45,7 @@ export function Toolbar() {
       <header className="flex items-center justify-around h-12 px-2 gap-2 bg-[var(--card)] border-b border-[var(--border)] shrink-0">
         {/* Undo */}
         <button
-          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300 disabled:opacity-40"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--foreground)] disabled:opacity-40"
           onClick={undo}
           disabled={!canUndo}
           aria-label="Undo"
@@ -56,7 +56,7 @@ export function Toolbar() {
 
         {/* Redo */}
         <button
-          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300 disabled:opacity-40"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--foreground)] disabled:opacity-40"
           onClick={redo}
           disabled={!canRedo}
           aria-label="Redo"
@@ -75,7 +75,7 @@ export function Toolbar() {
 
         {/* Clear */}
         <button
-          className="w-11 h-11 flex items-center justify-center rounded-lg text-neutral-300"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--foreground)]"
           onClick={clearGrid}
           aria-label="Clear canvas"
           data-testid="mobile-clear"

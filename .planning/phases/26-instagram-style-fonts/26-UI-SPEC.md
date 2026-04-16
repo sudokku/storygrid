@@ -1,7 +1,8 @@
 ---
 phase: 26
 slug: instagram-style-fonts
-status: draft
+status: approved
+reviewed_at: 2026-04-17
 shadcn_initialized: true
 preset: base-nova
 created: 2026-04-17

@@ -105,7 +105,7 @@ Plans:
   3. Every tray button has a minimum 44×44px tap target with at least 8px gaps between buttons
 **Plans**: 1 plan
 Plans:
-- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
+- [ ] 24-01-PLAN.md — MobileCellTray component + EditorShell wiring + CELL-01/02/03 unit tests
 **UI hint**: yes
 
 ### Phase 25: Touch Drag-and-Drop

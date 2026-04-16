@@ -5,6 +5,19 @@ import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
 import { OverlayLayer } from './OverlayLayer';
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+
+// Shared ref context so LeafNode useDndMonitor callbacks can write the active zone
+// and CanvasWrapper's onDragEnd can read it when a drop completes.
+export const DragZoneRefContext = React.createContext<React.MutableRefObject<'center' | 'top' | 'bottom' | 'left' | 'right'> | null>(null);
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
@@ -43,6 +56,27 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       backgroundGradientTo: s.backgroundGradientTo,
       backgroundGradientDir: s.backgroundGradientDir,
     })));
+
+  // Phase 25: unified sensor config — MouseSensor for desktop, TouchSensor for mobile
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 500, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor),
+  );
+
+  // Shared ref written by LeafNode useDndMonitor, read by onDragEnd
+  const activeZoneRef = useRef<'center' | 'top' | 'bottom' | 'left' | 'right'>('center');
+  const moveCell = useGridStore(s => s.moveCell);
+
+  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    moveCell(String(active.id), String(over.id), activeZoneRef.current);
+    activeZoneRef.current = 'center';
+  }, [moveCell]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -83,22 +117,26 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       className="flex flex-1 h-full items-start justify-center overflow-hidden"
       data-testid="canvas-container"
     >
-      <div
-        className="relative group mt-8 flex-shrink-0"
-        style={{
-          width: CANVAS_W,
-          height: CANVAS_H,
-          transform: `scale(${finalScale})`,
-          transformOrigin: 'top center',
-          background: canvasBackground,
-        }}
-        onClick={handleBgClick}
-        data-testid="canvas-surface"
-      >
-        <GridNodeComponent id={rootId} />
-        <OverlayLayer />
-        {showSafeZone && <SafeZoneOverlay />}
-      </div>
+      <DragZoneRefContext.Provider value={activeZoneRef}>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div
+            className="relative group mt-8 flex-shrink-0"
+            style={{
+              width: CANVAS_W,
+              height: CANVAS_H,
+              transform: `scale(${finalScale})`,
+              transformOrigin: 'top center',
+              background: canvasBackground,
+            }}
+            onClick={handleBgClick}
+            data-testid="canvas-surface"
+          >
+            <GridNodeComponent id={rootId} />
+            <OverlayLayer />
+            {showSafeZone && <SafeZoneOverlay />}
+          </div>
+        </DndContext>
+      </DragZoneRefContext.Provider>
     </div>
   );
 });

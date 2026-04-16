@@ -2,6 +2,7 @@ import { AlignLeft, AlignCenter, AlignRight, Trash2, ChevronUp, ChevronDown } fr
 import { useEditorStore } from '../store/editorStore';
 import { useOverlayStore } from '../store/overlayStore';
 import type { TextOverlay } from '../types';
+import { FontPickerList } from './FontPickerList';
 
 // ---------------------------------------------------------------------------
 // OverlayPanel
@@ -55,20 +56,10 @@ export function OverlayPanel() {
           {/* Font family */}
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-400">Font</label>
-            <select
+            <FontPickerList
               value={textOverlay.fontFamily}
-              onChange={e => updateOverlay(overlay.id, { fontFamily: e.target.value })}
-              className="w-full px-2 py-1.5 rounded text-xs bg-[#2a2a2a] border border-[#3a3a3a] text-neutral-200 focus:outline-none focus:border-[#3b82f6]"
-              aria-label="Font family"
-            >
-              <option value="Geist" style={{ fontFamily: 'Geist' }}>Geist</option>
-              <option value="Playfair Display" style={{ fontFamily: '"Playfair Display"' }}>
-                Playfair Display
-              </option>
-              <option value="Dancing Script" style={{ fontFamily: '"Dancing Script"' }}>
-                Dancing Script
-              </option>
-            </select>
+              onChange={(fontFamily) => updateOverlay(overlay.id, { fontFamily })}
+            />
           </div>
 
           {/* Font size */}

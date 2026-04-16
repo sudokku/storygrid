@@ -51,7 +51,7 @@ export type OverlayBase = {
 export type TextOverlay = OverlayBase & {
   type: 'text';
   content: string;
-  fontFamily: string;         // 'Geist' | 'Playfair Display' | 'Dancing Script'
+  fontFamily: string;         // e.g. 'Bebas Neue', 'Oswald', 'Dancing Script', etc.
   fontSize: number;           // 16..256 canvas px
   color: string;              // hex (#rrggbb)
   fontWeight: 'regular' | 'bold';

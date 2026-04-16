@@ -42,7 +42,7 @@ export function AddOverlayMenu({ open, onOpenChange }: AddOverlayMenuProps) {
       width: 600,
       rotation: 0,
       content: 'Double tap to edit',
-      fontFamily: 'Geist',
+      fontFamily: 'Bebas Neue',
       fontSize: 72,
       color: '#ffffff',
       fontWeight: 'bold',

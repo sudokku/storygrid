@@ -62,7 +62,7 @@
 - [x] **Phase 22: Mobile Header & Touch Polish** — All primary actions in the mobile header toolbar; eliminate 300ms tap delay and pull-to-refresh interference app-wide (completed 2026-04-15)
 - [x] **Phase 23: Bottom Sheet Redesign** — Replace drag-pill with a toggle button; auto-expand on cell select; full inner scroll in all snap states (completed 2026-04-15)
 - [x] **Phase 24: Mobile Cell Action Tray** — Persistent action strip above the sheet when a cell is selected; Upload, Split H/V, Fit, Clear at ≥44×44px touch targets (completed 2026-04-16)
-- [ ] **Phase 25: Touch Drag-and-Drop** — Long-press initiation, visual lift, 5-zone drop targets (swap + 4 edges) on mobile
+- [x] **Phase 25: Touch Drag-and-Drop** — Long-press initiation, visual lift, 5-zone drop targets (swap + 4 edges) on mobile (completed 2026-04-16)
 - [ ] **Phase 26: Instagram-Style Fonts** — 8 Google Fonts loaded async with font-display: swap; font picker renders names in their own typeface
 
 ## Phase Details
@@ -120,7 +120,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 25-01-PLAN.md — DndContext wiring + LeafNode @dnd-kit migration + ActionBar cleanup + CSS keyframe
-- [ ] 25-02-PLAN.md — Phase25 tests + phase09 zone test migration + manual verification checkpoint
+- [x] 25-02-PLAN.md — Phase25 tests + phase09 zone test migration + manual verification checkpoint
 
 ### Phase 26: Instagram-Style Fonts
 **Goal**: Text overlays can use 8 Instagram-aesthetic Google Fonts, each identifiable at a glance in the font picker
@@ -142,5 +142,5 @@ Plans:
 | 22. Mobile Header & Touch Polish | 1/1 | Complete   | 2026-04-15 |
 | 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
 | 24. Mobile Cell Action Tray | 1/1 | Complete   | 2026-04-16 |
-| 25. Touch Drag-and-Drop | 1/2 | In Progress|  |
+| 25. Touch Drag-and-Drop | 2/2 | Complete   | 2026-04-16 |
 | 26. Instagram-Style Fonts | 0/? | Not started | - |

@@ -132,7 +132,7 @@ Plans:
   3. Each font name in the picker is rendered in its own typeface so the user can visually distinguish styles before selecting
 **Plans**: 1 plan
 Plans:
-- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
+- [ ] 26-01-PLAN.md — FontPickerList with 8 Instagram fonts + MobileSheet overlay editing
 **UI hint**: yes
 
 ## Progress Table
@@ -143,4 +143,4 @@ Plans:
 | 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
 | 24. Mobile Cell Action Tray | 1/1 | Complete   | 2026-04-16 |
 | 25. Touch Drag-and-Drop | 2/2 | Complete   | 2026-04-16 |
-| 26. Instagram-Style Fonts | 0/? | Not started | - |
+| 26. Instagram-Style Fonts | 0/1 | Not started | - |

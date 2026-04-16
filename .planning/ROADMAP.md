@@ -117,9 +117,10 @@ Plans:
   2. While a cell is being dragged, all other cells show 5-zone drop targets: a center zone and four edge zones
   3. Releasing over a center zone swaps the dragged cell's content with the target cell's content
   4. Releasing over an edge zone inserts the dragged cell at that edge position in the grid tree
-**Plans**: 1 plan
+**Plans**: 2 plans
 Plans:
-- [ ] 22-01-PLAN.md — Mobile header 5-button toolbar + CSS touch polish
+- [ ] 25-01-PLAN.md — DndContext wiring + LeafNode @dnd-kit migration + ActionBar cleanup + CSS keyframe
+- [ ] 25-02-PLAN.md — Phase25 tests + phase09 zone test migration + manual verification checkpoint
 
 ### Phase 26: Instagram-Style Fonts
 **Goal**: Text overlays can use 8 Instagram-aesthetic Google Fonts, each identifiable at a glance in the font picker
@@ -140,6 +141,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 22. Mobile Header & Touch Polish | 1/1 | Complete   | 2026-04-15 |
 | 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
-| 24. Mobile Cell Action Tray | 0/? | Not started | - |
-| 25. Touch Drag-and-Drop | 0/? | Not started | - |
+| 24. Mobile Cell Action Tray | 1/1 | Complete   | 2026-04-16 |
+| 25. Touch Drag-and-Drop | 0/2 | Not started | - |
 | 26. Instagram-Style Fonts | 0/? | Not started | - |

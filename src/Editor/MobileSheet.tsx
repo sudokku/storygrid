@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { CanvasSettingsPanel, SelectedCellPanel } from './Sidebar';
+import { OverlayPanel } from './OverlayPanel';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -24,6 +25,7 @@ export const MobileSheet = React.memo(function MobileSheet() {
   const selectedNodeId = useEditorStore(s => s.selectedNodeId);
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
+  const selectedOverlayId = useEditorStore(s => s.selectedOverlayId);
 
   // Auto-expand sheet to full only on null → non-null transitions (cell newly selected)
   const prevSelectedRef = useRef(selectedNodeId);
@@ -32,6 +34,14 @@ export const MobileSheet = React.memo(function MobileSheet() {
     prevSelectedRef.current = selectedNodeId;
     if (!prev && selectedNodeId) setSheetSnapState('full');
   }, [selectedNodeId, setSheetSnapState]);
+
+  // Auto-expand sheet to full on null → non-null overlay selection
+  const prevOverlayRef = useRef(selectedOverlayId);
+  useEffect(() => {
+    const prev = prevOverlayRef.current;
+    prevOverlayRef.current = selectedOverlayId;
+    if (!prev && selectedOverlayId) setSheetSnapState('full');
+  }, [selectedOverlayId, setSheetSnapState]);
 
   return (
     <div
@@ -61,7 +71,11 @@ export const MobileSheet = React.memo(function MobileSheet() {
           }
         </button>
         <span className="text-sm font-medium text-[var(--foreground)]">
-          {selectedNodeId ? 'Cell Settings' : 'Canvas Settings'}
+          {selectedOverlayId !== null
+            ? 'Text Overlay'
+            : selectedNodeId
+              ? 'Cell Settings'
+              : 'Canvas Settings'}
         </span>
       </div>
 
@@ -84,6 +98,8 @@ export const MobileSheet = React.memo(function MobileSheet() {
               Exit Pan Mode
             </button>
           </div>
+        ) : selectedOverlayId !== null ? (
+          <OverlayPanel />
         ) : selectedNodeId ? (
           <SelectedCellPanel nodeId={selectedNodeId} key={selectedNodeId} />
         ) : (

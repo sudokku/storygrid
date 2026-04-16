@@ -18,7 +18,7 @@ const SEED_OVERLAY = {
   rotation: 0,
   zIndex: 1,
   content: 'hello',
-  fontFamily: 'Geist',
+  fontFamily: 'Bebas Neue',
   fontSize: 72,
   color: '#ffffff',
   fontWeight: 'regular' as const,
@@ -44,18 +44,36 @@ describe('OverlayPanel', () => {
     expect(useOverlayStore.getState().overlays[0].content).toBe('world');
   });
 
-  it('Test 2 (OVL-03): font picker has 3 options; changing calls updateOverlay with fontFamily', () => {
+  it('Test 2 (OVL-03): font picker has 8 buttons; clicking a font calls updateOverlay with fontFamily', () => {
+    const { getAllByRole } = render(<OverlayPanel />);
+
+    // Find all buttons with aria-label ending in " font"
+    const allButtons = getAllByRole('button');
+    const fontButtons = allButtons.filter(btn =>
+      btn.getAttribute('aria-label')?.endsWith(' font'),
+    );
+
+    expect(fontButtons).toHaveLength(8);
+    expect(fontButtons[0].getAttribute('aria-label')).toBe('Bebas Neue font');
+    expect(fontButtons[fontButtons.length - 1].getAttribute('aria-label')).toBe('Caveat font');
+
+    // Click Oswald and verify store update
+    const oswaldBtn = fontButtons.find(btn => btn.getAttribute('aria-label') === 'Oswald font')!;
+    fireEvent.click(oswaldBtn);
+    expect(useOverlayStore.getState().overlays[0].fontFamily).toBe('Oswald');
+  });
+
+  it('Test 2b: each font button has correct inline fontFamily style', () => {
     const { getByLabelText } = render(<OverlayPanel />);
-    const select = getByLabelText('Font family') as HTMLSelectElement;
+    const dancingBtn = getByLabelText('Dancing Script font') as HTMLButtonElement;
+    expect(dancingBtn.style.fontFamily).toContain('Dancing Script');
+  });
 
-    const options = Array.from(select.options).map(o => o.value);
-    expect(options).toHaveLength(3);
-    expect(options).toContain('Geist');
-    expect(options).toContain('Playfair Display');
-    expect(options).toContain('Dancing Script');
-
-    fireEvent.change(select, { target: { value: 'Playfair Display' } });
-    expect(useOverlayStore.getState().overlays[0].fontFamily).toBe('Playfair Display');
+  it('Test 2c: selected font button has aria-pressed="true"', () => {
+    const { getByLabelText } = render(<OverlayPanel />);
+    // SEED_OVERLAY has fontFamily 'Bebas Neue'
+    const bebasBtn = getByLabelText('Bebas Neue font');
+    expect(bebasBtn.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('Test 3 (OVL-04): font size slider has min=16, max=256; moving it calls updateOverlay with fontSize', () => {

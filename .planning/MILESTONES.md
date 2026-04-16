@@ -1,5 +1,26 @@
 # Milestones
 
+## v1.4 Mobile-First Overhaul & Instagram Fonts (Shipped: 2026-04-17)
+
+**Phases completed:** 5 phases (22–26), 6 plans
+**Timeline:** 2026-04-15 → 2026-04-17 (2 days)
+**Git range:** `444cfda` → `0751550` (76 commits, 87 files changed, +12,160 / −1,470)
+
+**Key accomplishments:**
+
+1. **Mobile header rebuilt** — 5-button toolbar (Export, Undo, Redo, Templates, Clear) replacing Export-only header; all 44×44px; `isMobile` prop on `ExportSplitButton` keeps logic unified
+2. **Bottom sheet drag-pill eliminated** — chevron toggle replaces gesture; `SheetSnapState` narrowed to `collapsed|full`; auto-expand on cell select; `100dvh` iOS address-bar fix; tab strip visible when closed
+3. **Mobile cell action tray** — `MobileCellTray` component with Upload/Split H/V/Fit/Clear at 44×44px; always-mounted CSS-driven visibility pattern; `pointerEvents: none` gate
+4. **Touch drag-and-drop via @dnd-kit** — `DndContext` + `TouchSensor`/`MouseSensor` (500ms hold); `useDndMonitor`-based 5-zone detection with `DragZoneRefContext` pointer tracking; `hold-pulse` CSS animation; file-drop preserved via `dataTransfer.types` guard
+5. **Instagram-style font picker** — 8 Google Fonts (Bebas Neue, Oswald, Dancing Script, Playfair Display, Space Mono, Pacifico, Barlow Condensed, Caveat) loaded async with `font-display: swap`; each name rendered in its own typeface; wired to both `OverlayPanel` (desktop) and `MobileSheet` overlay branch
+6. **Global touch polish** — `overscroll-behavior: contain` prevents pull-to-refresh; `touch-action: manipulation` eliminates 300ms tap delay app-wide
+
+**Known deferred items at close:** Touch drag-and-drop UX needs overhaul (interaction model shipped, polish deferred to v1.5); touch DnD flagged as v1.5 candidate
+
+**Archived:** `.planning/milestones/v1.4-ROADMAP.md`, `.planning/milestones/v1.4-REQUIREMENTS.md`
+
+---
+
 ## v1.2 Effects, Overlays & Persistence (Shipped: 2026-04-11)
 
 **Phases completed:** 6 phases (11–16), 17 plans

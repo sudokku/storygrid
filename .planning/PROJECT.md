@@ -4,7 +4,7 @@
 
 StoryGrid is a fully client-side web app for creating Instagram Story photo/video collages. Users build dynamic grid layouts by recursively splitting cells (like Figma frames), drop media into leaf cells, and export the final composition as a 1080×1920px image or video. Zero backend — fully static, deploys to Vercel/Netlify.
 
-**Current State:** v1.2 Effects, Overlays & Persistence shipped 2026-04-11 (6 phases, 17 plans, 144 commits, +28,101 LOC). v1.1 UI Polish & Bug Fixes shipped 2026-04-08. Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel.
+**Current State:** v1.4 Mobile-First Overhaul & Instagram Fonts shipped 2026-04-17 (5 phases, 6 plans, 76 commits, +12,160 LOC). Cumulative state: v1.0 delivered full image/video support, mobile-first UI, Canvas API export, and Mediabunny video export; v1.1 polished the editing experience with portal-based ActionBar, safe-zone visual overlay, friction-free template apply, full-workspace drop zone, and atomic cell MOVE semantics; v1.2 added per-cell effects (6 presets + 4 sliders), per-cell audio toggle, text/emoji/sticker overlay layer, Mediabunny direct MP4 pipeline (no COOP/COEP, no ffmpeg.wasm), Mediabunny VideoSampleSink decode-then-encode pipeline (eliminated 99.4% of export seek time), and a developer export metrics panel; v1.3 added Instagram-style named filter presets, auto-mute detection, breadth-first media drop, playback UI polish, and live audio preview; v1.4 overhauled mobile UX (5-button header, toggle-based bottom sheet, cell action tray, touch drag-and-drop) and added 8 Instagram-style Google Fonts for text overlays.
 
 ## Core Value
 
@@ -148,9 +148,38 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 - ✓ Feature-flagged via `VITE_ENABLE_EXPORT_METRICS`; Vite tree-shaking = zero production cost — v1.2
 - ✓ Human-verified on 749-frame export — no memory leaks — v1.2
 
+**Phase 22 — Mobile Header & Touch Polish** (v1.4)
+- ✓ HEADER-01: Export, Undo, Redo, Templates, Clear in mobile header toolbar — v1.4
+- ✓ HEADER-02: All header touch targets ≥44×44px with ≥8px gaps — v1.4
+- ✓ SCROLL-01: `overscroll-behavior: contain` on canvas area prevents pull-to-refresh — v1.4
+- ✓ SCROLL-02: `touch-action: manipulation` eliminates 300ms tap delay — v1.4
+
+**Phase 23 — Bottom Sheet Redesign** (v1.4)
+- ✓ SHEET-01: Bottom sheet opens/closes via chevron toggle (drag-pill removed) — v1.4
+- ✓ SHEET-02: Bottom sheet auto-expands to full height when a cell is selected — v1.4
+- ✓ SHEET-03: All bottom sheet content scrollable; nothing cut off in any snap state — v1.4
+- ✓ SHEET-04: Bottom sheet collapses to visible tab strip (not hidden) — v1.4
+
+**Phase 24 — Mobile Cell Action Tray** (v1.4)
+- ✓ CELL-01: Persistent cell action tray appears above sheet when a cell is tapped — v1.4
+- ✓ CELL-02: Tray exposes Upload, Split H, Split V, Fit toggle, Clear — v1.4
+- ✓ CELL-03: Tray buttons ≥44×44px with ≥8px gaps — v1.4
+
+**Phase 25 — Touch Drag-and-Drop** (v1.4)
+- ✓ DRAG-01: Long-press (≥500ms) initiates cell drag on mobile — v1.4
+- ✓ DRAG-02: Dragged cell shows visual lift feedback (opacity + box-shadow) — v1.4
+- ✓ DRAG-03: 5-zone drop overlays appear on all cells during drag — v1.4
+- ✓ DRAG-04: Center drop = swap; edge drop = insert — v1.4
+- ⚠️ Touch drag UX flagged for overhaul in v1.5 — interaction model ships but needs redesign
+
+**Phase 26 — Instagram-Style Fonts** (v1.4)
+- ✓ FONT-01: 8 Google Fonts available in text overlay picker — v1.4
+- ✓ FONT-02: Fonts load async with `font-display: swap` (no FOIT) — v1.4
+- ✓ FONT-03: Each font name rendered in its own typeface for visual preview — v1.4
+
 ### Active
 
-*No active milestone requirements — v1.2 complete. Next: `/gsd-new-milestone` to define v1.3.*
+*No active milestone requirements — v1.4 complete. Next: `/gsd-new-milestone` to define v1.5.*
 
 ### Out of Scope
 
@@ -216,6 +245,11 @@ Current state (after v1.1):
 | Mediabunny VideoSampleSink for decode (Phase 15) | Used Mediabunny's higher-level decode API instead of raw WebCodecs VideoDecoder — simpler GPU memory management, no low-level codec configuration | ✓ Good — eliminated 99.4% of export time (seeking bottleneck); sequential decode bounds peak GPU memory |
 | PERS-01..PERS-12 dropped from v1.2 | Phase 14 slot repurposed for Mediabunny migration; persistence deferred to v1.3 | — Deferred — AUD-08 deferred alongside PERS block |
 | Export Metrics Panel feature-flagged (Phase 16) | `VITE_ENABLE_EXPORT_METRICS` + Vite tree-shaking = zero production cost; ref-based polling avoids React re-renders during export | ✓ Good — developer tool with no user-facing cost |
+| MobileCellTray as separate component (Phase 24) | ActionBar stays desktop-only (hover-gated); mobile gets dedicated tray — no changes to portal ActionBar architecture | ✓ Good — clean separation, no regression risk to desktop |
+| SheetSnapState narrowed to collapsed\|full (Phase 23) | Half-snap removed — simplifies all sheet state transitions and eliminates the "cut-off controls" class of bugs | ✓ Good — dramatically simpler state machine |
+| TouchSensor + MouseSensor unified at delay:500 (Phase 25) | Same threshold across pointer devices ensures consistent long-press behavior; no device-specific branching | ✓ Good — consistent UX across desktop and mobile |
+| Google Fonts via consolidated `<link>` in index.html (Phase 26) | Single HTTP request for all 8 families with `display=swap`; no JS font loading API needed | ✓ Good — simple, zero runtime overhead |
+| Touch drag-and-drop architecture flagged for overhaul (Phase 25) | Current `useDndMonitor`+`DragZoneRefContext` approach works but interaction model needs redesign; deferred to v1.5 | ⚠️ Revisit — quick-task fix post-phase suggests underlying architectural debt |
 
 ## Evolution
 
@@ -235,4 +269,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 — v1.2 milestone complete. 6 phases / 17 plans shipped. Project Persistence (PERS-01..PERS-12) and AUD-08 deferred to v1.3. Next milestone: `/gsd-new-milestone`.*
+*Last updated: 2026-04-17 after v1.4 milestone — 5 phases / 6 plans shipped. Touch drag-and-drop (DRAG-01..04) shipped but flagged for v1.5 overhaul. PERS-01..12 deferred again. Next milestone: `/gsd-new-milestone`.*

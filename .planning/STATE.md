@@ -1,37 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Mobile-First Overhaul & Instagram Fonts
-status: verifying
-stopped_at: Completed 26-01-PLAN.md (Phase 26 instagram-style-fonts complete)
-last_updated: "2026-04-16T21:36:52.234Z"
-last_activity: 2026-04-16
+milestone: v1.5
+milestone_name: TBD
+status: planning
+stopped_at: v1.4 milestone archived — ready for /gsd-new-milestone
+last_updated: "2026-04-17T00:00:00.000Z"
+last_activity: 2026-04-17
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-15)
+See: .planning/PROJECT.md (updated 2026-04-17)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.4 Mobile-First Overhaul & Instagram Fonts — IN PROGRESS (started 2026-04-15)
-**Current focus:** Phase 26 — instagram-style-fonts
+**Current milestone:** v1.4 SHIPPED 2026-04-17 — archived to .planning/milestones/
+**Current focus:** Planning next milestone — run `/gsd-new-milestone` to define v1.5
 
 ## Current Position
 
-Phase: 26 (instagram-style-fonts) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-04-16
+Phase: — (between milestones)
+Status: v1.4 archived — ready for next milestone
+Last activity: 2026-04-17
 
-Progress: [██░░░░░░░░] 20% (1/5 phases complete)
+Progress: [██████████] 100% (v1.4 complete)
 
 ## Performance Metrics
 

@@ -88,6 +88,47 @@
 
 ---
 
+## Milestone: v1.4 — Mobile-First Overhaul & Instagram Fonts
+
+**Shipped:** 2026-04-17
+**Phases:** 5 (22–26) | **Plans:** 6 | **Timeline:** 2 days
+
+### What Was Built
+- Mobile header rebuilt from Export-only to 5-button toolbar with 44×44px targets; global CSS eliminating pull-to-refresh and 300ms tap delay
+- Bottom sheet drag-pill gesture replaced by chevron toggle; `SheetSnapState` narrowed to `collapsed|full`; auto-expand on cell select
+- `MobileCellTray` component — persistent action strip above sheet with Upload/Split H/V/Fit/Clear at 44×44px; always-mounted CSS-driven visibility
+- Touch drag-and-drop via `@dnd-kit` `TouchSensor` (500ms hold); `DragZoneRefContext` for pointer tracking; `hold-pulse` animation; file-drop preserved
+- `FontPickerList` with 8 Instagram-style Google Fonts; each name rendered in its own typeface; wired to `OverlayPanel` and `MobileSheet` overlay branch
+
+### What Worked
+- **SheetSnapState narrowing** — removing the half-snap state eliminated an entire class of "cut-off controls" bugs and simplified all sheet logic in one PR
+- **Always-mounted CSS-driven visibility pattern** — `MobileCellTray` using `pointerEvents: none` + opacity transition is reusable and avoids mount/unmount flicker; Phase 25 picked it up immediately
+- **Single consolidated Google Fonts `<link>`** — all 8 families in one request with `display=swap` required zero JS font loading code; clean and fast
+- **Tight 2-day milestone** — 5 phases at 1–2 plans each, sequentially dependent, moved quickly without coordination overhead
+
+### What Was Inefficient
+- **Touch DnD needed a post-phase quick fix** — `260416-vgk` was required immediately after Phase 25 shipped, suggesting the verification gate was too shallow for interaction-heavy code; a real device test during the plan would have caught pointer event collision earlier
+- **Requirements traceability not updated during execution** — all 18 requirements stayed `Pending` in REQUIREMENTS.md through the entire milestone; only updated at archive time; this is the third milestone with the same drift
+- **No milestone audit** — skipped because touch DnD UX was known to need overhaul; the right call but creates a gap in coverage data for future reference
+
+### Patterns Established
+- **MobileCellTray as a separate component from ActionBar** — desktop portal ActionBar stays unchanged; mobile gets dedicated tray; no cross-contamination between form factors
+- **`SheetSnapState` as a 2-state machine** — collapsed and full; anything in between adds complexity without UX benefit for a 9:16 story canvas
+- **Font picker as self-contained `FontPickerList`** — `aria-pressed` for state, responsive min-height via Tailwind breakpoints (no mobile prop), context-agnostic; reusable pattern for any picker list
+
+### Key Lessons
+1. **Real-device interaction testing before plan completion is load-bearing for gesture-heavy code.** Touch DnD passing unit tests and Playwright snapshots is not the same as passing a real finger test. Quick task `260416-vgk` was the evidence.
+2. **Narrowing a state machine is a feature, not a constraint.** Removing `half` from `SheetSnapState` resolved multiple open bugs simultaneously. When a state exists mainly to cause edge cases, delete it.
+3. **Requirements traceability drift is now a confirmed recurring anti-pattern** (v1.0, v1.1, v1.4 all had it). The fix is a hook that updates traceability on plan completion, not discipline.
+4. **Deferred UX debt should be named at archive time.** Touch DnD "needs an overhaul" is captured in the milestone archive and KEY DECISIONS — if it's not named, it won't appear in v1.5 planning.
+
+### Cost Observations
+- Model mix: primarily Sonnet 4.6 (balanced profile)
+- Sessions: ~4–5 estimated
+- Notable: Phase 26 (fonts) was the fastest — zero data model changes, pure UI wiring; phases with clear UI-only scope execute fastest
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -96,6 +137,9 @@
 |-----------|--------|-------|------------|
 | v1.0 | 8 | 23 | Baseline — first milestone |
 | v1.1 | 4 | 11 | Audit-driven gap closure introduced (Phase 10); human verification caught a plan-level mistake |
+| v1.2 | 6 | 17 | Mediabunny pipeline replaced ffmpeg.wasm; overlay system shipped; effects layer added |
+| v1.3 | 5 | 9 | Named filter presets; auto-mute detection; breadth-first drop; live audio preview |
+| v1.4 | 5 | 6 | Mobile UX overhaul (header/sheet/tray/DnD); Instagram fonts; touch polish |
 
 ### Cumulative Quality
 
@@ -103,6 +147,9 @@
 |-----------|------------|-------------------|
 | v1.0 | 60+ passing | Canvas API export, MediaRecorder video export |
 | v1.1 | 489 passing (43 files) | `SafeZoneOverlay`, `moveLeafToEdge` primitive, portal-based ActionBar |
+| v1.2 | 628 passing | Mediabunny pipeline, overlay system, effects layer |
+| v1.3 | 700+ passing | Named filter presets, auto-mute, breadth-first drop |
+| v1.4 | 729 passing (2 skipped) | `MobileCellTray`, `FontPickerList`, touch DnD via @dnd-kit |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -111,8 +158,12 @@
 3. **Audit gap-closure plans must read the commit message, not just the diff** (v1.1) — a revert may be deliberate
 4. **Portal in viewport space beats scale-compensation math** when a UI element must overflow a transformed container (v1.1)
 5. **Human verification is load-bearing even for "all automated checks pass" phases** (v1.1)
+6. **Narrowing a state machine is a feature** — removing `half` from `SheetSnapState` resolved multiple bugs simultaneously; when a state exists mainly to cause edge cases, delete it (v1.4)
+7. **Real-device gesture testing is load-bearing for touch-heavy code** — unit tests and Playwright snapshots don't catch pointer event collisions; a real finger test before phase close would have prevented the post-phase quick fix (v1.4)
+8. **Name deferred UX debt at archive time** — "touch DnD needs overhaul" captured in KEY DECISIONS ensures it surfaces in v1.5 planning rather than being silently carried forward
 
 ### Recurring Anti-Patterns (Not Yet Fixed)
 
-- **SUMMARY.md one-liner drift** — gsd-tools extracts accomplishments from SUMMARY files but the format is not enforced; noise polluted both v1.0 and v1.1 milestone entries at archive time
-- **ROADMAP progress table drift** — phase completion status in the Progress table is not auto-updated on plan completion; stale rows recurred in v1.0 and v1.1
+- **SUMMARY.md one-liner drift** — gsd-tools extracts accomplishments from SUMMARY files but the format is not enforced; noise polluted v1.0, v1.1, and later milestone entries
+- **ROADMAP progress table drift** — phase completion status not auto-updated on plan completion; recurred in v1.0, v1.1, v1.4
+- **Requirements traceability drift** — all requirements stayed `Pending` through v1.0, v1.1, and v1.4 execution; only updated at archive time; a hook on plan completion is the fix

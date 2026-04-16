@@ -6,10 +6,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import React from 'react';
+import { DndContext } from '@dnd-kit/core';
 import { LeafNodeComponent } from '../LeafNode';
 import { useGridStore } from '../../store/gridStore';
 import { useEditorStore } from '../../store/editorStore';
 import type { LeafNode, GridNode } from '../../types';
+
+// Phase 25: LeafNodeComponent uses useDndMonitor which requires DndContext ancestor.
+function withDnd(ui: React.ReactElement) {
+  return <DndContext>{ui}</DndContext>;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,8 +61,9 @@ class MockResizeObserver {
   }
   unobserve() {}
   disconnect() {
-    roCallback = null;
-    roTarget = null;
+    // Phase 25: do NOT clear roCallback on disconnect — DndContext may cause
+    // additional useLayoutEffect cleanup/re-run cycles. Keep roCallback pointing
+    // to the latest registered callback so tests can still fire it after remounts.
   }
 }
 
@@ -81,7 +88,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 1: Root cell div has className containing "overflow-visible" (not "overflow-hidden")', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
     expect(cell.className).toContain('overflow-visible');
     expect(cell.className).not.toContain('overflow-hidden');
@@ -90,7 +97,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 2: A child wrapper div with "absolute inset-0 overflow-hidden" wraps the canvas element', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
     // Find a div with overflow-hidden inside the cell
     const overflowHiddenDivs = Array.from(cell.querySelectorAll('div')).filter(
@@ -105,7 +112,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 3: Empty placeholder ImageIcon receives clamp-based style for width/height', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
     // Find the SVG icon inside the empty placeholder
     const svgs = cell.querySelectorAll('svg');
@@ -122,7 +129,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 4: Empty placeholder span has className containing text-[clamp(...)]', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
     const spans = cell.querySelectorAll('span');
     // Find the span with clamp-based text sizing
@@ -135,7 +142,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 5: When ResizeObserver fires with height < 80, the label span has className containing "hidden"', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
 
     // Trigger ResizeObserver with height < 80
@@ -160,7 +167,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
   it('Test 6: When height >= 80, the label is visible (no "hidden" class)', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
 
     // First set small, then set large to verify toggle works
     act(() => {
@@ -193,7 +200,7 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
     // This test verifies LeafNode's cell root directly — the overflow-visible is on the cell div
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const cell = screen.getByTestId('leaf-leaf-1');
     // The outermost cell div should be overflow-visible (not overflow-hidden)
     expect(cell.className).toContain('overflow-visible');

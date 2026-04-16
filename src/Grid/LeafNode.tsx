@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect, useContext } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -8,10 +8,14 @@ import { videoElementRegistry, registerVideo, unregisterVideo } from '../lib/vid
 import type { LeafNode } from '../types';
 import { ImageIcon, ArrowLeftRight } from 'lucide-react';
 import { ActionBar } from './ActionBar';
+import { useDraggable, useDroppable, useDndMonitor } from '@dnd-kit/core';
+import { DragZoneRefContext } from './CanvasWrapper';
 
 interface LeafNodeProps {
   id: string;
 }
+
+type ActiveZone = 'top' | 'bottom' | 'left' | 'right' | 'center' | null;
 
 /**
  * Recompute totalDuration as the max duration across all registered video elements.
@@ -49,11 +53,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const split = useGridStore(s => s.split);
   const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const updateCell = useGridStore(s => s.updateCell);
-  const moveCell = useGridStore(s => s.moveCell);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  type ActiveZone = 'top' | 'bottom' | 'left' | 'right' | 'center' | null;
   const [activeZone, setActiveZone] = useState<ActiveZone>(null);
+  const [isPendingDrag, setIsPendingDrag] = useState(false);
+  const dragZoneRef = useContext(DragZoneRefContext);
   const [isTooSmall, setIsTooSmall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
@@ -292,6 +296,64 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     };
   }, [id]);
 
+  // Phase 25: track pointer position for zone detection inside useDndMonitor
+  const pointerPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handler = (e: PointerEvent) => {
+      pointerPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener('pointermove', handler);
+    return () => document.removeEventListener('pointermove', handler);
+  }, []);
+
+  // Phase 25 D-01/D-04: @dnd-kit draggable — replaces HTML5 ondragstart on ActionBar button
+  const {
+    setNodeRef: setDragNodeRef,
+    listeners: dragListeners,
+    isDragging,
+    attributes: dragAttributes,
+  } = useDraggable({ id, data: { nodeId: id } });
+
+  // Phase 25 D-01: @dnd-kit droppable — target for other cells being dragged
+  const { setNodeRef: setDropNodeRef } = useDroppable({ id, data: { nodeId: id } });
+
+  // Merge divRef + drag ref + drop ref into a single callback ref
+  const setRefs = useCallback((el: HTMLDivElement | null) => {
+    divRef.current = el;
+    setDragNodeRef(el);
+    setDropNodeRef(el);
+  }, [setDragNodeRef, setDropNodeRef]);
+
+  // Phase 25 D-03: track active drag state to show 5-zone overlays on non-dragged cells
+  useDndMonitor({
+    onDragStart({ active }) {
+      if (active.id === id) setIsPendingDrag(false);
+    },
+    onDragOver({ over, active }) {
+      if (active.id === id) return; // Don't show zones on the dragged cell itself
+      if (over?.id !== id) { setActiveZone(null); return; }
+      const rect = divRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = pointerPosRef.current.x - rect.left;
+      const y = pointerPosRef.current.y - rect.top;
+      const w = rect.width;
+      const h = rect.height;
+      const threshold = Math.max(20, Math.min(w, h) * 0.2);
+      let zone: ActiveZone;
+      if (y < threshold) zone = 'top';
+      else if (y > h - threshold) zone = 'bottom';
+      else if (x < threshold) zone = 'left';
+      else if (x > w - threshold) zone = 'right';
+      else zone = 'center';
+      setActiveZone(zone);
+      // Write to shared ref so CanvasWrapper's onDragEnd can read it
+      if (dragZoneRef) dragZoneRef.current = zone ?? 'center';
+    },
+    onDragEnd() { setActiveZone(null); setIsPendingDrag(false); },
+    onDragCancel() { setActiveZone(null); setIsPendingDrag(false); },
+  });
+
   if (!node || node.type !== 'leaf') return null;
 
   const hasMedia = !!mediaUrl;
@@ -419,96 +481,59 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     });
   }, [addMedia, setMedia, split, setHasAudioTrack]);
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const isCellDrag = Array.from(e.dataTransfer.types).includes('text/cell-id');
-    e.dataTransfer.dropEffect = isCellDrag ? 'move' : 'copy';
-
-    if (isCellDrag) {
-      // Phase 9 D-01: 5-zone hit detection during cell-to-cell drag.
-      const rect = divRef.current?.getBoundingClientRect();
-      if (rect) {
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const w = rect.width;
-        const h = rect.height;
-        // 20% of short dimension, minimum 20px physical band so small cells stay usable.
-        const threshold = Math.max(20, Math.min(w, h) * 0.2);
-        let zone: ActiveZone;
-        if (y < threshold) zone = 'top';
-        else if (y > h - threshold) zone = 'bottom';
-        else if (x < threshold) zone = 'left';
-        else if (x > w - threshold) zone = 'right';
-        else zone = 'center';
-        setActiveZone(zone);
-      }
-      // Do NOT set isDragOver for cell drags — that is the file-drop indicator.
-    } else {
-      // File drag — preserve existing behavior.
-      setIsDragOver(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setIsDragOver(false);
-    setActiveZone(null);
-  }, []);
-
-  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+  // Phase 25: file-drop from desktop preserved as a separate handler.
+  // Only handles actual file drops (dataTransfer.files) — not @dnd-kit pointer events.
+  const handleFileDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    const zoneAtDrop = activeZone;
-    setActiveZone(null);
 
-    // D-16 (MVP scope): Cell swap uses native HTML5 drag events (dataTransfer text/cell-id).
-    // Native HTML5 drag events do not fire on iOS/Android touch — cell swap is desktop-only.
-    // See .planning/decisions/adr-cell-swap-touch.md
-    //
-    // Phase 9 D-04: Drop routing goes through moveCell (not swapCells directly). The
-    // 'center' edge delegates to swap semantics inside the store; other edges perform a
-    // structural move via moveLeafToEdge.
-    const fromId = e.dataTransfer.getData('text/cell-id');
-    if (fromId && fromId !== id) {
-      moveCell(fromId, id, zoneAtDrop ?? 'center');
-      return;
-    }
-
-    // File drop
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      if (files.length === 1) {
-        // DROP-03 / SC6: Single file targets THIS cell exactly
-        const file = files[0];
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
-        const { nanoid } = await import('nanoid');
-        const mediaId = nanoid();
-        if (file.type.startsWith('video/')) {
-          const blobUrl = URL.createObjectURL(file);
-          addMedia(mediaId, blobUrl, 'video');
-        } else {
-          const { fileToBase64 } = await import('../lib/media');
-          const dataUri = await fileToBase64(file);
-          addMedia(mediaId, dataUri, 'image');
-        }
-        setMedia(id, mediaId);
-        // D-02: Audio detection for single-file direct drops
-        const hasAudio = file.type.startsWith('video/')
-          ? await detectAudioTrack(file)
-          : false;
-        setHasAudioTrack(id, hasAudio);
+    if (files.length === 1) {
+      // DROP-03 / SC6: Single file targets THIS cell exactly
+      const file = files[0];
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+      const { nanoid } = await import('nanoid');
+      const mediaId = nanoid();
+      if (file.type.startsWith('video/')) {
+        const blobUrl = URL.createObjectURL(file);
+        addMedia(mediaId, blobUrl, 'video');
       } else {
-        // Multi-file: use BFS autoFillCells
-        await autoFillCells(files, {
-          addMedia,
-          setMedia,
-          split,
-          getRoot: () => useGridStore.getState().root,
-          setHasAudioTrack,
-        });
+        const { fileToBase64 } = await import('../lib/media');
+        const dataUri = await fileToBase64(file);
+        addMedia(mediaId, dataUri, 'image');
       }
+      setMedia(id, mediaId);
+      // D-02: Audio detection for single-file direct drops
+      const hasAudio = file.type.startsWith('video/')
+        ? await detectAudioTrack(file)
+        : false;
+      setHasAudioTrack(id, hasAudio);
+    } else {
+      // Multi-file: use BFS autoFillCells
+      await autoFillCells(files, {
+        addMedia,
+        setMedia,
+        split,
+        getRoot: () => useGridStore.getState().root,
+        setHasAudioTrack,
+      });
     }
-  }, [id, activeZone, moveCell, addMedia, setMedia, split, setHasAudioTrack]);
+  }, [id, addMedia, setMedia, split, setHasAudioTrack]);
+
+  const handleFileDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    // Only react to file drags from desktop (not @dnd-kit pointer drags)
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
+    if (!hasFiles) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragOver(true);
+  }, []);
+
+  const handleFileDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
 
   // Fix: setPointerCapture on the wrapper div, not e.target
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -586,23 +611,31 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   return (
     <div
-      ref={divRef}
+      ref={setRefs}
+      {...dragListeners}
+      {...dragAttributes}
       className={`
         relative w-full h-full overflow-visible select-none
         ${isHovered && !isPanMode ? 'z-20' : ''}
+        ${isDragging ? 'z-50' : ''}
         ${ringClass}
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}
       style={{
         backfaceVisibility: 'hidden',
+        touchAction: 'none',
+        transition: 'transform 150ms ease-out, opacity 150ms ease-out',
+        ...(isDragging ? { transform: 'scale(1.08)', opacity: 0.6 } : {}),
+        ...(isPendingDrag && !isDragging ? { animation: 'drag-hold-pulse 500ms ease-in-out forwards' } : {}),
       }}
+      data-hold-pending={isPendingDrag && !isDragging ? 'true' : undefined}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDragOver={handleFileDragOver}
+      onDragLeave={handleFileDragLeave}
+      onDrop={handleFileDrop}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

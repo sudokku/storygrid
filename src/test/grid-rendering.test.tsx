@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { DndContext } from '@dnd-kit/core';
 import { GridNodeComponent } from '../Grid/GridNode';
 import { ContainerNodeComponent } from '../Grid/ContainerNode';
 import { LeafNodeComponent } from '../Grid/LeafNode';
@@ -9,6 +10,11 @@ import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { createLeaf } from '../lib/tree';
 import type { ContainerNode, LeafNode, GridNode } from '../types';
+
+// Phase 25: LeafNodeComponent now uses useDndMonitor which requires DndContext ancestor.
+function withDnd(ui: React.ReactElement) {
+  return <DndContext>{ui}</DndContext>;
+}
 
 // ---------------------------------------------------------------------------
 // Test tree builders
@@ -52,14 +58,14 @@ describe('GridNode dispatcher (REND-01)', () => {
   it('renders ContainerNode for container type nodes', () => {
     const tree = makeContainer();
     setStoreRoot(tree);
-    render(<GridNodeComponent id="container-1" />);
+    render(withDnd(<GridNodeComponent id="container-1" />));
     expect(screen.getByTestId('container-container-1')).toBeTruthy();
   });
 
   it('renders LeafNode for leaf type nodes', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<GridNodeComponent id="leaf-1" />);
+    render(withDnd(<GridNodeComponent id="leaf-1" />));
     expect(screen.getByTestId('leaf-leaf-1')).toBeTruthy();
   });
 
@@ -76,7 +82,7 @@ describe('ContainerNode flex layout (REND-02)', () => {
   it('renders flex-row for horizontal direction', () => {
     const tree = makeContainer('horizontal');
     setStoreRoot(tree);
-    render(<ContainerNodeComponent id="container-1" />);
+    render(withDnd(<ContainerNodeComponent id="container-1" />));
     const container = screen.getByTestId('container-container-1');
     expect(container.className).toContain('flex-row');
   });
@@ -84,7 +90,7 @@ describe('ContainerNode flex layout (REND-02)', () => {
   it('renders flex-col for vertical direction', () => {
     const tree = makeContainer('vertical');
     setStoreRoot(tree);
-    render(<ContainerNodeComponent id="container-1" />);
+    render(withDnd(<ContainerNodeComponent id="container-1" />));
     const container = screen.getByTestId('container-container-1');
     expect(container.className).toContain('flex-col');
   });
@@ -95,7 +101,7 @@ describe('ContainerNode flex layout (REND-02)', () => {
     const right = createLeaf();
     const tree = makeContainer('horizontal', [left, middle, right]);
     setStoreRoot(tree);
-    render(<ContainerNodeComponent id="container-1" />);
+    render(withDnd(<ContainerNodeComponent id="container-1" />));
     // 3 children → 2 dividers
     const dividers = screen.getAllByTestId(/^divider-container-1-/);
     expect(dividers).toHaveLength(2);
@@ -110,7 +116,7 @@ describe('LeafNode empty state (REND-04)', () => {
   it('renders dashed border with upload prompt text', () => {
     const leaf = makeLeaf({ mediaId: null });
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     expect(leafEl.className).toContain('border-dashed');
     expect(leafEl.className).toContain('border-[#333333]');
@@ -119,7 +125,7 @@ describe('LeafNode empty state (REND-04)', () => {
   it('shows "Drop image or use Upload button" text', () => {
     const leaf = makeLeaf({ mediaId: null });
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     expect(screen.getByText('Drop image or use Upload button')).toBeTruthy();
   });
 });
@@ -137,7 +143,7 @@ describe('LeafNode media state (REND-05)', () => {
       history: [{ root: leaf }],
       historyIndex: 0,
     });
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     // Media is now rendered via <canvas>, not <img>
     const canvas = leafEl.querySelector('canvas');
@@ -153,7 +159,7 @@ describe('LeafNode media state (REND-05)', () => {
       history: [{ root: leaf }],
       historyIndex: 0,
     });
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     // Media is now rendered via <canvas>, not <img>
     const canvas = leafEl.querySelector('canvas');
@@ -171,7 +177,7 @@ describe('LeafNode selection and action bar (REND-06)', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
     useEditorStore.setState({ selectedNodeId: 'leaf-1' });
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     expect(leafEl.className).toContain('ring-2');
     expect(leafEl.className).toContain('ring-[#3b82f6]');
@@ -181,7 +187,7 @@ describe('LeafNode selection and action bar (REND-06)', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
     useEditorStore.setState({ selectedNodeId: null });
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     expect(leafEl.className).not.toContain('ring-2');
   });
@@ -243,7 +249,7 @@ describe('ActionBar stacking context (CELL-01)', () => {
   it('LeafNode root does NOT include Tailwind `isolate` class', () => {
     const leaf = makeLeaf();
     setStoreRoot(leaf);
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     // Match whole-word `isolate` only (avoid false positives from e.g. `isolated`)
     expect(leafEl.className).not.toMatch(/\bisolate\b/);

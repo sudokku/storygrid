@@ -75,11 +75,6 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
         {/* Button order: Drag Handle (always) → Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
 
         <button
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData('text/cell-id', nodeId);
-            e.dataTransfer.effectAllowed = 'move';
-          }}
           className={`${btnClass} cursor-grab active:cursor-grabbing`}
           aria-label="Drag to move"
           title="Drag to move"

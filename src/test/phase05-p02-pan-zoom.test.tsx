@@ -14,10 +14,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { DndContext } from '@dnd-kit/core';
 import { LeafNodeComponent } from '../Grid/LeafNode';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import type { LeafNode, GridNode } from '../types';
+
+// Phase 25: LeafNodeComponent now uses useDndMonitor which requires DndContext ancestor.
+function withDnd(ui: React.ReactElement) {
+  return <DndContext>{ui}</DndContext>;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +67,7 @@ describe('Pan mode entry (D-08)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     fireEvent.doubleClick(leafEl);
 
@@ -73,7 +79,7 @@ describe('Pan mode entry (D-08)', () => {
     setGridState(leaf);
     useEditorStore.setState({ selectedNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     fireEvent.doubleClick(leafEl);
 
@@ -85,7 +91,7 @@ describe('Pan mode entry (D-08)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: null }); // not selected
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     fireEvent.doubleClick(leafEl);
 
@@ -103,7 +109,7 @@ describe('Pan mode ring styling (D-09)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     expect(leafEl.className).toContain('ring-[#f59e0b]');
   });
@@ -113,7 +119,7 @@ describe('Pan mode ring styling (D-09)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     // When in pan mode, blue ring should NOT appear (amber takes over)
     // We just verify amber is present and it looks right
@@ -132,7 +138,7 @@ describe('Dim overlay on other cells (D-09)', () => {
     // Pan mode is active on some OTHER leaf
     useEditorStore.setState({ selectedNodeId: null, panModeNodeId: 'leaf-OTHER' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const dimOverlay = screen.queryByTestId('dim-overlay-leaf-1');
     expect(dimOverlay).toBeTruthy();
     expect(dimOverlay!.className).toContain('bg-black/65');
@@ -143,7 +149,7 @@ describe('Dim overlay on other cells (D-09)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: null, panModeNodeId: null });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     expect(screen.queryByTestId('dim-overlay-leaf-1')).toBeNull();
   });
 
@@ -152,7 +158,7 @@ describe('Dim overlay on other cells (D-09)', () => {
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     expect(screen.queryByTestId('dim-overlay-leaf-1')).toBeNull();
   });
 });
@@ -170,7 +176,7 @@ describe('ActionBar hidden in pan mode (D-12)', () => {
       panModeNodeId: 'leaf-1',
     });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
 
     // Trigger hover so we know ActionBar would otherwise show.
     fireEvent.mouseEnter(screen.getByTestId('leaf-leaf-1'));
@@ -188,7 +194,7 @@ describe('ActionBar hidden in pan mode (D-12)', () => {
       panModeNodeId: null,
     });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     fireEvent.mouseEnter(screen.getByTestId('leaf-leaf-1'));
 
     expect(screen.getByTestId('action-bar-wrapper-leaf-1')).toBeInTheDocument();
@@ -205,7 +211,7 @@ describe('CSS transform on img (D-10)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', panX: 0, panY: 0, panScale: 1 });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     // Media rendering migrated from <img> to <canvas> for WYSIWYG with export pipeline
     const canvas = leafEl.querySelector('canvas');
@@ -217,7 +223,7 @@ describe('CSS transform on img (D-10)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', panX: 20, panY: 0, panScale: 1 });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     const img = leafEl.querySelector('img');
     expect(img!.style.transform).toContain('translate');
@@ -228,7 +234,7 @@ describe('CSS transform on img (D-10)', () => {
     const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1', panX: 0, panY: 0, panScale: 2 });
     setGridState(leaf, { 'mid-1': 'data:image/png;base64,abc' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
     const img = leafEl.querySelector('img');
     expect(img!.style.transform).toContain('scale');
@@ -248,7 +254,7 @@ describe('Pointer drag in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     // Simulate drag: down at (100, 100), move to (120, 115)
@@ -272,7 +278,7 @@ describe('Pointer drag in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: null });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     fireEvent.pointerDown(leafEl, { clientX: 100, clientY: 100, pointerId: 1 });
@@ -294,7 +300,7 @@ describe('Wheel zoom in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     // deltaY < 0 means scroll up → zoom in
@@ -313,7 +319,7 @@ describe('Wheel zoom in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     // deltaY > 0 means scroll down → zoom out
@@ -332,7 +338,7 @@ describe('Wheel zoom in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     // Scroll down at min scale → should clamp to 1.0
@@ -350,7 +356,7 @@ describe('Wheel zoom in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: 'leaf-1' });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     // Scroll up at max scale → should clamp to 3.0
@@ -368,7 +374,7 @@ describe('Wheel zoom in pan mode (D-11)', () => {
     useGridStore.setState({ updateCell });
     useEditorStore.setState({ selectedNodeId: 'leaf-1', panModeNodeId: null });
 
-    render(<LeafNodeComponent id="leaf-1" />);
+    render(withDnd(<LeafNodeComponent id="leaf-1" />));
     const leafEl = screen.getByTestId('leaf-leaf-1');
 
     fireEvent.wheel(leafEl, { deltaY: -100 });

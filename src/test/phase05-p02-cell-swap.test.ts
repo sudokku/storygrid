@@ -180,7 +180,10 @@ describe('ActionBar drag handle (D-13, D-14)', () => {
 
     expect(screen.queryByTestId('drag-handle-leaf-1')).not.toBeNull();
     const handle = screen.getByTestId('drag-handle-leaf-1');
-    expect(handle).toHaveAttribute('draggable', 'true');
+    // Phase 25: native draggable removed from ActionBar button — @dnd-kit listeners
+    // are spread on LeafNode root div instead (touch + mouse unified sensor).
+    expect(handle).not.toHaveAttribute('draggable', 'true');
+    expect(handle).toHaveAttribute('aria-label', 'Drag to move');
   });
 
   it('drag handle button has aria-label "Drag to move"', () => {

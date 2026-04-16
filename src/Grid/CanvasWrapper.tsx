@@ -60,7 +60,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   // Phase 25: unified sensor config — MouseSensor for desktop, TouchSensor for mobile
   const sensors = useSensors(
     useSensor(MouseSensor, {
-      activationConstraint: { distance: 5 },
+      activationConstraint: { delay: 500, tolerance: 5 },
     }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 500, tolerance: 5 },

@@ -16,7 +16,6 @@ import {
   Minimize2,
   Upload,
   ImageOff,
-  GripVertical,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -72,16 +71,7 @@ export const ActionBar = React.memo(function ActionBar({ nodeId, fit, hasMedia, 
         className="flex items-center gap-1 px-1 py-1 rounded-md bg-black/70 backdrop-blur-sm"
         data-testid={`action-bar-${nodeId}`}
       >
-        {/* Button order: Drag Handle (always) → Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
-
-        <button
-          className={`${btnClass} cursor-grab active:cursor-grabbing`}
-          aria-label="Drag to move"
-          title="Drag to move"
-          data-testid={`drag-handle-${nodeId}`}
-        >
-          <GripVertical size={ICON_SIZE} className="text-white" />
-        </button>
+        {/* Button order: Upload/Replace → Split H → Split V → Toggle Fit → Clear Media → Remove Cell */}
 
         <Tooltip>
           <TooltipTrigger render={<button className={btnClass} onClick={onUploadClick} aria-label={hasMedia ? 'Replace image' : 'Upload image'} />}>

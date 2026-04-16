@@ -644,6 +644,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         backfaceVisibility: 'hidden',
         touchAction: 'none',
         transition: 'opacity 150ms ease-out, box-shadow 150ms ease-out',
+        cursor: isPanMode ? undefined : (isDragging || isPendingDrag ? 'grabbing' : 'grab'),
         ...(isDragging ? { opacity: 0.6, boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.6)' } : {}),
         ...(isPendingDrag && !isDragging ? { animation: 'drag-hold-pulse 500ms ease-in-out forwards' } : {}),
       }}

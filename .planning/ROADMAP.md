@@ -63,7 +63,7 @@
 - [x] **Phase 23: Bottom Sheet Redesign** — Replace drag-pill with a toggle button; auto-expand on cell select; full inner scroll in all snap states (completed 2026-04-15)
 - [x] **Phase 24: Mobile Cell Action Tray** — Persistent action strip above the sheet when a cell is selected; Upload, Split H/V, Fit, Clear at ≥44×44px touch targets (completed 2026-04-16)
 - [x] **Phase 25: Touch Drag-and-Drop** — Long-press initiation, visual lift, 5-zone drop targets (swap + 4 edges) on mobile (completed 2026-04-16)
-- [ ] **Phase 26: Instagram-Style Fonts** — 8 Google Fonts loaded async with font-display: swap; font picker renders names in their own typeface
+- [x] **Phase 26: Instagram-Style Fonts** — 8 Google Fonts loaded async with font-display: swap; font picker renders names in their own typeface (completed 2026-04-16)
 
 ## Phase Details
 
@@ -132,7 +132,7 @@ Plans:
   3. Each font name in the picker is rendered in its own typeface so the user can visually distinguish styles before selecting
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — FontPickerList with 8 Instagram fonts + MobileSheet overlay editing
+- [x] 26-01-PLAN.md — FontPickerList with 8 Instagram fonts + MobileSheet overlay editing
 **UI hint**: yes
 
 ## Progress Table
@@ -143,4 +143,4 @@ Plans:
 | 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
 | 24. Mobile Cell Action Tray | 1/1 | Complete   | 2026-04-16 |
 | 25. Touch Drag-and-Drop | 2/2 | Complete   | 2026-04-16 |
-| 26. Instagram-Style Fonts | 0/1 | Not started | - |
+| 26. Instagram-Style Fonts | 1/1 | Complete   | 2026-04-16 |

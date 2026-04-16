@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Mobile-First Overhaul & Instagram Fonts
-status: executing
-stopped_at: Phase 25 UI-SPEC approved
-last_updated: "2026-04-16T10:54:55.654Z"
-last_activity: 2026-04-16 -- Phase 25 execution started
+status: verifying
+stopped_at: Completed 26-01-PLAN.md (Phase 26 instagram-style-fonts complete)
+last_updated: "2026-04-16T21:36:52.234Z"
+last_activity: 2026-04-16
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_phases: 5
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
 **Current milestone:** v1.4 Mobile-First Overhaul & Instagram Fonts — IN PROGRESS (started 2026-04-15)
-**Current focus:** Phase 25 — touch-drag-and-drop
+**Current focus:** Phase 26 — instagram-style-fonts
 
 ## Current Position
 
-Phase: 25 (touch-drag-and-drop) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 25
-Last activity: 2026-04-16 -- Phase 25 execution started
+Phase: 26 (instagram-style-fonts) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-16
 
 Progress: [██░░░░░░░░] 20% (1/5 phases complete)
 
@@ -84,6 +84,7 @@ Progress: [██░░░░░░░░] 20% (1/5 phases complete)
 | Phase 09-improve-cell-movement-and-swapping P04 | 3min | 2 tasks | 2 files |
 | Phase 09-improve-cell-movement-and-swapping P03 | 8min | 2 tasks | 2 files |
 | Phase 19-auto-mute-detection-breadth-first-drop P04 | 226 | 2 tasks | 3 files |
+| Phase 26-instagram-style-fonts P01 | 8 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,8 @@ Recent decisions affecting current work:
 - [Roadmap v1.4]: Phase 25 (touch drag-and-drop) depends on Phase 24 (cell tray) — tray provides the selection state context that touch drag initiates from
 - [Roadmap v1.4]: Phase 26 (fonts) depends only on Phase 22 — font loading is independent of sheet/tray/drag work; could parallelize but standard granularity keeps it serial
 - [Roadmap v1.4]: ActionBar stays desktop-only (hover-gated) — mobile gets the new CELL tray (Phase 24) as a separate component; no changes to portal ActionBar
+- [Phase Phase 26-instagram-style-fonts]: Responsive sizing via Tailwind breakpoint classes (min-h-[44px] md:min-h-[36px]) rather than a mobile prop — keeps FontPickerList context-agnostic
+- [Phase Phase 26-instagram-style-fonts]: aria-pressed on each font button for accessible selected-state communication
 
 ### Pending Todos
 
@@ -231,8 +234,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-16T10:39:04.664Z
-Stopped at: Phase 25 UI-SPEC approved
-Resume file: .planning/phases/25-touch-drag-and-drop/25-UI-SPEC.md
+Last session: 2026-04-16T21:36:52.229Z
+Stopped at: Completed 26-01-PLAN.md (Phase 26 instagram-style-fonts complete)
+Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

@@ -119,7 +119,7 @@ Plans:
   4. Releasing over an edge zone inserts the dragged cell at that edge position in the grid tree
 **Plans**: 2 plans
 Plans:
-- [ ] 25-01-PLAN.md — DndContext wiring + LeafNode @dnd-kit migration + ActionBar cleanup + CSS keyframe
+- [x] 25-01-PLAN.md — DndContext wiring + LeafNode @dnd-kit migration + ActionBar cleanup + CSS keyframe
 - [ ] 25-02-PLAN.md — Phase25 tests + phase09 zone test migration + manual verification checkpoint
 
 ### Phase 26: Instagram-Style Fonts
@@ -142,5 +142,5 @@ Plans:
 | 22. Mobile Header & Touch Polish | 1/1 | Complete   | 2026-04-15 |
 | 23. Bottom Sheet Redesign | 1/1 | Complete   | 2026-04-15 |
 | 24. Mobile Cell Action Tray | 1/1 | Complete   | 2026-04-16 |
-| 25. Touch Drag-and-Drop | 0/2 | Not started | - |
+| 25. Touch Drag-and-Drop | 1/2 | In Progress|  |
 | 26. Instagram-Style Fonts | 0/? | Not started | - |

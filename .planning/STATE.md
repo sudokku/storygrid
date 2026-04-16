@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Mobile-First Overhaul & Instagram Fonts
 status: executing
-stopped_at: Phase 24 complete — MobileCellTray shipped (CELL-01/02/03)
-last_updated: "2026-04-16T00:00:00.000Z"
-last_activity: 2026-04-16 -- Phase 24 complete (19 tests pass, tsc clean)
+stopped_at: Phase 25 UI-SPEC approved
+last_updated: "2026-04-16T10:54:55.654Z"
+last_activity: 2026-04-16 -- Phase 25 execution started
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 4
+  total_plans: 5
   completed_plans: 3
-  percent: 75
+  percent: 60
 ---
 
 # Project State
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
 **Current milestone:** v1.4 Mobile-First Overhaul & Instagram Fonts — IN PROGRESS (started 2026-04-15)
-**Current focus:** Phase 24 — mobile-cell-action-tray
+**Current focus:** Phase 25 — touch-drag-and-drop
 
 ## Current Position
 
-Phase: 24 (mobile-cell-action-tray) — COMPLETE
-Plan: 1 of 1
-Status: Phase 24 complete — awaiting verification
-Last activity: 2026-04-16 -- Phase 24 complete (19 tests pass, tsc clean)
+Phase: 25 (touch-drag-and-drop) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 25
+Last activity: 2026-04-16 -- Phase 25 execution started
 
 Progress: [██░░░░░░░░] 20% (1/5 phases complete)
 
@@ -230,8 +230,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-16T00:40:38.671Z
-Stopped at: Phase 24 UI-SPEC approved
-Resume file: .planning/phases/24-mobile-cell-action-tray/24-UI-SPEC.md
+Last session: 2026-04-16T10:39:04.664Z
+Stopped at: Phase 25 UI-SPEC approved
+Resume file: .planning/phases/25-touch-drag-and-drop/25-UI-SPEC.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

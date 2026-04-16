@@ -179,7 +179,22 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 
 ### Active
 
-*No active milestone requirements — v1.4 complete. Next: `/gsd-new-milestone` to define v1.5.*
+## Current Milestone: v1.5 Unified Drag-and-Drop UX
+
+**Goal:** Replace the current touch/desktop DnD implementation with a unified engine that delivers identical, intuitive cell-drag behavior on both platforms and clear visual affordances at every stage of the interaction.
+
+**Target features:**
+- Unified DnD library/engine powering cell drag across desktop + mobile (research selects library)
+- Drag cursor on hover + press-and-hold affordance with subtle drag-start animation
+- Semi-opaque cell-content preview following the pointer/finger during drag
+- 5-icon drop-zone overlay on hover target: center = swap; top/right/bottom/left = insert at edge; active zone icon bright, inactive dim
+- ESC-to-cancel drag
+- Complete replacement of Phase 25 touch DnD code (buggy 5-zone detection + flaky swap logic)
+
+**Key context:**
+- Research decides whether file-from-desktop drops, text/emoji/sticker overlay drag, and divider resize fold into the same engine (include only if unification yields debugging/maintenance gains)
+- Library choice open — `pragmatic-drag-and-drop`, `@dnd-kit/core` rebuild, or other
+- Milestone intentionally small/iterative — more DnD phases expected as implementation reveals needs
 
 ### Out of Scope
 
@@ -269,4 +284,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-17 after v1.4 milestone — 5 phases / 6 plans shipped. Touch drag-and-drop (DRAG-01..04) shipped but flagged for v1.5 overhaul. PERS-01..12 deferred again. Next milestone: `/gsd-new-milestone`.*
+*Last updated: 2026-04-17 — v1.5 Unified Drag-and-Drop UX milestone started. Focus: replace Phase 25 touch DnD + @dnd-kit usage with a unified cross-device engine delivering clear visual affordances. PERS-01..12 remains deferred.*

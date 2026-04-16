@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: TBD
+milestone_name: Unified Drag-and-Drop UX
 status: planning
-stopped_at: v1.4 milestone archived — ready for /gsd-new-milestone
+stopped_at: v1.5 milestone defined — defining requirements
 last_updated: "2026-04-17T00:00:00.000Z"
 last_activity: 2026-04-17
 progress:
@@ -21,16 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-17)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
-**Current milestone:** v1.4 SHIPPED 2026-04-17 — archived to .planning/milestones/
-**Current focus:** Planning next milestone — run `/gsd-new-milestone` to define v1.5
+**Current milestone:** v1.5 Unified Drag-and-Drop UX — started 2026-04-17
+**Current focus:** Defining requirements — research + REQUIREMENTS.md + ROADMAP.md next
 
 ## Current Position
 
-Phase: — (between milestones)
-Status: v1.4 archived — ready for next milestone
-Last activity: 2026-04-17
-
-Progress: [██████████] 100% (v1.4 complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-17 — Milestone v1.5 started
 
 ## Performance Metrics
 

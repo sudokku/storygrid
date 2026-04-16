@@ -61,7 +61,7 @@
 
 - [x] **Phase 22: Mobile Header & Touch Polish** — All primary actions in the mobile header toolbar; eliminate 300ms tap delay and pull-to-refresh interference app-wide (completed 2026-04-15)
 - [x] **Phase 23: Bottom Sheet Redesign** — Replace drag-pill with a toggle button; auto-expand on cell select; full inner scroll in all snap states (completed 2026-04-15)
-- [ ] **Phase 24: Mobile Cell Action Tray** — Persistent action strip above the sheet when a cell is selected; Upload, Split H/V, Fit, Clear at ≥44×44px touch targets
+- [x] **Phase 24: Mobile Cell Action Tray** — Persistent action strip above the sheet when a cell is selected; Upload, Split H/V, Fit, Clear at ≥44×44px touch targets (completed 2026-04-16)
 - [ ] **Phase 25: Touch Drag-and-Drop** — Long-press initiation, visual lift, 5-zone drop targets (swap + 4 edges) on mobile
 - [ ] **Phase 26: Instagram-Style Fonts** — 8 Google Fonts loaded async with font-display: swap; font picker renders names in their own typeface
 
@@ -105,7 +105,7 @@ Plans:
   3. Every tray button has a minimum 44×44px tap target with at least 8px gaps between buttons
 **Plans**: 1 plan
 Plans:
-- [ ] 24-01-PLAN.md — MobileCellTray component + EditorShell wiring + CELL-01/02/03 unit tests
+- [x] 24-01-PLAN.md — MobileCellTray component + EditorShell wiring + CELL-01/02/03 unit tests
 **UI hint**: yes
 
 ### Phase 25: Touch Drag-and-Drop

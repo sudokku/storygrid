@@ -201,11 +201,11 @@ describe('DRAG-01: Sensor configuration', () => {
 });
 
 // ---------------------------------------------------------------------------
-// DRAG-02: Visual lift feedback (isDragging → scale + opacity)
+// DRAG-02: Visual lift feedback (isDragging → boxShadow inset + opacity)
 // ---------------------------------------------------------------------------
 
 describe('DRAG-02: Visual lift feedback', () => {
-  it('leaf root div has scale(1.08) and opacity:0.6 when isDragging=true', async () => {
+  it('leaf root div has inset box-shadow and opacity:0.6 when isDragging=true', async () => {
     const { LeafNodeComponent } = await import('../Grid/LeafNode');
     const { DndContext } = await import('@dnd-kit/core');
     mockIsDragging = true;
@@ -217,12 +217,14 @@ describe('DRAG-02: Visual lift feedback', () => {
       </DndContext>
     );
     const leafDiv = screen.getByTestId('leaf-leaf-1');
-    // The component applies transform: scale(1.08) and opacity: 0.6 when isDragging
-    expect(leafDiv.style.transform).toContain('scale(1.08)');
+    // The component applies boxShadow inset ring and opacity: 0.6 when isDragging
+    // scale(1.08) was replaced to avoid visual overflow outside the cell's layout box
+    expect(leafDiv.style.transform).not.toContain('scale(1.08)');
+    expect(leafDiv.style.boxShadow).toContain('inset');
     expect(Number(leafDiv.style.opacity)).toBeCloseTo(0.6);
   });
 
-  it('leaf root div has no scale transform when isDragging=false', async () => {
+  it('leaf root div has no box-shadow and full opacity when isDragging=false', async () => {
     const { LeafNodeComponent } = await import('../Grid/LeafNode');
     const { DndContext } = await import('@dnd-kit/core');
     mockIsDragging = false;
@@ -234,8 +236,9 @@ describe('DRAG-02: Visual lift feedback', () => {
       </DndContext>
     );
     const leafDiv = screen.getByTestId('leaf-leaf-1');
-    // No scale transform when not dragging
+    // No scale transform and no inset ring when not dragging
     expect(leafDiv.style.transform).not.toContain('scale(1.08)');
+    expect(leafDiv.style.boxShadow).not.toContain('inset');
     expect(leafDiv.style.opacity).not.toBe('0.6');
   });
 });

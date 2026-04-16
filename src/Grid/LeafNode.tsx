@@ -298,6 +298,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   // Phase 25: track pointer position for zone detection inside useDndMonitor
   const pointerPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Track isPanMode for native listener without stale closure
+  const isPanModeRef = useRef(false);
 
   useEffect(() => {
     const handler = (e: PointerEvent) => {
@@ -354,10 +356,28 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     onDragCancel() { setActiveZone(null); setIsPendingDrag(false); },
   });
 
+  // Native pointerdown listener — fires before React synthetic events, ensuring
+  // isPendingDrag=true is set during the 500ms hold-pulse animation in non-pan mode.
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    const onDown = () => { if (!isPanModeRef.current) setIsPendingDrag(true); };
+    const onUp = () => setIsPendingDrag(false);
+    el.addEventListener('pointerdown', onDown, { passive: true });
+    el.addEventListener('pointerup', onUp, { passive: true });
+    el.addEventListener('pointercancel', onUp, { passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+    };
+  }, []);
+
   if (!node || node.type !== 'leaf') return null;
 
   const hasMedia = !!mediaUrl;
   const isPanMode = panModeNodeId === id;
+  isPanModeRef.current = isPanMode;
   const isPanModeOtherCell = panModeNodeId !== null && panModeNodeId !== id;
 
   // Native wheel listener — React's onWheel is passive in React 17+ and cannot preventDefault
@@ -612,7 +632,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   return (
     <div
       ref={setRefs}
-      {...dragListeners}
       {...dragAttributes}
       className={`
         relative w-full h-full overflow-visible select-none
@@ -624,8 +643,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       style={{
         backfaceVisibility: 'hidden',
         touchAction: 'none',
-        transition: 'transform 150ms ease-out, opacity 150ms ease-out',
-        ...(isDragging ? { transform: 'scale(1.08)', opacity: 0.6 } : {}),
+        transition: 'opacity 150ms ease-out, box-shadow 150ms ease-out',
+        ...(isDragging ? { opacity: 0.6, boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.6)' } : {}),
         ...(isPendingDrag && !isDragging ? { animation: 'drag-hold-pulse 500ms ease-in-out forwards' } : {}),
       }}
       data-hold-pending={isPendingDrag && !isDragging ? 'true' : undefined}
@@ -639,6 +658,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      {...(!isPanMode ? dragListeners : {})}
       data-testid={`leaf-${id}`}
       aria-selected={isSelected}
       role="gridcell"

@@ -197,16 +197,16 @@ describe('ActionBar clamp-based sizing (07-01)', () => {
     }
   });
 
-  it('Test 4: All 7 buttons render with correct aria-labels (drag, upload, split-h, split-v, fit-toggle, clear-media, remove)', () => {
+  it('Test 4: All 6 buttons render with correct aria-labels (upload, split-h, split-v, fit-toggle, clear-media, remove) — Phase 28 DRAG-07 removed the drag handle', () => {
     const leaf = makeLeaf({ mediaId: 'mid-1' });
     setStoreRoot(leaf, { 'mid-1': 'data:image/png;base64,x' });
     render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={true} onUploadClick={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Drag to move' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Replace image' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Split horizontal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Split vertical' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /switch to contain/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear media' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove cell' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Drag to move' })).toBeNull();
   });
 });

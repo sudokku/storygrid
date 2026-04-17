@@ -147,21 +147,37 @@ describe('HEADER-02: Touch target sizing', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Clear button: no window.confirm on mobile
+// Clear button: uses window.confirm guard on mobile (WR-01 — introduced by
+// commit e68c728 in Phase 23 code review; original Phase 22 contract of
+// "no confirm" was intentionally reversed).
 // ---------------------------------------------------------------------------
 
-describe('Mobile Clear button: no confirmation dialog', () => {
-  it('calls clearGrid without calling window.confirm', () => {
+describe('Mobile Clear button: confirmation dialog (WR-01)', () => {
+  it('calls clearGrid only when window.confirm returns true', () => {
     const clearGridMock = vi.fn();
     useGridStore.setState({ clearGrid: clearGridMock } as ReturnType<typeof useGridStore.setState>);
 
-    const confirmSpy = vi.spyOn(window, 'confirm');
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<Toolbar />);
     const clearBtn = screen.getByTestId('mobile-clear');
     fireEvent.click(clearBtn);
 
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
     expect(clearGridMock).toHaveBeenCalledTimes(1);
-    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not call clearGrid when window.confirm returns false', () => {
+    const clearGridMock = vi.fn();
+    useGridStore.setState({ clearGrid: clearGridMock } as ReturnType<typeof useGridStore.setState>);
+
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<Toolbar />);
+    const clearBtn = screen.getByTestId('mobile-clear');
+    fireEvent.click(clearBtn);
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(clearGridMock).not.toHaveBeenCalled();
   });
 });

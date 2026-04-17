@@ -13,12 +13,17 @@
  *
  * Implementation: Phase 28.
  */
+import { useDroppable } from '@dnd-kit/core';
 
 export type UseCellDropTargetResult = {
   isOver: boolean;
   setNodeRef: (node: HTMLElement | null) => void;
 };
 
-export function useCellDropTarget(_leafId: string): UseCellDropTargetResult {
-  throw new Error('useCellDropTarget: implementation lands in Phase 28');
+export function useCellDropTarget(leafId: string): UseCellDropTargetResult {
+  const { setNodeRef, isOver } = useDroppable({
+    id: leafId,
+    data: { nodeId: leafId },
+  });
+  return { setNodeRef, isOver };
 }

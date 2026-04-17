@@ -29,16 +29,17 @@
 
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { PointerSensor } from '@dnd-kit/core';
-import type { Modifier } from '@dnd-kit/core';
+import type { Modifier, PointerSensorOptions } from '@dnd-kit/core';
 import { useEditorStore } from '../../store/editorStore';
 
 // ---------------------------------------------------------------------------
-// Activator handler options (D-02) — the `onActivation` callback is the only
-// field the activators need from `PointerSensorOptions`. Inlined here to keep
-// the adapter self-contained without depending on `@dnd-kit/core` exporting
-// its internal `PointerSensorOptions` interface verbatim.
+// Activator handler options (D-02) — use the public `PointerSensorOptions`
+// type from `@dnd-kit/core` so the override signature is structurally
+// compatible with the parent `PointerSensor.activators` shape
+// (`SensorActivatorFunction<PointerSensorOptions>`). Plan 07 consumes these
+// classes via `useSensor(PointerSensorMouse, { activationConstraint })` and
+// the type-check fails if we narrow the options below the parent's contract.
 // ---------------------------------------------------------------------------
-type ActivatorOptions = { onActivation?: (args: { event: Event }) => void };
 
 /**
  * PointerSensorMouse — discriminates on `pointerType === 'mouse'` (D-02).
@@ -56,7 +57,7 @@ export class PointerSensorMouse extends PointerSensor {
     eventName: 'onPointerDown' as const,
     handler: (
       { nativeEvent: event }: ReactPointerEvent,
-      { onActivation }: ActivatorOptions,
+      { onActivation }: PointerSensorOptions,
     ): boolean => {
       if (event.pointerType !== 'mouse') return false;
       const target = event.target as Element | null;
@@ -84,7 +85,7 @@ export class PointerSensorTouch extends PointerSensor {
     eventName: 'onPointerDown' as const,
     handler: (
       { nativeEvent: event }: ReactPointerEvent,
-      { onActivation }: ActivatorOptions,
+      { onActivation }: PointerSensorOptions,
     ): boolean => {
       if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return false;
       const target = event.target as Element | null;

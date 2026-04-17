@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
-last_updated: "2026-04-17T10:20:19.038Z"
+last_updated: "2026-04-17T12:01:47.727Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 2
@@ -24,13 +24,16 @@ See: `.planning/ROADMAP.md` (current milestone phase sequence)
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
 
 **Current milestone:** v1.5 Unified Drag-and-Drop UX — started 2026-04-17
-**Current focus:** Phase 27 — DnD Foundation
+**Current focus:** Phase 28 — cell-to-cell-drag
 
 ## Current Position
 
+Phase: 28 (cell-to-cell-drag) — EXECUTING
+Plan: 1 of 11
+
 - **Phase:** 27
 - **Plan:** Not started (4 plans completed in prior execution; ready to continue)
-- **Status:** Ready to execute
+- **Status:** Executing Phase 28
 - **Last activity:** 2026-04-17
 
 ## Decisions & History

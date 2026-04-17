@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v1.5
+milestone_name: Unified Drag-and-Drop UX
 status: Ready to run `/gsd-plan-phase 27`
 stopped_at: context exhaustion at 90% (2026-04-17)
-last_updated: "2026-04-17T01:18:25.227Z"
-last_activity: 2026-04-17 — v1.5 REQUIREMENTS.md + ROADMAP.md committed (9bfb388)
+last_updated: "2026-04-17T01:32:47.514Z"
+last_activity: 2026-04-17
 progress:
   total_phases: 0
   completed_phases: 0
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 Phase: 27 DnD Foundation (not yet planned)
 Plan: —
 Status: Ready to run `/gsd-plan-phase 27`
-Last activity: 2026-04-17 — v1.5 REQUIREMENTS.md + ROADMAP.md committed (9bfb388)
+Last activity: 2026-04-17
 
 ## Performance Metrics
 

@@ -7,7 +7,7 @@
 - ✅ **v1.2 Effects, Overlays & Persistence** — Phases 11–16 (shipped 2026-04-11) — see `.planning/milestones/v1.2-ROADMAP.md`
 - ✅ **v1.3 Filters, Video Tools & Playback** — Phases 17–21 (shipped 2026-04-14) — see `.planning/milestones/v1.3-ROADMAP.md`
 - ✅ **v1.4 Mobile-First Overhaul & Instagram Fonts** — Phases 22–26 (shipped 2026-04-17) — see `.planning/milestones/v1.4-ROADMAP.md`
-- 🔄 **v1.5 Unified Drag-and-Drop UX** — Phases 27–30 (IN PROGRESS) — see `.planning/milestones/v1.5-ROADMAP.md`
+- 🚧 **v1.5 Unified Drag-and-Drop UX** — Phases 27–30 (IN PROGRESS) — see `.planning/milestones/v1.5-ROADMAP.md`
 
 ## Phases
 
@@ -70,11 +70,18 @@
 </details>
 
 <details>
-<summary>🔄 v1.5 Unified Drag-and-Drop UX (Phases 27–30) — IN PROGRESS</summary>
+<summary>🚧 v1.5 Unified Drag-and-Drop UX (Phases 27–30) — IN PROGRESS</summary>
 
-- [ ] **Phase 27: DnD Foundation** — `src/dnd/` module scaffold, `computeDropZone`, `dragStore`, unit tests. No UI wiring.
-- [ ] **Phase 28: Cell-to-Cell Drag** — Unified `PointerSensor` engine wired to `LeafNode`; Phase 25 wiring removed; ghost + 5-zone overlay working on desktop and touch.
-- [ ] **Phase 29: ESC-Cancel + Visual Polish** — ESC-to-cancel, 200ms snap-back, drag-start wobble, 80% ghost opacity, active zone bright/dim, 700ms drop flash.
-- [ ] **Phase 30: Mobile Handle + Tray Polish** — Haptics, tray/sheet auto-collapse on drag-start, `touch-action: none`, `-webkit-touch-callout: none`, context-menu suppression.
+### Phase 27: DnD Foundation
+`src/dnd/` module scaffold, `computeDropZone`, `dragStore`, unit tests. No UI wiring.
+
+### Phase 28: Cell-to-Cell Drag
+Unified `PointerSensor` engine wired to `LeafNode`; Phase 25 wiring removed; ghost + 5-zone overlay working on desktop and touch.
+
+### Phase 29: ESC-Cancel + Visual Polish
+ESC-to-cancel, 200ms snap-back, drag-start wobble, 80% ghost opacity, active zone bright/dim, 700ms drop flash.
+
+### Phase 30: Mobile Handle + Tray Polish
+Haptics, tray/sheet auto-collapse on drag-start, `touch-action: none`, `-webkit-touch-callout: none`, context-menu suppression.
 
 </details>

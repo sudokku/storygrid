@@ -63,7 +63,7 @@ human_verification:
 |----|-----------|---------------------|--------------------|
 | SC-1 | Desktop click-hold (≥8px) → drag → drop semantic (swap or insert) | Sensor config asserted by `useCellDraggable.test.tsx` + integration test; `gridStore.moveCell` spy asserted in `CanvasWrapper.integration.test.tsx` | Required — real browser pointer sequence (D-31) |
 | SC-2 | Touch 250ms press-and-hold → drag → drop | Config-value assertion (`{ delay: 250, tolerance: 5 }`) | Required — real device (D-31) |
-| SC-3 | `grep -rE 'TouchSensor\|MouseSensor\|DragZoneRefContext\|useDndMonitor' src/` returns zero | PASS — grep gate run, zero matches | N/A |
+| SC-3 | `grep -rE 'DragZoneRefContext\|useDndMonitor\|KeyboardSensor' src/` returns zero (RELAXED 2026-04-17 — gap-closure 28-11; see Gap-Closure Updates § SC-3 Gate — Relaxation Note) | PASS — grep gate run, zero matches | N/A |
 | SC-4 | File-drop onto cell + workspace file-drop still work | Covered by existing `phase08-p02-workspace-drop.test.tsx` + rewritten `phase09-p03-leafnode-zones.test.ts` (dataTransfer.types=Files branch) | Desirable — cross-OS spot-check |
 | SC-5 | Ghost follows pointer, source 40%, 5-zone overlay + accent outline | Static structure asserted (DragPreviewPortal img testid; DropZoneIndicators testid; opacity 0.4 selector; ring class) | Required — visual tracking + no-jump requires browser (D-33) |
 
@@ -180,6 +180,45 @@ See `human_verification` in frontmatter. SC-1, SC-2, SC-4, SC-5 all require real
 No automated gaps found. All 19 Phase-28-owned truths VERIFIED. All 5 automated behavioral spot-checks (tsc, test suite 886/886, build, SC-3 grep, artifact grep matrix) pass. SC-3 grep gate returns zero matches.
 
 Phase 28 is **automation-complete**; four success criteria (SC-1, SC-2, SC-4, SC-5) require real-device UAT per D-31 and D-33 — this is by design, not a gap. Status is `human_needed`, NOT `gaps_found`.
+
+---
+
+## Gap-Closure Updates
+
+### SC-3 Gate — Relaxation Note (gap-closure 28-11)
+
+**Original gate (Phase 28 plans 28-01 through 28-10b):**
+`grep -rE 'TouchSensor|MouseSensor|DragZoneRefContext|useDndMonitor' src/` must return zero matches.
+
+**Relaxed gate (Phase 28 gap-closure 28-11):**
+`grep -rE 'DragZoneRefContext|useDndMonitor|KeyboardSensor' src/` must return zero matches. `MouseSensor` and `TouchSensor` literals are now ALLOWED.
+
+**NEW regression guard (gap-closure 28-11):**
+`grep -c "'onPointerDown'" src/dnd/adapter/dndkit.ts` MUST return `0`. This locks the fix — any future revert to the PointerSensor-collision pattern would reintroduce the literal and trip this guard. The guard applies specifically to the adapter file (tests under `__tests__/` may reference the string for assertion purposes).
+
+**Rationale:**
+The original gate's premise was that any `MouseSensor` + `TouchSensor` coexistence in src/ indicated a Phase 25 anti-pattern. That premise turned out to be materially false: the two `@dnd-kit/core` built-in sensors bind to DIFFERENT React event keys (`onMouseDown` vs `onTouchStart`) and coexist correctly under `useSyntheticListeners`. The actual flaky pattern was the Phase 28 replacement — two `PointerSensor` subclasses both bound to the same React event key, where the second silently overwrote the first (root cause of 28-HUMAN-UAT Test 1: desktop drag completely dead; see `.planning/debug/desktop-drag-dead.md`).
+
+Gap-closure 28-11 replaces the PointerSensor subclasses with subclasses of the built-in `MouseSensor` + `TouchSensor` (named `CellDragMouseSensor` + `CellDragTouchSensor`). The two `DRAG-03` / `DRAG-04` activation constraints (250ms touch / 8px mouse) are applied at the `useSensor()` call sites in `CanvasWrapper.tsx`. The keyboard sensor remains banned — this app has no keyboard-drag affordance. `DragZoneRefContext` and `useDndMonitor` remain banned — they encode the obsolete Phase 25 zone-tracking architecture (single pointer source rule, Pitfall 2).
+
+**Related tests that encode the new invariant:**
+- `src/dnd/__tests__/sensor-coexistence.test.tsx` — locks CellDragMouseSensor.eventName !== CellDragTouchSensor.eventName, and neither === 'onPointerDown'. Includes routing-proof tests (vi.spyOn on each class's activator handler).
+- `src/dnd/adapter/__tests__/dndkit.test.ts` — class-shape + ignore-check + primary-button guard + touches guard tests for the new classes.
+
+**Grep gates post-28-11:**
+
+```bash
+grep -rE 'DragZoneRefContext|useDndMonitor|KeyboardSensor' src/   # expected: 0
+grep -c "'onPointerDown'" src/dnd/adapter/dndkit.ts                # expected: 0
+grep -rc 'CellDragMouseSensor\|CellDragTouchSensor' src/           # expected: >=4
+grep -c 'PointerSensorMouse\|PointerSensorTouch' src/              # expected: 0
+```
+
+**Gap 1 root cause + fix:**
+
+| Symptom | Root cause | Gap-closure plan | Fix |
+|---------|------------|------------------|-----|
+| Desktop mouse drag: nothing happens (28-HUMAN-UAT Test 1, Test 4 desktop portion) | Two PointerSensor subclasses bind to same React event key; useSyntheticListeners reducer collapses to one handler, second-registered wins | 28-11 | Replaced PointerSensor subclasses with MouseSensor + TouchSensor subclasses (different React event keys, no collision). SC-3 gate relaxed to allow the new literals. Regression guard: the React event key formerly used by PointerSensor is BANNED as a literal in src/dnd/adapter/dndkit.ts. |
 
 ---
 

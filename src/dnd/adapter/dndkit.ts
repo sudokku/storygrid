@@ -13,8 +13,8 @@
  *   two PointerSensor subclasses collide under useSyntheticListeners because
  *   both register activators under the identical React event key used by
  *   PointerSensor. MouseSensor binds to 'onMouseDown', TouchSensor to
- *   'onTouchStart' — different keys, no collision. KeyboardSensor remains
- *   OFF — this app has no keyboard-drag affordance.
+ *   'onTouchStart' — different keys, no collision. The keyboard sensor
+ *   remains OFF — this app has no keyboard-drag affordance.
  *
  * RULE 2 — Pitfall 4 (PITFALLS.md): Activation thresholds.
  *   Touch:  { delay: 250, tolerance: 5 }   (NEVER 500ms — collides with
@@ -25,7 +25,7 @@
  * RULE 3 — Pitfall 10 (PITFALLS.md): No parallel engines during migration.
  *   Phase 25 wiring (the per-hook draggable / droppable / drag-monitor
  *   helpers in LeafNode.tsx; DndContext + the legacy per-input sensor
- *   classes + KeyboardSensor + the zone-ref React context in
+ *   classes (including the keyboard sensor) + the zone-ref React context in
  *   CanvasWrapper.tsx) is removed in the SAME phase that wires this
  *   adapter — Phase 28. Never ship with both.
  *

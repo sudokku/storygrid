@@ -1,22 +1,21 @@
 /**
  * Adapter unit tests — Phase 28 Plan 11 (gap-closure: MouseSensor/TouchSensor subclasses).
+ * Updated by gap-closure plan 28-12: scaleCompensationModifier removed (amplification-as-correct
+ * contract disavowed). See src/dnd/adapter/dndkit.ts file comment for rationale.
  *
- * Covers DND-04, DRAG-03, DRAG-04, GHOST-02, GHOST-06, CROSS-01:
+ * Covers DND-04, DRAG-03, DRAG-04, GHOST-06, CROSS-01:
  *   • CellDragMouseSensor activator guards button === 0 and [data-dnd-ignore] check.
  *   • CellDragTouchSensor activator guards touches.length >= 1 and [data-dnd-ignore] check.
  *   • Both honor `[data-dnd-ignore]` escape hatch via `closest()` BEFORE onActivation.
- *   • scaleCompensationModifier divides transform.x/y by editorStore.canvasScale,
- *     guards divide-by-zero, preserves scaleX/scaleY fields.
  *
  * Timing semantics (SC-1: 250ms touch, SC-2: 8px mouse) are configured at
  * useSensor() call-sites (CanvasWrapper), not inside these classes — per D-03 these
  * constraints live on `activationConstraint`, not on the class itself.
  * Real-device UAT is the authoritative timing check (D-31).
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { MouseSensor, TouchSensor } from '@dnd-kit/core';
-import { CellDragMouseSensor, CellDragTouchSensor, scaleCompensationModifier } from '../dndkit';
-import { useEditorStore } from '../../../store/editorStore';
+import { CellDragMouseSensor, CellDragTouchSensor } from '../dndkit';
 
 // ---------------------------------------------------------------------------
 // Helpers — activator handler fixtures
@@ -210,97 +209,3 @@ describe('[data-dnd-ignore] escape hatch — D-26 (ignore-check BEFORE onActivat
   });
 });
 
-// ---------------------------------------------------------------------------
-// scaleCompensationModifier — D-08, D-09
-// ---------------------------------------------------------------------------
-
-function makeModifierArgs(transform: { x: number; y: number; scaleX: number; scaleY: number }): any {
-  return {
-    activatorEvent: null,
-    active: null,
-    activeNodeRect: null,
-    draggingNodeRect: null,
-    containerNodeRect: null,
-    over: null,
-    overlayNodeRect: null,
-    scrollableAncestors: [],
-    scrollableAncestorRects: [],
-    transform,
-    windowRect: null,
-  };
-}
-
-describe('scaleCompensationModifier — D-08 (scale compensation)', () => {
-  beforeEach(() => {
-    // Reset to default scale between tests
-    useEditorStore.getState().setCanvasScale(1);
-  });
-
-  it('is a function (Modifier shape)', () => {
-    expect(typeof scaleCompensationModifier).toBe('function');
-  });
-
-  it('divides transform.x and transform.y by canvasScale=0.5 (preview-size canvas)', () => {
-    useEditorStore.getState().setCanvasScale(0.5);
-    const result = scaleCompensationModifier(
-      makeModifierArgs({ x: 100, y: 200, scaleX: 1, scaleY: 1 }),
-    );
-    expect(result.x).toBe(200);
-    expect(result.y).toBe(400);
-  });
-
-  it('is a no-op at canvasScale=1 (desktop at 1:1)', () => {
-    useEditorStore.getState().setCanvasScale(1);
-    const result = scaleCompensationModifier(
-      makeModifierArgs({ x: 42, y: -17, scaleX: 1, scaleY: 1 }),
-    );
-    expect(result.x).toBe(42);
-    expect(result.y).toBe(-17);
-  });
-
-  it('divides by canvasScale=0.2 (heavily scaled-down canvas)', () => {
-    useEditorStore.getState().setCanvasScale(0.2);
-    const result = scaleCompensationModifier(
-      makeModifierArgs({ x: 10, y: 20, scaleX: 1, scaleY: 1 }),
-    );
-    expect(result.x).toBeCloseTo(50, 5);
-    expect(result.y).toBeCloseTo(100, 5);
-  });
-
-  it('preserves scaleX and scaleY from input transform', () => {
-    useEditorStore.getState().setCanvasScale(0.5);
-    const result = scaleCompensationModifier(
-      makeModifierArgs({ x: 10, y: 20, scaleX: 1.5, scaleY: 2.0 }),
-    );
-    expect(result.scaleX).toBe(1.5);
-    expect(result.scaleY).toBe(2.0);
-  });
-
-  it('guards divide-by-zero when canvasScale=0 (|| 1 fallback)', () => {
-    useEditorStore.getState().setCanvasScale(0);
-    const result = scaleCompensationModifier(
-      makeModifierArgs({ x: 100, y: 200, scaleX: 1, scaleY: 1 }),
-    );
-    expect(result.x).toBe(100);
-    expect(result.y).toBe(200);
-    // Explicitly NOT Infinity — guard active
-    expect(Number.isFinite(result.x)).toBe(true);
-    expect(Number.isFinite(result.y)).toBe(true);
-  });
-
-  it('reads canvasScale imperatively via getState (not React subscription)', () => {
-    // First call with scale=0.5
-    useEditorStore.getState().setCanvasScale(0.5);
-    const r1 = scaleCompensationModifier(
-      makeModifierArgs({ x: 100, y: 100, scaleX: 1, scaleY: 1 }),
-    );
-    expect(r1.x).toBe(200);
-
-    // Mutate store — modifier must read FRESH value on next call (no stale closure)
-    useEditorStore.getState().setCanvasScale(0.25);
-    const r2 = scaleCompensationModifier(
-      makeModifierArgs({ x: 100, y: 100, scaleX: 1, scaleY: 1 }),
-    );
-    expect(r2.x).toBe(400);
-  });
-});

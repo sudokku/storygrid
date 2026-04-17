@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import { useDragStore } from '../../dnd/dragStore';
 import React from 'react';
 import { DndContext } from '@dnd-kit/core';
 import { LeafNodeComponent } from '../LeafNode';
@@ -221,5 +222,130 @@ describe('LeafNode overflow isolation and placeholder scaling (07-01)', () => {
     }
     // In an isolated render, there should be no overflow-hidden ancestor
     expect(ancestorHasOverflowHidden).toBe(false);
+  });
+});
+
+describe('LeafNode drag-over accent ring overlay (DROP-04, gap-closure 28-13)', () => {
+  // Convenience wrapper composing the EXISTING helpers at the top of this
+  // file (makeLeaf, setStoreRoot, withDnd). DO NOT duplicate those — they
+  // already exist. A leaf-only tree is sufficient because these tests only
+  // assert overlay-div presence/absence + className; no gridStore mutation
+  // semantics are required.
+  function renderLeafNode({ id }: { id: string }) {
+    const leaf = makeLeaf({ id });
+    setStoreRoot(leaf);
+    return render(withDnd(<LeafNodeComponent id={id} />));
+  }
+
+  beforeEach(() => {
+    useDragStore.setState({
+      status: 'idle',
+      kind: null,
+      sourceId: null,
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: null,
+      sourceRect: null,
+    });
+  });
+
+  it('does not render drag-over overlay at rest (dragStore idle)', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    expect(screen.queryByTestId('drag-over-leaf-1')).toBeNull();
+  });
+
+  it('renders drag-over overlay when this cell is the drag-over target and a different cell is the source', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    act(() => {
+      useDragStore.setState({
+        status: 'dragging',
+        kind: 'cell',
+        sourceId: 'leaf-2',
+        overId: 'leaf-1',
+        activeZone: 'center',
+        ghostDataUrl: null,
+        sourceRect: { left: 0, top: 0, width: 100, height: 100 },
+      });
+    });
+    const overlay = screen.getByTestId('drag-over-leaf-1');
+    expect(overlay).toBeInTheDocument();
+    expect(overlay.className).toMatch(/ring-2/);
+    expect(overlay.className).toMatch(/ring-\[#3b82f6\]/);
+    expect(overlay.className).toMatch(/ring-inset/);
+    expect(overlay.className).toMatch(/pointer-events-none/);
+    expect(overlay.className).toMatch(/z-10/);
+    expect(overlay.className).toMatch(/absolute/);
+    expect(overlay.className).toMatch(/inset-0/);
+  });
+
+  it('does NOT render drag-over overlay on the source cell during its own drag (overId unset)', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    act(() => {
+      useDragStore.setState({
+        status: 'dragging',
+        kind: 'cell',
+        sourceId: 'leaf-1',
+        overId: null,
+        activeZone: null,
+        ghostDataUrl: null,
+        sourceRect: { left: 0, top: 0, width: 100, height: 100 },
+      });
+    });
+    expect(screen.queryByTestId('drag-over-leaf-1')).toBeNull();
+  });
+
+  it('does NOT render drag-over overlay on a non-target cell while drag is in progress', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    act(() => {
+      useDragStore.setState({
+        status: 'dragging',
+        kind: 'cell',
+        sourceId: 'leaf-2',
+        overId: 'leaf-9',
+        activeZone: 'top',
+        ghostDataUrl: null,
+        sourceRect: { left: 0, top: 0, width: 100, height: 100 },
+      });
+    });
+    expect(screen.queryByTestId('drag-over-leaf-1')).toBeNull();
+  });
+
+  it('drag-over overlay testid is distinct from the file-drop drop-target overlay', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    act(() => {
+      useDragStore.setState({
+        status: 'dragging',
+        kind: 'cell',
+        sourceId: 'leaf-2',
+        overId: 'leaf-1',
+        activeZone: 'center',
+        ghostDataUrl: null,
+        sourceRect: { left: 0, top: 0, width: 100, height: 100 },
+      });
+    });
+    // cell-drag overlay present; file-drop overlay (driven by isDragOver, a
+    // local useState that is false by default) absent.
+    expect(screen.getByTestId('drag-over-leaf-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('drop-target-leaf-1')).toBeNull();
+  });
+
+  it('root leaf div does NOT carry a drag-over ring class when only isOverThisCell is true (ring moved to overlay)', () => {
+    renderLeafNode({ id: 'leaf-1' });
+    act(() => {
+      useDragStore.setState({
+        status: 'dragging',
+        kind: 'cell',
+        sourceId: 'leaf-2',
+        overId: 'leaf-1',
+        activeZone: 'center',
+        ghostDataUrl: null,
+        sourceRect: { left: 0, top: 0, width: 100, height: 100 },
+      });
+    });
+    const root = screen.getByTestId('leaf-leaf-1');
+    // The overlay carries the ring classes now. The root's className must NOT
+    // contain the ring-[#3b82f6] signature UNLESS isPanMode or isSelected is
+    // also true (they aren't in this test). This assertion encodes the split.
+    expect(root.className).not.toMatch(/ring-\[#3b82f6\]/);
   });
 });

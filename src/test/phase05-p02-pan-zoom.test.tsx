@@ -20,7 +20,8 @@ import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import type { LeafNode, GridNode } from '../types';
 
-// Phase 25: LeafNodeComponent now uses useDndMonitor which requires DndContext ancestor.
+// Phase 28: LeafNodeComponent uses useCellDraggable / useCellDropTarget (from src/dnd),
+// which require a DndContext ancestor at mount time.
 function withDnd(ui: React.ReactElement) {
   return <DndContext>{ui}</DndContext>;
 }

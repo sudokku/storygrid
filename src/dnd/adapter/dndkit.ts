@@ -6,9 +6,11 @@
  * ───────────────────────────────────────────────────────────────────────
  *
  * RULE 1 — DND-01 (REQUIREMENTS.md): Single PointerSensor only.
- *   Do NOT add TouchSensor or MouseSensor. dnd-kit docs explicitly forbid
- *   the Touch + Mouse combination; it was a primary cause of Phase 25's
- *   flaky activation (PITFALLS.md Root Cause Hypothesis).
+ *   Do NOT add the per-input-family sensor classes shipped by @dnd-kit/core
+ *   (the touch-only and mouse-only variants). dnd-kit docs explicitly
+ *   forbid combining them; it was a primary cause of Phase 25's flaky
+ *   activation (PITFALLS.md Root Cause Hypothesis). Use only the unified
+ *   pointer-based classes defined below.
  *
  * RULE 2 — Pitfall 4 (PITFALLS.md): Activation thresholds.
  *   Touch:  { delay: 250, tolerance: 5 }   (NEVER 500ms — collides with
@@ -17,10 +19,11 @@
  *   Mouse:  { distance: 8 }                (prevents click-as-drag)
  *
  * RULE 3 — Pitfall 10 (PITFALLS.md): No parallel engines during migration.
- *   Phase 25 wiring (useDraggable / useDroppable / useDndMonitor in
- *   LeafNode.tsx; DndContext + MouseSensor + TouchSensor + KeyboardSensor
- *   + DragZoneRefContext in CanvasWrapper.tsx) is removed in the SAME
- *   phase that wires this adapter — Phase 28. Never ship with both.
+ *   Phase 25 wiring (the per-hook draggable / droppable / drag-monitor
+ *   helpers in LeafNode.tsx; DndContext + the legacy per-input sensor
+ *   classes + KeyboardSensor + the zone-ref React context in
+ *   CanvasWrapper.tsx) is removed in the SAME phase that wires this
+ *   adapter — Phase 28. Never ship with both.
  *
  * Phase 27 ships this file as a skeleton only. Phase 28 implements the
  * DndContext host + sensors + onDragStart/onDragOver/onDragEnd/onDragCancel

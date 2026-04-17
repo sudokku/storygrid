@@ -220,6 +220,62 @@ grep -c 'PointerSensorMouse\|PointerSensorTouch' src/              # expected: 0
 |---------|------------|------------------|-----|
 | Desktop mouse drag: nothing happens (28-HUMAN-UAT Test 1, Test 4 desktop portion) | Two PointerSensor subclasses bind to same React event key; useSyntheticListeners reducer collapses to one handler, second-registered wins | 28-11 | Replaced PointerSensor subclasses with MouseSensor + TouchSensor subclasses (different React event keys, no collision). SC-3 gate relaxed to allow the new literals. Regression guard: the React event key formerly used by PointerSensor is BANNED as a literal in src/dnd/adapter/dndkit.ts. |
 
+### Gap-Closure Plan 28-12 — scaleCompensationModifier removal + per-axis zone threshold
+
+**Landed:** 2026-04-17
+**Closes:** PRIMARY findings of Gap 2 from 28-HUMAN-UAT (Test 2 — touch press-and-hold drag + drop; ghost 1:1 + extend zones commit) + the accelerated-ghost portion of Gap 3 (Test 4 ghost tracking). The "accentuate the icon of the move" remark from Test 2 is NOT closed by this plan — it is DEFERRED to Phase 29 per D-15 (design decision, not defect).
+
+**Task-scope clarification:**
+- **Task 1** (scaleCompensationModifier removal + MeasuringStrategy.Always) is the PRIMARY Gap 2 closure. After Task 1 lands, Gap 2 is functionally closed: ghost tracks 1:1, edge zones commit because delta is no longer amplified.
+- **Task 2** (computeDropZone per-axis threshold) is a SECONDARY independent improvement documented in `.planning/debug/zone-visuals-broken.md` as a separate finding (non-square cell dead-band between visual indicator bands and compute threshold). Task 2 is bundled for convenience — the fix is small, fully tested, lives in the same debug report. Task 2 is NOT a requirement for Gap 2 closure; an executor who ships Task 1 as a standalone PR still closes Gap 2.
+
+**Artifact status changes:**
+
+| Artifact | Previous | Now |
+|----------|----------|-----|
+| `src/dnd/adapter/dndkit.ts` | VERIFIED: CellDragMouseSensor + CellDragTouchSensor + scaleCompensationModifier | VERIFIED: CellDragMouseSensor + CellDragTouchSensor. scaleCompensationModifier REMOVED. No useEditorStore import. |
+| `src/dnd/DragPreviewPortal.tsx` | VERIFIED: `<DragOverlay adjustScale={false} modifiers={[scaleCompensationModifier]}>` | VERIFIED: `<DragOverlay adjustScale={false}>` — no modifiers. |
+| `src/Grid/CanvasWrapper.tsx` | VERIFIED: 4 handlers on DndContext | VERIFIED: 4 handlers + `measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}` — upstream fix for DragOverlay-at-non-1x-scale drift (PITFALLS.md:461). |
+| `src/dnd/computeDropZone.ts` | VERIFIED: threshold = max(20, min(w,h) * 0.2) shorter-axis | VERIFIED: per-axis yThreshold + xThreshold aligned with DropZoneIndicators band geometry. Closes non-square dead-band between indicator and compute (SECONDARY improvement — see Task 2 scope note). |
+| `src/dnd/adapter/__tests__/dndkit.test.ts` | 6 scaleCompensation tests assert divide-by-scale as correct | DELETED — the amplification-as-correct contract is disavowed. Class-shape + activator tests preserved. |
+| `src/dnd/computeDropZone.test.ts` | Zone-table assertions under shorter-axis threshold | Assertions recomputed under per-axis threshold; new regression-lock block for 100×300 non-square cell. |
+
+**Truth row updates:**
+
+Row 13 (DragPreviewPortal ghost rendering) — the "VERIFIED PRESENT" evidence for `modifiers={[scaleCompensationModifier]}` is inverted: after this plan, that modifier MUST NOT be present. New evidence: `<DragOverlay adjustScale={false}>` with no modifiers.
+
+**SC-5 (visual) mapping change:**
+
+The SC-5 human-UAT re-verification expectation is that the ghost tracks pointer 1:1 across canvasScale ∈ {0.2, 0.3, 0.5, 1.0}. Previously documented as "Required — visual tracking + no-jump requires browser (D-33)" — unchanged in scope, but the expected OUTCOME flips: previously the UAT would have exposed the bug; now it should PASS.
+
+**Data-flow note:**
+
+The `onDragOver` pointer derivation in CanvasWrapper (activatorEvent + delta) is UNCHANGED. It continues to use `activatorEvent.clientX/Y + delta.x/y`. The only change is that `delta` is now viewport-space-truthful (since no modifier amplifies it), so the reconstructed pointer is ACCURATE at any canvasScale. `computeDropZone` consumes this accurate viewport-space pointer against per-axis thresholds that match the visual indicator bands — end-to-end consistency restored.
+
+**What this plan did NOT change (explicit non-scope):**
+- `DropZoneIndicators.tsx` still destructures `{ zone: _zone }` — DROP-02/03 active-zone styling remains Phase 29 work (D-15). The truth "accentuate icon of the move" from 28-HUMAN-UAT Test 2 is NOT closed by this plan; it remains a Phase 29 scope boundary. **DROP-02/03 were NOT pulled forward** — the user did not request this change.
+- `LeafNode.tsx` `ringClass` / accent-outline structure — the "no outline on hovered cell" portion of Gap 3 is plan 28-13's job.
+
+**Post-fix UAT mapping:**
+
+| UAT Test | Previous Result | Expected After 28-12 + 28-11 |
+|----------|-----------------|------------------------------|
+| Test 1 — Desktop click-hold drag + drop | issue (blocker — nothing happens) | pass (covered by plan 28-11 — sensor collision fixed; this plan does not touch that) |
+| Test 2 — Touch press-and-hold drag + drop | issue (major — ghost accelerated; edge zones 1-in-3; icon emphasis missing) | **partial** — ghost 1:1 (modifier removed); edge zones commit reliably (MeasuringStrategy.Always + per-axis threshold); **per-zone icon emphasis DEFERRED to Phase 29 (D-15; design decision, not defect)** |
+| Test 3 — File-drop onto cell | pass | pass (untouched) |
+| Test 4 — Ghost + zone visuals | issue (major — accelerated + no outline + buggy zones) | ghost tracking fixed by this plan; zone commit reliability fixed by this plan; **accent outline on hovered cell REMAINS OPEN — plan 28-13**; per-zone icon emphasis REMAINS DEFERRED to Phase 29 (D-15) |
+
+**Grep gates post-28-12:**
+
+```bash
+grep -rc 'scaleCompensationModifier' src/     # expected: 0 (functional refs only — comments OK)
+grep -c 'useEditorStore' src/dnd/adapter/dndkit.ts  # expected: 0
+grep -c 'MeasuringStrategy.Always' src/Grid/CanvasWrapper.tsx  # expected: >=1
+grep -c 'yThreshold' src/dnd/computeDropZone.ts    # expected: >=1
+grep -c 'xThreshold' src/dnd/computeDropZone.ts    # expected: >=1
+grep -c 'Math.min(w, h)' src/dnd/computeDropZone.ts  # expected: 0
+```
+
 ---
 
 _Verified: 2026-04-17T22:00:00Z_

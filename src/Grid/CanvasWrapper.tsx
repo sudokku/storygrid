@@ -11,7 +11,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
-import { PointerSensorMouse, PointerSensorTouch } from '../dnd/adapter/dndkit';
+import { CellDragMouseSensor, CellDragTouchSensor } from '../dnd/adapter/dndkit';
 import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 import type { DropZone } from '../dnd';
 
@@ -53,13 +53,14 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       backgroundGradientDir: s.backgroundGradientDir,
     })));
 
-  // Phase 28 — unified DnD engine (D-02 / D-03 — SEPARATE constraints):
+  // D-02/D-03 — SEPARATE activation constraints on different React event keys.
   //   Mouse: { distance: 8 }   (REQ DRAG-04, Pitfall 4)
   //   Touch: { delay: 250, tolerance: 5 }   (REQ DRAG-03, Pitfall 4 — NEVER 500ms)
-  // NEVER combine delay+distance on a single sensor (D-03 collapses to delay-only).
+  // MouseSensor binds to onMouseDown; TouchSensor binds to onTouchStart — no
+  // listener-key collision (gap-closure 28-11 reason).
   const sensors = useSensors(
-    useSensor(PointerSensorMouse, { activationConstraint: { distance: 8 } }),
-    useSensor(PointerSensorTouch, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(CellDragMouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(CellDragTouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
   );
 
   const moveCell = useGridStore(s => s.moveCell);

@@ -18,7 +18,7 @@ import { render, renderHook } from '@testing-library/react';
 import React from 'react';
 import { DndContext } from '@dnd-kit/core';
 import { useCellDraggable } from '../useCellDraggable';
-import { PointerSensorMouse, PointerSensorTouch } from '../adapter/dndkit';
+import { CellDragMouseSensor, CellDragTouchSensor } from '../adapter/dndkit';
 import { useDragStore } from '../dragStore';
 
 beforeEach(() => {
@@ -64,25 +64,25 @@ describe('useCellDraggable hook contract (DRAG-01, DRAG-07)', () => {
   });
 });
 
-describe('PointerSensorMouse config (DRAG-03)', () => {
+describe('CellDragMouseSensor config (DRAG-03)', () => {
   it('is a class (constructable sensor)', () => {
-    expect(typeof PointerSensorMouse).toBe('function');
+    expect(typeof CellDragMouseSensor).toBe('function');
   });
 
   it('exposes activators array with at least one entry', () => {
-    const activators = (PointerSensorMouse as unknown as { activators: unknown[] }).activators;
+    const activators = (CellDragMouseSensor as unknown as { activators: unknown[] }).activators;
     expect(Array.isArray(activators)).toBe(true);
     expect(activators.length).toBeGreaterThanOrEqual(1);
   });
 });
 
-describe('PointerSensorTouch config (DRAG-04)', () => {
+describe('CellDragTouchSensor config (DRAG-04)', () => {
   it('is a class (constructable sensor)', () => {
-    expect(typeof PointerSensorTouch).toBe('function');
+    expect(typeof CellDragTouchSensor).toBe('function');
   });
 
   it('exposes activators array with at least one entry', () => {
-    const activators = (PointerSensorTouch as unknown as { activators: unknown[] }).activators;
+    const activators = (CellDragTouchSensor as unknown as { activators: unknown[] }).activators;
     expect(Array.isArray(activators)).toBe(true);
     expect(activators.length).toBeGreaterThanOrEqual(1);
   });
@@ -90,7 +90,7 @@ describe('PointerSensorTouch config (DRAG-04)', () => {
 
 describe('Mouse + Touch sensor parity (CROSS-01)', () => {
   it('both sensors are distinct classes (two activation paths, same downstream store)', () => {
-    expect(PointerSensorMouse).not.toBe(PointerSensorTouch);
+    expect(CellDragMouseSensor).not.toBe(CellDragTouchSensor);
   });
 });
 

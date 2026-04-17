@@ -573,14 +573,24 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
   }, []);
 
-  // D-17 / DROP-04: 2px accent outline when hovered as a drop target during drag.
+  // D-17 / DROP-04: cell-drag-over accent ring is now a DEDICATED OVERLAY DIV
+  // rendered below as a sibling of the canvas-clip-wrapper. It cannot live on
+  // the root's className as `ring-inset` because the sibling canvas-clip-wrapper
+  // occludes the parent's box-shadow (CSS painting order — positioned
+  // descendants paint above their parent's box-shadow). See gap-closure
+  // plan 28-13 + .planning/debug/zone-visuals-broken.md.
+  //
+  // NOTE (scope): `isPanMode` and `isSelected` rings below are likely subject
+  // to the same occlusion on media cells, but this plan deliberately does not
+  // fix them — they are not listed in 28-HUMAN-UAT Gap 3's `missing:` items
+  // and a broader audit of ring-inset-on-root usage is warranted. A future
+  // plan should unify pan/select/drag-over into a single overlay pattern.
+  // Tracked in 28-VERIFICATION.md gap-closure section 28-13.
   const ringClass = isPanMode
     ? 'ring-2 ring-[#f59e0b] ring-inset'
     : isSelected
       ? 'ring-2 ring-[#3b82f6] ring-inset'
-      : isOverThisCell
-        ? 'ring-2 ring-[#3b82f6] ring-inset'
-        : !mediaUrl ? 'border border-dashed border-[#333333]' : '';
+      : !mediaUrl ? 'border border-dashed border-[#333333]' : '';
 
   return (
     <div
@@ -660,6 +670,20 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {/* Drop target highlight (file drag only — cell drags use the DropZoneIndicators below) */}
       {isDragOver && (
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
+      )}
+
+      {/* Phase 28 gap-closure 28-13: cell-drag accent ring as dedicated overlay div.
+          MUST NOT live on the root's className as box-shadow — the canvas-clip-
+          wrapper occludes inset box-shadows on media cells (CSS painting order:
+          positioned descendants paint above their parent's box-shadow). z-10
+          matches the file-drop overlay; DropZoneIndicators carries zIndex: 20 so
+          the 5-zone arrows still paint above this ring. pointer-events-none is
+          mandatory — this overlay must not intercept drop events (DROP-05). */}
+      {isOverThisCell && (
+        <div
+          className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10"
+          data-testid={`drag-over-${id}`}
+        />
       )}
 
       {/* Phase 28 D-12: 5-icon drop-zone overlay while this cell is the hovered drop target. */}

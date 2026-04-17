@@ -4,8 +4,8 @@ milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
 stopped_at: context exhaustion at 90% (2026-04-17)
-last_updated: "2026-04-17T01:59:16.658Z"
-last_activity: 2026-04-17 -- Phase 27 planning complete
+last_updated: "2026-04-17T02:01:47.054Z"
+last_activity: 2026-04-17 -- Phase 27 execution started
 progress:
   total_phases: 1
   completed_phases: 0
@@ -22,14 +22,14 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 
 **Core value:** A user can build a multi-cell photo/video collage from scratch, fill it with images or videos, and download a pixel-perfect 1080×1920px PNG or MP4 — entirely in the browser, no account or server required.
 **Current milestone:** v1.5 Unified Drag-and-Drop UX — started 2026-04-17
-**Current focus:** Planning complete (research + REQUIREMENTS.md + ROADMAP.md committed); ready to plan Phase 27
+**Current focus:** Phase 27 — dnd-foundation
 
 ## Current Position
 
-Phase: 27 DnD Foundation (not yet planned)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-04-17 -- Phase 27 planning complete
+Phase: 27 (dnd-foundation) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 27
+Last activity: 2026-04-17 -- Phase 27 execution started
 
 ## Performance Metrics
 

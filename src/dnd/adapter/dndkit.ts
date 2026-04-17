@@ -35,6 +35,15 @@
  *   28-VERIFICATION.md §Gap-Closure Updates for the full rationale and
  *   grep gate.
  *
+ * NOTE (gap-closure 28-12): scaleCompensationModifier was removed from this
+ *   file. The modifier was based on a false premise (DragOverlay renders
+ *   inside the scaled canvas). DragOverlay portals to document.body via
+ *   createPortal (see node_modules/@dnd-kit/core/dist/core.esm.js
+ *   PositionedOverlay). The transform it receives is already viewport-space
+ *   pointer delta; no compensation is needed. Upstream drift at non-1x scale
+ *   is handled by MeasuringStrategy.Always on DndContext (PITFALLS.md:461,
+ *   dnd-kit issues #50/#205/#250/#393).
+ *
  * Phase 27 ships this file as a skeleton only. Phase 28 implements the
  * DndContext host + sensors + onDragStart/onDragOver/onDragEnd/onDragCancel
  * callbacks that wire into dragStore and computeDropZone.
@@ -42,8 +51,7 @@
 
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from 'react';
 import { MouseSensor, TouchSensor } from '@dnd-kit/core';
-import type { Modifier, MouseSensorOptions, TouchSensorOptions } from '@dnd-kit/core';
-import { useEditorStore } from '../../store/editorStore';
+import type { MouseSensorOptions, TouchSensorOptions } from '@dnd-kit/core';
 
 /**
  * CellDragMouseSensor — subclasses @dnd-kit/core MouseSensor to add the
@@ -99,19 +107,3 @@ export class CellDragTouchSensor extends TouchSensor {
   }];
 }
 
-/**
- * scaleCompensationModifier — divides `transform.x` / `transform.y` by the
- * current `canvasScale` so the drag ghost tracks the exact pointer position
- * despite the ancestor `transform: scale()` on the canvas root (D-08).
- *
- * Reads via `useEditorStore.getState()` imperatively — this function is NOT
- * a React component, so the hook form would throw. The `|| 1` guards the
- * rare `canvasScale === 0` bootstrap window before the ResizeObserver fires
- * (see editorStore.ts initial state). The object spread preserves
- * `scaleX` / `scaleY` from the input `Transform` (D-09 — `adjustScale=false`
- * on `DragOverlay` leaves those untouched here).
- */
-export const scaleCompensationModifier: Modifier = ({ transform }) => {
-  const scale = useEditorStore.getState().canvasScale || 1;
-  return { ...transform, x: transform.x / scale, y: transform.y / scale };
-};

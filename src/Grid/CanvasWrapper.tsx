@@ -9,6 +9,7 @@ import {
   DndContext,
   useSensor,
   useSensors,
+  MeasuringStrategy,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 import { CellDragMouseSensor, CellDragTouchSensor } from '../dnd/adapter/dndkit';
@@ -180,8 +181,13 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       className="flex flex-1 h-full items-start justify-center overflow-hidden"
       data-testid="canvas-container"
     >
+      {/* Phase 28 gap-closure plan 28-12: MeasuringStrategy.Always on droppable.
+          Upstream fix for DragOverlay-at-non-1x-scale drift (PITFALLS.md:461,
+          dnd-kit issues #50/#205/#250/#393). Replaces the scaleCompensationModifier
+          approach which was based on a false premise (see file comment in dndkit.ts). */}
       <DndContext
         sensors={sensors}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}

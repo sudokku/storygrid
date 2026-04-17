@@ -1,38 +1,58 @@
 /**
- * Adapter unit tests — Phase 28 Plan 02.
+ * Adapter unit tests — Phase 28 Plan 11 (gap-closure: MouseSensor/TouchSensor subclasses).
  *
  * Covers DND-04, DRAG-03, DRAG-04, GHOST-02, GHOST-06, CROSS-01:
- *   • PointerSensorMouse activator discriminates pointerType === 'mouse' only.
- *   • PointerSensorTouch activator discriminates pointerType === 'touch' | 'pen'.
+ *   • CellDragMouseSensor activator guards button === 0 and [data-dnd-ignore] check.
+ *   • CellDragTouchSensor activator guards touches.length >= 1 and [data-dnd-ignore] check.
  *   • Both honor `[data-dnd-ignore]` escape hatch via `closest()` BEFORE onActivation.
  *   • scaleCompensationModifier divides transform.x/y by editorStore.canvasScale,
  *     guards divide-by-zero, preserves scaleX/scaleY fields.
  *
  * Timing semantics (SC-1: 250ms touch, SC-2: 8px mouse) are configured at
- * useSensor() call-sites (Plan 07), not inside these classes — per D-03 these
+ * useSensor() call-sites (CanvasWrapper), not inside these classes — per D-03 these
  * constraints live on `activationConstraint`, not on the class itself.
  * Real-device UAT is the authoritative timing check (D-31).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PointerSensor } from '@dnd-kit/core';
-import { PointerSensorMouse, PointerSensorTouch, scaleCompensationModifier } from '../dndkit';
+import { MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { CellDragMouseSensor, CellDragTouchSensor, scaleCompensationModifier } from '../dndkit';
 import { useEditorStore } from '../../../store/editorStore';
+
+// ---------------------------------------------------------------------------
+// RED — pre-28-11 adapter exports are gone
+// ---------------------------------------------------------------------------
+
+describe('RED — pre-28-11 adapter exports are gone', () => {
+  it('PointerSensorMouse is no longer a named export of ../dndkit', async () => {
+    const mod = await import('../dndkit');
+    // Pre-28-11 adapter exports PointerSensorMouse — this MUST be undefined post-fix.
+    expect((mod as Record<string, unknown>).PointerSensorMouse).toBeUndefined();
+  });
+  it('PointerSensorTouch is no longer a named export of ../dndkit', async () => {
+    const mod = await import('../dndkit');
+    expect((mod as Record<string, unknown>).PointerSensorTouch).toBeUndefined();
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Helpers — activator handler fixtures
 // ---------------------------------------------------------------------------
 
-function makePointerEvent(opts: {
-  pointerType: 'mouse' | 'touch' | 'pen' | '';
-  target?: Element | null;
-}) {
-  // Mimic the React.PointerEvent shape the activator reads from.
-  // Only `nativeEvent` is accessed by the activator; the wrapper shape is opaque.
+function makeMouseEvent(opts: { button?: number; target?: Element | null } = {}) {
   return {
     nativeEvent: {
-      pointerType: opts.pointerType,
+      button: opts.button ?? 0,
       target: opts.target ?? null,
-    } as unknown as PointerEvent,
+    } as unknown as MouseEvent,
+  } as any;
+}
+
+function makeTouchEvent(opts: { touchesLen?: number; target?: Element | null } = {}) {
+  return {
+    nativeEvent: {
+      touches: { length: opts.touchesLen ?? 1 } as unknown as TouchList,
+      target: opts.target ?? null,
+    } as unknown as TouchEvent,
   } as any;
 }
 
@@ -40,125 +60,87 @@ function makePointerEvent(opts: {
 // Class-identity and inheritance invariants
 // ---------------------------------------------------------------------------
 
-describe('PointerSensorMouse — class shape', () => {
-  it('extends PointerSensor', () => {
-    expect(Object.getPrototypeOf(PointerSensorMouse)).toBe(PointerSensor);
+describe('CellDragMouseSensor — class shape', () => {
+  it('extends MouseSensor', () => {
+    expect(Object.getPrototypeOf(CellDragMouseSensor)).toBe(MouseSensor);
   });
 
-  it('has exactly one activator entry on onPointerDown', () => {
-    expect(PointerSensorMouse.activators).toHaveLength(1);
-    expect(PointerSensorMouse.activators[0].eventName).toBe('onPointerDown');
-    expect(typeof PointerSensorMouse.activators[0].handler).toBe('function');
+  it('has exactly one activator entry on onMouseDown', () => {
+    expect(CellDragMouseSensor.activators).toHaveLength(1);
+    expect(CellDragMouseSensor.activators[0].eventName).toBe('onMouseDown');
+    expect(typeof CellDragMouseSensor.activators[0].handler).toBe('function');
   });
 });
 
-describe('PointerSensorTouch — class shape', () => {
-  it('extends PointerSensor', () => {
-    expect(Object.getPrototypeOf(PointerSensorTouch)).toBe(PointerSensor);
+describe('CellDragTouchSensor — class shape', () => {
+  it('extends TouchSensor', () => {
+    expect(Object.getPrototypeOf(CellDragTouchSensor)).toBe(TouchSensor);
   });
 
-  it('has exactly one activator entry on onPointerDown', () => {
-    expect(PointerSensorTouch.activators).toHaveLength(1);
-    expect(PointerSensorTouch.activators[0].eventName).toBe('onPointerDown');
-    expect(typeof PointerSensorTouch.activators[0].handler).toBe('function');
+  it('has exactly one activator entry on onTouchStart', () => {
+    expect(CellDragTouchSensor.activators).toHaveLength(1);
+    expect(CellDragTouchSensor.activators[0].eventName).toBe('onTouchStart');
+    expect(typeof CellDragTouchSensor.activators[0].handler).toBe('function');
   });
 });
 
 // ---------------------------------------------------------------------------
-// PointerSensorMouse — pointerType discrimination + ignore-check
+// CellDragMouseSensor — primary-button guard
 // ---------------------------------------------------------------------------
 
-describe('PointerSensorMouse.activator — pointerType discrimination (D-02)', () => {
-  const handler = PointerSensorMouse.activators[0].handler;
+describe('CellDragMouseSensor.activator — primary-button guard', () => {
+  const handler = CellDragMouseSensor.activators[0].handler;
 
-  it('accepts pointerType === "mouse" (returns true and fires onActivation)', () => {
+  it('accepts button === 0 and invokes onActivation', () => {
     let fired = false;
     const onActivation = () => { fired = true; };
     const result = handler(
-      makePointerEvent({ pointerType: 'mouse' }),
+      makeMouseEvent({ button: 0 }),
       { onActivation } as any,
     );
     expect(result).toBe(true);
     expect(fired).toBe(true);
   });
 
-  it('rejects pointerType === "touch" (returns false, no onActivation)', () => {
+  it('rejects button !== 0 (right-click) and does NOT invoke onActivation', () => {
     let fired = false;
     const onActivation = () => { fired = true; };
     const result = handler(
-      makePointerEvent({ pointerType: 'touch' }),
+      makeMouseEvent({ button: 2 }),
       { onActivation } as any,
     );
     expect(result).toBe(false);
     expect(fired).toBe(false);
-  });
-
-  it('rejects pointerType === "pen" (returns false, no onActivation)', () => {
-    let fired = false;
-    const onActivation = () => { fired = true; };
-    const result = handler(
-      makePointerEvent({ pointerType: 'pen' }),
-      { onActivation } as any,
-    );
-    expect(result).toBe(false);
-    expect(fired).toBe(false);
-  });
-
-  it('tolerates missing onActivation callback (optional chaining)', () => {
-    const result = handler(
-      makePointerEvent({ pointerType: 'mouse' }),
-      {} as any,
-    );
-    expect(result).toBe(true);
   });
 });
 
 // ---------------------------------------------------------------------------
-// PointerSensorTouch — pointerType discrimination + ignore-check
+// CellDragTouchSensor — touches guard
 // ---------------------------------------------------------------------------
 
-describe('PointerSensorTouch.activator — pointerType discrimination (D-02)', () => {
-  const handler = PointerSensorTouch.activators[0].handler;
+describe('CellDragTouchSensor.activator — touches guard', () => {
+  const handler = CellDragTouchSensor.activators[0].handler;
 
-  it('accepts pointerType === "touch" (returns true and fires onActivation)', () => {
+  it('accepts touches.length === 1 and invokes onActivation', () => {
     let fired = false;
     const onActivation = () => { fired = true; };
     const result = handler(
-      makePointerEvent({ pointerType: 'touch' }),
+      makeTouchEvent({ touchesLen: 1 }),
       { onActivation } as any,
     );
     expect(result).toBe(true);
     expect(fired).toBe(true);
   });
 
-  it('accepts pointerType === "pen" (returns true and fires onActivation)', () => {
+  it('rejects touches.length === 0 and does NOT invoke onActivation', () => {
     let fired = false;
     const onActivation = () => { fired = true; };
     const result = handler(
-      makePointerEvent({ pointerType: 'pen' }),
-      { onActivation } as any,
-    );
-    expect(result).toBe(true);
-    expect(fired).toBe(true);
-  });
-
-  it('rejects pointerType === "mouse" (returns false, no onActivation)', () => {
-    let fired = false;
-    const onActivation = () => { fired = true; };
-    const result = handler(
-      makePointerEvent({ pointerType: 'mouse' }),
+      makeTouchEvent({ touchesLen: 0 }),
       { onActivation } as any,
     );
     expect(result).toBe(false);
     expect(fired).toBe(false);
-  });
-
-  it('tolerates missing onActivation callback (optional chaining)', () => {
-    const result = handler(
-      makePointerEvent({ pointerType: 'touch' }),
-      {} as any,
-    );
-    expect(result).toBe(true);
   });
 });
 
@@ -175,78 +157,67 @@ describe('[data-dnd-ignore] escape hatch — D-26 (ignore-check BEFORE onActivat
     return child;
   }
 
-  it('PointerSensorMouse rejects when target is inside [data-dnd-ignore] (returns false, no onActivation)', () => {
+  it('CellDragMouseSensor rejects when target is inside [data-dnd-ignore] (returns false, no onActivation)', () => {
     const target = makeTarget(true);
     let fired = false;
     const onActivation = () => { fired = true; };
-    const result = PointerSensorMouse.activators[0].handler(
-      makePointerEvent({ pointerType: 'mouse', target }),
+    const result = CellDragMouseSensor.activators[0].handler(
+      makeMouseEvent({ button: 0, target }),
       { onActivation } as any,
     );
     expect(result).toBe(false);
     expect(fired).toBe(false);
   });
 
-  it('PointerSensorMouse rejects when target itself has [data-dnd-ignore]', () => {
+  it('CellDragMouseSensor rejects when target itself has [data-dnd-ignore]', () => {
     const target = document.createElement('div');
     target.setAttribute('data-dnd-ignore', 'true');
     let fired = false;
-    const result = PointerSensorMouse.activators[0].handler(
-      makePointerEvent({ pointerType: 'mouse', target }),
+    const result = CellDragMouseSensor.activators[0].handler(
+      makeMouseEvent({ button: 0, target }),
       { onActivation: () => { fired = true; } } as any,
     );
     expect(result).toBe(false);
     expect(fired).toBe(false);
   });
 
-  it('PointerSensorMouse accepts when no ancestor has [data-dnd-ignore]', () => {
+  it('CellDragMouseSensor accepts when no ancestor has [data-dnd-ignore]', () => {
     const target = makeTarget(false);
     let fired = false;
-    const result = PointerSensorMouse.activators[0].handler(
-      makePointerEvent({ pointerType: 'mouse', target }),
+    const result = CellDragMouseSensor.activators[0].handler(
+      makeMouseEvent({ button: 0, target }),
       { onActivation: () => { fired = true; } } as any,
     );
     expect(result).toBe(true);
     expect(fired).toBe(true);
   });
 
-  it('PointerSensorTouch rejects when target is inside [data-dnd-ignore]', () => {
+  it('CellDragTouchSensor rejects when target is inside [data-dnd-ignore]', () => {
     const target = makeTarget(true);
     let fired = false;
-    const result = PointerSensorTouch.activators[0].handler(
-      makePointerEvent({ pointerType: 'touch', target }),
+    const result = CellDragTouchSensor.activators[0].handler(
+      makeTouchEvent({ touchesLen: 1, target }),
       { onActivation: () => { fired = true; } } as any,
     );
     expect(result).toBe(false);
     expect(fired).toBe(false);
   });
 
-  it('PointerSensorTouch rejects when target is inside [data-dnd-ignore] (pen)', () => {
-    const target = makeTarget(true);
-    let fired = false;
-    const result = PointerSensorTouch.activators[0].handler(
-      makePointerEvent({ pointerType: 'pen', target }),
-      { onActivation: () => { fired = true; } } as any,
-    );
-    expect(result).toBe(false);
-    expect(fired).toBe(false);
-  });
-
-  it('PointerSensorTouch accepts when no ancestor has [data-dnd-ignore]', () => {
+  it('CellDragTouchSensor accepts when no ancestor has [data-dnd-ignore]', () => {
     const target = makeTarget(false);
     let fired = false;
-    const result = PointerSensorTouch.activators[0].handler(
-      makePointerEvent({ pointerType: 'touch', target }),
+    const result = CellDragTouchSensor.activators[0].handler(
+      makeTouchEvent({ touchesLen: 1, target }),
       { onActivation: () => { fired = true; } } as any,
     );
     expect(result).toBe(true);
     expect(fired).toBe(true);
   });
 
-  it('tolerates null target (no error, no onActivation) — defensive for mouse', () => {
+  it('tolerates null target (no error, proceeds to button/touches check) — defensive for mouse', () => {
     let fired = false;
-    const result = PointerSensorMouse.activators[0].handler(
-      makePointerEvent({ pointerType: 'mouse', target: null }),
+    const result = CellDragMouseSensor.activators[0].handler(
+      makeMouseEvent({ button: 0, target: null }),
       { onActivation: () => { fired = true; } } as any,
     );
     // Null target cannot fail the ignore-check (no closest to call), so activation proceeds.

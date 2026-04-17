@@ -179,6 +179,46 @@ A user can build a multi-cell photo/video collage from scratch, fill it with ima
 
 ### Active
 
+**Phase 27 — DnD Foundation** (v1.5, not yet planned)
+- [ ] DND-01: Single `@dnd-kit/core` PointerSensor (no Touch+Mouse combination)
+- [ ] DND-02: Ephemeral drag state in separate vanilla `dragStore` (not gridStore)
+- [ ] DND-03: All DnD code under `src/dnd/` module
+- [ ] DND-05: `gridStore.moveCell` + tree primitives unchanged
+- [ ] DND-06: `@dnd-kit/modifiers` installed for canvas `transform: scale()` compensation
+- [ ] DROP-06: `computeDropZone` pure function, live recompute per pointermove
+- [ ] CANCEL-05: Zones fully tile each cell — no dead-zone cancels
+- [ ] CANCEL-06: `gridStore.moveCell` no-op guards (lines 473-494) unchanged
+
+**Phase 28 — Cell-to-Cell Drag** (v1.5, not yet planned)
+- [ ] DND-04: Phase 25 `@dnd-kit` wiring removed in SAME phase as new engine (no parallel)
+- [ ] DRAG-01/02: `cursor: grab` on hover, `cursor: grabbing` during drag
+- [ ] DRAG-03/04: 250ms + 5px touch activation, 8px mouse distance
+- [ ] DRAG-07: Entire cell body is drag-activation region (no dedicated handle)
+- [ ] GHOST-01/02/04/05/06/07: Ghost via `canvas.toDataURL()` in `DragOverlay` portal, grab-point preserved, source-size, artwork only, source dims 40%
+- [ ] DROP-01/04/05/07: 5 zones tile cell, 2px accent outline on hover, no insertion line, ghost under pointer (no magnetism)
+- [ ] CANCEL-03/04: Release outside canvas = cancel; release on origin = no-op snap-back
+- [ ] CROSS-01: Single pointer-event stream (no mouse/touch branching)
+
+**Phase 29 — ESC-Cancel + Visual Polish** (v1.5, not yet planned)
+- [ ] DRAG-05: Drag-start wobble: scale 1.00→1.05→1.02, 150ms, back-out spring
+- [ ] DRAG-06: Ghost lift: scale 1.04 + drop shadow
+- [ ] GHOST-03: Ghost opacity 80%
+- [ ] DROP-02: Active zone 100% white icon + scale 1.1 + soft glow
+- [ ] DROP-03: Inactive zones 30% white icon
+- [ ] DROP-08: 700ms accent-color flash on successful drop commit
+- [ ] CANCEL-01: ESC during drag cancels + snap-back
+- [ ] CANCEL-02: Snap-back 200ms, `cubic-bezier(0.15, 1.0, 0.3, 1.0)`
+
+**Phase 30 — Mobile Handle + Tray Polish** (v1.5, not yet planned)
+- [ ] CROSS-02: `touch-action: none` on draggable cells
+- [ ] CROSS-03: `-webkit-touch-callout: none` on draggable cells
+- [ ] CROSS-04: `user-select: none` on body during active drag
+- [ ] CROSS-05: `contextmenu` prevented during active drag
+- [ ] CROSS-06: `navigator.vibrate(10)` on drag activation
+- [ ] CROSS-07: `navigator.vibrate(15)` on drop commit
+- [ ] CROSS-08: Bottom sheet + tray auto-collapse on drag-start, restore on drag-end
+
+
 ## Current Milestone: v1.5 Unified Drag-and-Drop UX
 
 **Goal:** Replace the current touch/desktop DnD implementation with a unified engine that delivers identical, intuitive cell-drag behavior on both platforms and clear visual affordances at every stage of the interaction.

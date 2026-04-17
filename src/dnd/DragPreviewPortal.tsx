@@ -10,6 +10,51 @@
  * to DragOverlay and the dragStore ghost-dataURL field.
  */
 
-export function DragPreviewPortal(): null {
-  return null;
+import { DragOverlay } from '@dnd-kit/core';
+import { useDragStore } from './dragStore';
+import { scaleCompensationModifier } from './adapter/dndkit';
+
+export function DragPreviewPortal() {
+  // Scoped primitive selectors — only re-render this portal when ghost state
+  // changes (ARCHITECTURE.md §3). Avoid object-returning selectors that would
+  // require useShallow.
+  const status = useDragStore((s) => s.status);
+  const ghostDataUrl = useDragStore((s) => s.ghostDataUrl);
+  const sourceRect = useDragStore((s) => s.sourceRect);
+
+  // Narrow sourceRect to non-null before destructuring width/height below.
+  const active = status === 'dragging' && sourceRect !== null;
+
+  return (
+    <DragOverlay adjustScale={false} modifiers={[scaleCompensationModifier]}>
+      {active ? (
+        ghostDataUrl ? (
+          <img
+            src={ghostDataUrl}
+            style={{
+              width: sourceRect.width,
+              height: sourceRect.height,
+              opacity: 0.8,
+              display: 'block',
+            }}
+            alt=""
+            draggable={false}
+            data-testid="drag-ghost-img"
+          />
+        ) : (
+          // D-10: empty-cell fallback — no canvas snapshot available, render a
+          // dark div at source dims rather than a broken <img>.
+          <div
+            className="bg-[#1c1c1c]"
+            style={{
+              width: sourceRect.width,
+              height: sourceRect.height,
+              opacity: 0.8,
+            }}
+            data-testid="drag-ghost-fallback"
+          />
+        )
+      ) : null}
+    </DragOverlay>
+  );
 }

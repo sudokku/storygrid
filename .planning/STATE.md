@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
-last_updated: "2026-04-17T18:01:45.566Z"
+last_updated: "2026-04-17T19:53:31.483Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 15
-  completed_plans: 14
-  percent: 93
+  total_plans: 18
+  completed_plans: 15
+  percent: 83
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: `.planning/ROADMAP.md` (current milestone phase sequence)
 ## Current Position
 
 Phase: 28 (cell-to-cell-drag) — EXECUTING
-Plan: 1 of 11
+Plan: 1 of 3
 
 - **Phase:** 27
 - **Plan:** Not started (4 plans completed in prior execution; ready to continue)

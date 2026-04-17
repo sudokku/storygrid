@@ -26,6 +26,8 @@ const INITIAL = {
   sourceId: null,
   overId: null,
   activeZone: null,
+  ghostDataUrl: null,
+  sourceRect: null,
 };
 
 beforeEach(() => {
@@ -52,6 +54,12 @@ describe('dragStore — initial state', () => {
   });
   it('activeZone is null', () => {
     expect(useDragStore.getState().activeZone).toBeNull();
+  });
+  it('ghostDataUrl is null (Phase 28)', () => {
+    expect(useDragStore.getState().ghostDataUrl).toBeNull();
+  });
+  it('sourceRect is null (Phase 28)', () => {
+    expect(useDragStore.getState().sourceRect).toBeNull();
   });
 });
 
@@ -290,5 +298,73 @@ describe('dragStore — action references are stable across ticks', () => {
     expect(useDragStore.getState().end).toBe(endBefore);
     expect(useDragStore.getState().beginCellDrag).toBe(beginBefore);
     expect(useDragStore.getState().setOver).toBe(setOverBefore);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. setGhost action (Phase 28 / D-06) — ghost snapshot + source-rect storage
+// ---------------------------------------------------------------------------
+
+describe('setGhost action (Phase 28 / D-06)', () => {
+  const RECT = { width: 360, height: 640, left: 12, top: 24 };
+  const DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==';
+
+  it('atomically sets ghostDataUrl and sourceRect', () => {
+    useDragStore.getState().setGhost(DATA_URL, RECT);
+    const s = useDragStore.getState();
+    expect(s.ghostDataUrl).toBe(DATA_URL);
+    expect(s.sourceRect).toEqual(RECT);
+  });
+
+  it('clears both fields when called with (null, null)', () => {
+    // Seed first.
+    useDragStore.getState().setGhost(DATA_URL, RECT);
+    expect(useDragStore.getState().ghostDataUrl).toBe(DATA_URL);
+    expect(useDragStore.getState().sourceRect).toEqual(RECT);
+
+    useDragStore.getState().setGhost(null, null);
+    const s = useDragStore.getState();
+    expect(s.ghostDataUrl).toBeNull();
+    expect(s.sourceRect).toBeNull();
+  });
+
+  it('end() resets ghostDataUrl and sourceRect alongside the existing 5 fields', () => {
+    useDragStore.getState().beginCellDrag('src');
+    useDragStore.getState().setGhost(DATA_URL, RECT);
+    useDragStore.getState().setOver('tgt', 'left');
+    useDragStore.getState().end();
+    const s = useDragStore.getState();
+    expect(s.status).toBe('idle');
+    expect(s.kind).toBeNull();
+    expect(s.sourceId).toBeNull();
+    expect(s.overId).toBeNull();
+    expect(s.activeZone).toBeNull();
+    expect(s.ghostDataUrl).toBeNull();
+    expect(s.sourceRect).toBeNull();
+  });
+
+  it('beginCellDrag does NOT clear ghostDataUrl or sourceRect (defensive decoupling — adapter sets them separately right after)', () => {
+    // Seed ghost fields first.
+    useDragStore.getState().setGhost(DATA_URL, RECT);
+    // Now begin a drag — ghost fields must survive (adapter will overwrite them imperatively).
+    useDragStore.getState().beginCellDrag('src');
+    const s = useDragStore.getState();
+    expect(s.status).toBe('dragging');
+    expect(s.sourceId).toBe('src');
+    // Defensive decoupling: ghost fields NOT cleared by beginCellDrag.
+    expect(s.ghostDataUrl).toBe(DATA_URL);
+    expect(s.sourceRect).toEqual(RECT);
+  });
+
+  it('setGhost function reference is stable across reads', () => {
+    const a = useDragStore.getState().setGhost;
+    const b = useDragStore.getState().setGhost;
+    expect(a).toBe(b);
+  });
+
+  it('source file does NOT import or reference Immer or persist (invariant preserved after Phase 28 extension)', () => {
+    const src = readFileSync(resolve(__dirname, 'dragStore.ts'), 'utf-8');
+    expect(src).not.toMatch(/zustand\/middleware\/immer/);
+    expect(src).not.toMatch(/zustand\/middleware\/persist/);
   });
 });

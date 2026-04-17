@@ -12,7 +12,10 @@ import { useGridStore } from '../../store/gridStore';
 import { useEditorStore } from '../../store/editorStore';
 import type { LeafNode, GridNode } from '../../types';
 
-// Phase 25: LeafNodeComponent uses useDndMonitor which requires DndContext ancestor.
+// Phase 28: LeafNodeComponent uses useCellDraggable + useCellDropTarget from
+// the new dnd engine. These hooks wrap useDraggable/useDroppable, which require
+// a DndContext ancestor. The DndContext here has no sensors configured, so no
+// pointer activation happens — only the hook registration side-effects are exercised.
 function withDnd(ui: React.ReactElement) {
   return <DndContext>{ui}</DndContext>;
 }
@@ -61,9 +64,10 @@ class MockResizeObserver {
   }
   unobserve() {}
   disconnect() {
-    // Phase 25: do NOT clear roCallback on disconnect — DndContext may cause
-    // additional useLayoutEffect cleanup/re-run cycles. Keep roCallback pointing
-    // to the latest registered callback so tests can still fire it after remounts.
+    // Keep roCallback pointing to the latest registered callback. The DndContext
+    // wrapper (used by the new Phase 28 dnd hooks) can trigger useLayoutEffect
+    // cleanup/re-run cycles during test renders; clearing here would break
+    // tests that fire the callback after a remount.
   }
 }
 

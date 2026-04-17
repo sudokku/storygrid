@@ -19,22 +19,6 @@ import { CellDragMouseSensor, CellDragTouchSensor, scaleCompensationModifier } f
 import { useEditorStore } from '../../../store/editorStore';
 
 // ---------------------------------------------------------------------------
-// RED — pre-28-11 adapter exports are gone
-// ---------------------------------------------------------------------------
-
-describe('RED — pre-28-11 adapter exports are gone', () => {
-  it('PointerSensorMouse is no longer a named export of ../dndkit', async () => {
-    const mod = await import('../dndkit');
-    // Pre-28-11 adapter exports PointerSensorMouse — this MUST be undefined post-fix.
-    expect((mod as Record<string, unknown>).PointerSensorMouse).toBeUndefined();
-  });
-  it('PointerSensorTouch is no longer a named export of ../dndkit', async () => {
-    const mod = await import('../dndkit');
-    expect((mod as Record<string, unknown>).PointerSensorTouch).toBeUndefined();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Helpers — activator handler fixtures
 // ---------------------------------------------------------------------------
 

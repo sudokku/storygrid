@@ -5,12 +5,16 @@
  * BLOCKING RULES — reintroducing any of these reproduces Phase 25 failures.
  * ───────────────────────────────────────────────────────────────────────
  *
- * RULE 1 — DND-01 (REQUIREMENTS.md): Single PointerSensor only.
- *   Do NOT add the per-input-family sensor classes shipped by @dnd-kit/core
- *   (the touch-only and mouse-only variants). dnd-kit docs explicitly
- *   forbid combining them; it was a primary cause of Phase 25's flaky
- *   activation (PITFALLS.md Root Cause Hypothesis). Use only the unified
- *   pointer-based classes defined below.
+ * RULE 1 — DND-04 (REQUIREMENTS.md): ONE DnD engine. Cell-drag is served by
+ *   two coexisting dnd-kit built-in sensors (MouseSensor + TouchSensor)
+ *   subclassed for the data-dnd-ignore escape hatch. This replaces the
+ *   earlier single-PointerSensor-subclass approach (see
+ *   .planning/debug/desktop-drag-dead.md + phase 28 gap-closure plan 28-11):
+ *   two PointerSensor subclasses collide under useSyntheticListeners because
+ *   both register activators under the identical React event key used by
+ *   PointerSensor. MouseSensor binds to 'onMouseDown', TouchSensor to
+ *   'onTouchStart' — different keys, no collision. KeyboardSensor remains
+ *   OFF — this app has no keyboard-drag affordance.
  *
  * RULE 2 — Pitfall 4 (PITFALLS.md): Activation thresholds.
  *   Touch:  { delay: 250, tolerance: 5 }   (NEVER 500ms — collides with
@@ -25,48 +29,44 @@
  *   CanvasWrapper.tsx) is removed in the SAME phase that wires this
  *   adapter — Phase 28. Never ship with both.
  *
+ * REGRESSION GUARD (gap-closure 28-11): The React event key formerly used by
+ *   PointerSensor is BANNED as a string literal in this file. Any revert to
+ *   the PointerSensor-collision pattern would reintroduce it. See
+ *   28-VERIFICATION.md §Gap-Closure Updates for the full rationale and
+ *   grep gate.
+ *
  * Phase 27 ships this file as a skeleton only. Phase 28 implements the
  * DndContext host + sensors + onDragStart/onDragOver/onDragEnd/onDragCancel
  * callbacks that wire into dragStore and computeDropZone.
  */
 
-import type { PointerEvent as ReactPointerEvent } from 'react';
-import { PointerSensor } from '@dnd-kit/core';
-import type { Modifier, PointerSensorOptions } from '@dnd-kit/core';
+import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from 'react';
+import { MouseSensor, TouchSensor } from '@dnd-kit/core';
+import type { Modifier, MouseSensorOptions, TouchSensorOptions } from '@dnd-kit/core';
 import { useEditorStore } from '../../store/editorStore';
 
-// ---------------------------------------------------------------------------
-// Activator handler options (D-02) — use the public `PointerSensorOptions`
-// type from `@dnd-kit/core` so the override signature is structurally
-// compatible with the parent `PointerSensor.activators` shape
-// (`SensorActivatorFunction<PointerSensorOptions>`). Plan 07 consumes these
-// classes via `useSensor(PointerSensorMouse, { activationConstraint })` and
-// the type-check fails if we narrow the options below the parent's contract.
-// ---------------------------------------------------------------------------
-
 /**
- * PointerSensorMouse — discriminates on `pointerType === 'mouse'` (D-02).
- * activationConstraint `{ distance: 8 }` is applied at the `useSensor()` call
- * site in Plan 07 — NEVER encoded on the class itself, NEVER combined with a
- * `delay` constraint on the same sensor (D-03 — `AbstractPointerSensor.attach`
- * collapses `{delay, distance}` to delay-only).
+ * CellDragMouseSensor — subclasses @dnd-kit/core MouseSensor to add the
+ * [data-dnd-ignore] escape hatch (D-26). MouseSensor's activator binds to
+ * React 'onMouseDown' — different key than TouchSensor's 'onTouchStart' —
+ * so the two coexist under useSyntheticListeners without collision.
  *
- * The activator checks for a `[data-dnd-ignore]` ancestor BEFORE calling
- * `onActivation` (D-26) — this prevents the Divider hit-area and OverlayLayer
- * root (both added by Plan 09) from accidentally starting a cell drag.
+ * activationConstraint `{ distance: 8 }` is applied at the useSensor() call
+ * site in CanvasWrapper — NEVER encoded on the class itself, NEVER combined
+ * with a delay constraint on the same sensor (D-03).
  */
-export class PointerSensorMouse extends PointerSensor {
+export class CellDragMouseSensor extends MouseSensor {
   static activators = [{
-    eventName: 'onPointerDown' as const,
+    eventName: 'onMouseDown' as const,
     handler: (
-      { nativeEvent: event }: ReactPointerEvent,
-      { onActivation }: PointerSensorOptions,
+      { nativeEvent: event }: ReactMouseEvent,
+      { onActivation }: MouseSensorOptions,
     ): boolean => {
-      if (event.pointerType !== 'mouse') return false;
       const target = event.target as Element | null;
       if (target && typeof target.closest === 'function' && target.closest('[data-dnd-ignore]')) {
         return false;
       }
+      if (event.button !== 0) return false;
       onActivation?.({ event });
       return true;
     },
@@ -74,27 +74,25 @@ export class PointerSensorMouse extends PointerSensor {
 }
 
 /**
- * PointerSensorTouch — discriminates on `pointerType === 'touch' | 'pen'`
- * (D-02). activationConstraint `{ delay: 250, tolerance: 5 }` is applied at
- * the `useSensor()` call site in Plan 07. The 250ms threshold is
- * non-negotiable — Pitfall 4 documents that 500ms collides with the iOS
- * 17.2+ image-action menu.
+ * CellDragTouchSensor — subclasses @dnd-kit/core TouchSensor to add the
+ * [data-dnd-ignore] escape hatch (D-26). Binds to React 'onTouchStart'.
  *
- * See `PointerSensorMouse` for the rationale on the `[data-dnd-ignore]`
- * ancestor check (D-26).
+ * activationConstraint `{ delay: 250, tolerance: 5 }` is applied at the
+ * useSensor() call site in CanvasWrapper. 250ms is non-negotiable — Pitfall 4
+ * documents that 500ms collides with iOS 17.2+ image-action menu.
  */
-export class PointerSensorTouch extends PointerSensor {
+export class CellDragTouchSensor extends TouchSensor {
   static activators = [{
-    eventName: 'onPointerDown' as const,
+    eventName: 'onTouchStart' as const,
     handler: (
-      { nativeEvent: event }: ReactPointerEvent,
-      { onActivation }: PointerSensorOptions,
+      { nativeEvent: event }: ReactTouchEvent,
+      { onActivation }: TouchSensorOptions,
     ): boolean => {
-      if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return false;
       const target = event.target as Element | null;
       if (target && typeof target.closest === 'function' && target.closest('[data-dnd-ignore]')) {
         return false;
       }
+      if (event.touches.length === 0) return false;
       onActivation?.({ event });
       return true;
     },

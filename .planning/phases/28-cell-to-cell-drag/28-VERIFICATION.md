@@ -50,7 +50,7 @@ human_verification:
 | 13 | `DragPreviewPortal` wraps in `<DragOverlay adjustScale={false} modifiers={[scaleCompensationModifier]}>` and renders `<img data-testid='drag-ghost-img'>` at 0.8 opacity when `ghostDataUrl` set | VERIFIED | `src/dnd/DragPreviewPortal.tsx:29,42,37,52`; empty-cell fallback `<div className="bg-[#1c1c1c]">` (D-10) |
 | 14 | `DropZoneIndicators` renders 5 absolute-positioned lucide icons (center swap + 4 edges) with `pointer-events-none` (DROP-01/05) | VERIFIED | `src/dnd/DropZoneIndicators.tsx:14` imports all 5 icons; root `data-testid='drop-zones'` at line 36; every child has `pointer-events-none` |
 | 15 | Source cell dims to `opacity: 0.4` when `sourceId === id && status === 'dragging'` (GHOST-07) | VERIFIED | `LeafNode.tsx:601` — `...(isSourceOfDrag ? { opacity: 0.4 } : {})` |
-| 16 | Hovered target cell gains 2px accent-color outline when `overId === id` (DROP-04, D-17) | VERIFIED | `LeafNode.tsx:577-582` — `ringClass` yields `ring-2 ring-[#3b82f6] ring-inset` when `isOverThisCell` |
+| 16 | Hovered target cell gains 2px accent-color outline when `overId === id` (DROP-04, D-17) | VERIFIED | `LeafNode.tsx` — dedicated overlay `<div data-testid="drag-over-${id}" className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10">` rendered as sibling of canvas-clip-wrapper (gap-closure 28-13). Old ringClass-on-root approach was occluded by canvas — see .planning/debug/zone-visuals-broken.md. |
 | 17 | `cursor: grab` on LeafNode root when not in pan mode; `cursor: grabbing` on body during active drag (DRAG-01/02) | VERIFIED | `LeafNode.tsx:600` — `cursor: isPanMode ? undefined : (isDragging ? 'grabbing' : 'grab')`; body cursor in `CanvasWrapper.tsx:130-141` toggles via `useEffect` on `dragStatus` |
 | 18 | `Divider` hit-area and `OverlayLayer` root carry `data-dnd-ignore="true"`; OverlayLayer flips `pointerEvents` to `none` during drag (D-25, D-27) | VERIFIED | `src/Grid/Divider.tsx:116`, `src/Grid/OverlayLayer.tsx:53,70`; `OverlayLayer.tsx:18` consumes `useDragStore(s => s.status === 'dragging')` |
 | 19 | `dragStore` extended with `ghostDataUrl`, `sourceRect`, `setGhost(...)` — vanilla Zustand invariant preserved (no middleware) | VERIFIED | `src/dnd/dragStore.ts:44-48,58-59,67`; `src/dnd/index.ts` exports barrel. No immer/persist imports in file |
@@ -275,6 +275,53 @@ grep -c 'yThreshold' src/dnd/computeDropZone.ts    # expected: >=1
 grep -c 'xThreshold' src/dnd/computeDropZone.ts    # expected: >=1
 grep -c 'Math.min(w, h)' src/dnd/computeDropZone.ts  # expected: 0
 ```
+
+### Gap-Closure Plan 28-13 — drag-over accent ring as dedicated overlay
+
+**Landed:** 2026-04-17T01:16:00Z
+**Closes:** The 'no accent outline on hovered drop cell' portion of Gap 3 from 28-HUMAN-UAT Test 4.
+
+**Root cause recap:** `ringClass = 'ring-2 ring-[#3b82f6] ring-inset'` on the LeafNode root compiles to `box-shadow: inset`. The sibling `<div absolute inset-0 overflow-hidden>` + its canvas child occlude the inset box-shadow on any cell with media (CSS painting order: positioned descendants paint above the parent's box-shadow). The existing file-drop highlight at LeafNode.tsx:662 demonstrates the correct pattern: a dedicated sibling overlay div with explicit z-10.
+
+**Fix:** Mirror the file-drop pattern for cell-drag-over. `isOverThisCell` branch removed from `ringClass`; new `{isOverThisCell && <div data-testid="drag-over-${id}" className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" />}` added as a sibling of the canvas-clip-wrapper, immediately before the DropZoneIndicators render.
+
+**Artifact status changes:**
+
+| Artifact | Previous | Now |
+|----------|----------|-----|
+| `src/Grid/LeafNode.tsx` truth 16 evidence | `ringClass on root div (occluded on media cells)` | `dedicated <div data-testid="drag-over-${id}"> sibling of canvas-clip-wrapper; z-10 pointer-events-none` |
+| `src/Grid/__tests__/LeafNode.test.tsx` | No overlay coverage | 6 tests under `describe('LeafNode drag-over accent ring overlay (DROP-04, gap-closure 28-13)')`, reusing existing `makeLeaf`/`setStoreRoot`/`withDnd` primitives via a local `renderLeafNode` wrapper |
+
+**Scope boundary — explicitly deferred:**
+
+`isSelected` and `isPanMode` ring paths (LeafNode.tsx: 'ring-2 ring-[#3b82f6] ring-inset' on root for selected, 'ring-2 ring-[#f59e0b] ring-inset' on root for pan-mode) are LIKELY subject to the same CSS painting-order occlusion on cells with media. This plan did NOT fix them. Rationale:
+- Neither was reported as broken in 28-HUMAN-UAT.
+- A broader audit of `ring-inset`-on-root usage is warranted (the pattern may appear elsewhere).
+- Unifying all three into one overlay pattern touches selection + pan affordances — medium-risk refactor.
+
+**Follow-up:** Open a v1.5+ plan to unify `isPanMode`, `isSelected`, and `isOverThisCell` into a single overlay-div pattern. Before opening, verify the visual severity on a real media cell in selected + pan-mode states (it may be less noticeable than drag-over because those rings persist while the user is looking at the cell, whereas drag-over appears transiently during an action).
+
+**Post-fix UAT mapping:**
+
+| UAT Test | Previous Result | Expected After 28-11 + 28-12 + 28-13 |
+|----------|-----------------|--------------------------------------|
+| Test 1 — Desktop click-hold drag + drop | blocker | pass (plan 28-11) |
+| Test 2 — Touch press-and-hold drag + drop | major | **partial** — ghost 1:1 + extend zones commit (this phase, via plan 28-12); **per-zone icon emphasis DEFERRED to Phase 29 (D-15; design decision, not defect)** |
+| Test 3 — File drop | pass | pass (untouched) |
+| Test 4 — Ghost + zone visuals | major | **partial** — ghost 1:1 (28-12), zones reliable (28-12), accent outline visible (this plan); **per-zone icon emphasis DEFERRED to Phase 29 (D-15; design decision, not defect)** |
+
+**Grep gates post-28-13:**
+
+```bash
+grep -c 'drag-over-' src/Grid/LeafNode.tsx                # expected: >=1
+grep -c 'pointer-events-none z-10' src/Grid/LeafNode.tsx  # expected: >=2 (file-drop + cell-drag overlays)
+grep -nE 'isOverThisCell\s*\?' src/Grid/LeafNode.tsx       # expected: no matches (no longer a ternary branch)
+```
+
+**What remains OPEN after all three gap-closure plans (28-11 + 28-12 + 28-13):**
+- DROP-02 / DROP-03 active-zone icon emphasis — deferred to Phase 29 per D-15 (design decision, not defect).
+- `isSelected` / `isPanMode` ring occlusion on media cells — tracked as follow-up (this section).
+- Nothing else from 28-HUMAN-UAT.
 
 ---
 

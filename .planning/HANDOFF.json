@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-17T00:05:51.498Z",
+  "context": "research",
+  "milestone": "v1.5 Unified Drag-and-Drop UX",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Update PROJECT.md with v1.5 milestone scope", "status": "done", "commit": "ab3a529"},
+    {"id": 2, "name": "Reset STATE.md for new milestone", "status": "done", "commit": "ab3a529"},
+    {"id": 3, "name": "Run 4 parallel research agents (STACK/FEATURES/ARCHITECTURE/PITFALLS)", "status": "done", "commit": null}
+  ],
+  "remaining_tasks": [
+    {"id": 4, "name": "Write .planning/research/SUMMARY.md synthesizing the 4 research docs (overwrite stale 2026-04-13 file); resolve library conflict to @dnd-kit/core rebuild", "status": "not_started"},
+    {"id": 5, "name": "Commit research directory", "status": "not_started"},
+    {"id": 6, "name": "Define .planning/REQUIREMENTS.md via category-by-category scoping using FEATURES.md 6 categories (A/B/C/D/E/F)", "status": "not_started"},
+    {"id": 7, "name": "Commit REQUIREMENTS.md", "status": "not_started"},
+    {"id": 8, "name": "Spawn gsd-roadmapper to create ROADMAP.md starting Phase 27", "status": "not_started"},
+    {"id": 9, "name": "Review and commit roadmap", "status": "not_started"}
+  ],
+  "blockers": [
+    {"description": "Sonnet model rate limit hit during research phase; resets 3am Europe/Bucharest. Roadmapper agent runs on Sonnet.", "type": "external", "workaround": "Wait for reset before spawning gsd-roadmapper; summary synthesis can proceed on Opus 4.7."}
+  ],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Rebuild DnD on @dnd-kit/core@^6.3.1 with a single PointerSensor", "rationale": "STACK research identified 3 hard blockers against Pragmatic DnD: (1) issue #203 transform:scale() incompatibility, (2) issue #165 ESC-cancel platform-gated by native HTML5 DnD, (3) iOS Safari 15 native touch DnD flakiness. @dnd-kit also lets us keep @dnd-kit/sortable + @dnd-kit/utilities; total ~16 kB gzip.", "phase": "v1.5-research"},
+    {"decision": "Root cause of Phase 25 DnD failures: using TouchSensor + MouseSensor simultaneously violates dnd-kit docs + JSX attribute order collision on LeafNode (spread before explicit onPointerDown)", "rationale": "Documented in PITFALLS.md items 1 and 2. Fix: replace both sensors with single PointerSensor; ensure explicit onPointerDown never follows listener spread.", "phase": "v1.5-research"},
+    {"decision": "File drop, overlay drag, and divider resize stay on their current native-pointer implementations", "rationale": "User confirmed: include only if unification yields debugging/maintenance gains. File drop is native HTML5 (already working Phase 8 DROP-01/DROP-02). Divider uses setPointerCapture intentionally. Overlay drag is separate domain.", "phase": "v1.5-scoping"},
+    {"decision": "Reduce press-and-hold delay from current 500ms to 250ms with 5px tolerance", "rationale": "500ms collides with iOS 17.2+ image-action menu (PITFALLS.md item 4); 250ms is the @dnd-kit recommended value and matches HIG.", "phase": "v1.5-research"},
+    {"decision": "Ephemeral drag state lives in a separate vanilla Zustand store (dragStore), NOT gridStore", "rationale": "Prevents pollution of undo/redo history; gridStore.moveCell already has early-return no-op guards at lines 473-494 so no store changes needed.", "phase": "v1.5-research"}
+  ],
+  "uncommitted_files": [
+    ".planning/STATE.md",
+    ".planning/research/ARCHITECTURE.md",
+    ".planning/research/FEATURES.md",
+    ".planning/research/PITFALLS.md",
+    ".planning/research/STACK.md"
+  ],
+  "next_action": "Write .planning/research/SUMMARY.md synthesizing the 4 research docs. Resolve library conflict explicitly: @dnd-kit/core rebuild wins (STACK's 3 blockers decisive); ARCHITECTURE's layout stands but adapter file is src/dnd/adapter/dndkit.ts (DndContext/PointerSensor/DragOverlay/useDraggable/useDroppable) not pragmatic.ts; drop useFileDropTarget.ts.",
+  "context_notes": "Milestone scope was locked-in via two user rounds + confirmation. User explicitly wants: grab cursor on hover, press-and-hold affordance, drag-start animation, semi-opaque cell-content preview, 5-icon drop-zone overlay (1 central swap + 4 edge inserts with bright/dim active states), ESC-to-cancel, library-backed (not custom). User plans to add more phases iteratively. Visual UI/UX first; interactions later. Anti-features confirmed: no multi-select, no keyboard DnD, no auto-scroll."
+}

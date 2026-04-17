@@ -1,289 +1,274 @@
-# Stack Research — StoryGrid
+# Stack Research — v1.5 Unified Drag-and-Drop UX
 
-**Project:** StoryGrid (client-side Instagram Story collage editor)
-**Researched:** 2026-03-31
-**Overall confidence:** HIGH for core choices, MEDIUM for export libraries, LOW for video export stability
+**Domain:** Cross-device cell DnD engine (mouse + touch) inside a CSS `transform: scale()` canvas editor
+**Researched:** 2026-04-17
+**Confidence:** HIGH (for recommendation), MEDIUM (for exact bundle-size numbers — Bundlephobia was unreadable, sizes are reported from library authors and secondary sources)
+
+> **Scope note:** This document supersedes only the DnD-related portions of the v1.0 STACK research. All other locked stack choices (Vite 8, React 18.3.1, TypeScript 5.9.3, Zustand 5.0.12, Immer 10.2.0, Tailwind 3.4.19, Canvas-API export, Mediabunny video export) remain unchanged. Prior v1.0 STACK findings for those layers are preserved in git history.
+
+---
+
+## TL;DR — Recommendation
+
+**Rebuild on `@dnd-kit/core@^6.3.1` with a single `PointerSensor`** (replace `TouchSensor + MouseSensor`). Keep `@dnd-kit/sortable` and `@dnd-kit/utilities`. Add `@dnd-kit/modifiers` for `snapCenterToCursor` and a custom scale-aware modifier. Delete the custom `useDndMonitor` + `DragZoneRefContext` pointer tracking — let dnd-kit own pointer state via `onDragStart`/`onDragMove`/`onDragOver`/`onDragEnd`/`onDragCancel`.
+
+**Reject Pragmatic DnD.** It is built on the native HTML5 Drag-and-Drop API, which has three hard blockers for StoryGrid:
+
+1. **CSS `transform: scale()` incompatibility** — documented open issue #203; PDND uses viewport coordinates, and native HTML5 drag ignores CSS transforms at the platform level. No workaround from maintainers.
+2. **ESC cancel is platform-gated** — the browser takes over input during native drag; you cannot listen for `keydown`. PDND can only infer cancellation after `dragend` via `dropEffect === 'none'` — no mid-drag ESC animation or feedback.
+3. **Mobile touch is a polyfill story** — iOS 15+ and Android Chrome 96+ have varying native HTML5 DnD support, but touch-to-drag remains flaky across Safari 15 (our floor). The "unified" claim is marketing; in practice you'd add `drag-drop-touch-js` polyfill.
+
+**Reject `@dnd-kit/react@^0.4.0`.** Still pre-1.0 (v0.4.0 published April 2025 — a year before the current date with no further releases visible). Breaking changes between point releases. Issue #1842 asking for roadmap clarity has zero maintainer replies. Production risk is unjustifiable for a milestone whose entire point is fixing flaky DnD.
+
+**Reject custom pointer-events engine from scratch.** The tree primitives (`moveLeafToEdge`, `moveCell`) and 5-zone geometry are the easy part. Keyboard-accessibility, autoscroll, pointer capture, sensor lifecycle on pointercancel, and the event-delegation work dnd-kit already ships would be 2–4 weeks of net-new code and regression surface. Not worth it.
 
 ---
 
 ## Recommended Stack
 
-| Layer | Library | Recommended Version | Confidence | Notes |
-|-------|---------|---------------------|------------|-------|
-| Build tool | Vite | ^8.0.2 | HIGH | Current stable; Rolldown-powered |
-| React plugin | @vitejs/plugin-react | ^6.0.0 | HIGH | Ships with Vite 8; Babel → Oxc |
-| UI framework | React | ^18.3.x | HIGH | Pin to 18 — see rationale |
-| Language | TypeScript | ^5.8.x | HIGH | Current; no blockers |
-| State | Zustand | ^5.0.12 | HIGH | Current stable; React 18-native |
-| Immutable updates | Immer (via zustand/middleware/immer) | ^10.1.x | HIGH | Bundled via zustand; install separately |
-| Styling | Tailwind CSS | **v3.4.x** | HIGH | Pin v3 — see rationale |
-| Drag and drop | @dnd-kit/core + @dnd-kit/sortable + @dnd-kit/utilities | ^6.3.1 | MEDIUM | Stable API but slow maintenance |
-| DOM-to-image (MVP export) | html-to-image | ^1.11.13 | MEDIUM | Stale but ~3M weekly downloads; no active drop-in replacement |
-| Icons | lucide-react | ^1.7.0 | HIGH | Current; React 18 + 19 compatible |
-| ID generation | nanoid | ^5.1.7 | HIGH | Current; ESM-only at v5 |
-| Video export (v1 only) | @ffmpeg/ffmpeg + @ffmpeg/util | ^0.12.15 | MEDIUM | Last release ~1 year ago; no successor yet |
-| Video export core | @ffmpeg/core (or @ffmpeg/core-mt) | ^0.12.x | MEDIUM | Load from CDN at runtime — not bundled |
+### Core Technologies
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| **@dnd-kit/core** | `^6.3.1` (already installed) | DnD orchestration, sensor abstraction, DragOverlay | Stable 6.x line, React 18.3.1-native, handles CSS transforms via documented `scaleX`/`scaleY` output in the `transform` object on `useDraggable` and `DragOverlay.adjustScale`. Battle-tested in this project through v1.4. |
+| **@dnd-kit/sortable** | `^10.0.0` (already installed) | `useSortable` hook for cell reordering primitives | Keeps cell-move semantics identical to v1.1–v1.4 — no net-new tree code required; `moveLeafToEdge`/`moveCell` already exist and remain the callees. |
+| **@dnd-kit/utilities** | `^3.2.2` (already installed) | `CSS.Translate.toString()` for transform strings | Paired with `useDraggable.transform` for scaled-container math. |
+| **@dnd-kit/modifiers** | `^9.0.0` (new install) | `snapCenterToCursor` + custom scale-compensation modifier | Solves the drag-preview-in-scaled-canvas problem without forking dnd-kit. Modifiers receive `activatorEvent` + `transform` and can divide by the canvas scale factor, recentering the preview at the pointer. |
+
+### Supporting Libraries
+
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| *(none — keep the stack minimal)* | — | — | No new non-dnd-kit library needed. Existing `lucide-react` icons cover the 5-zone overlay; custom React cursor/animation elements handle drag-start feedback. |
+
+### Development Tools
+
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| Vitest + `@testing-library/user-event` (already installed) | Exercise `pointerDown`/`pointerMove`/`pointerUp` | `user-event` v14 has first-class `pointer()` API for keyboard + touch + mouse simulation. No new test tooling. |
+| `PointerEvent` polyfill check | Verify Safari 15 / iOS 15 | PointerEvents are supported in Safari 13+ and iOS Safari 13+ — no polyfill needed for our floor. |
 
 ---
 
-## Rationale and Gotchas
-
-### Vite 8
-
-**Why:** Vite 8 (released March 12, 2026) is the current stable version. It replaces the dual esbuild/Rollup architecture with Rolldown, a Rust-based bundler delivering 10–30x faster builds. The `@vitejs/plugin-react` v6 replaces Babel with Oxc for React Refresh, reducing install size further. Both `.wasm?init` SSR fixes and TypeScript path alias support are built in — both relevant for this project.
-
-**Gotchas:**
-- `@vitejs/plugin-react` v5 still works with Vite 8 if a gradual migration is needed, but start fresh with v6.
-- The Rolldown bundler is architecturally new; if obscure Rollup plugin edge cases arise, the workaround is to swap to the `rolldown-vite` compatibility layer first (documented in Vite 8 migration guide).
-- ffmpeg.wasm WASM loading (`.wasm?url` or CDN) works correctly with Vite 8's improved WASM handling.
-
-**Alternatives considered:** Vite 6 / Vite 7 — both still receive security patches but are not recommended for new projects started in 2026. Webpack is not worth the DX regression.
-
----
-
-### React 18 (pin to 18, do not use 19)
-
-**Why:** React 19 is the current stable release, but the PROJECT.md explicitly constrains `@dnd-kit/core` and `html-to-image` — neither of which has verified React 19 peer dependency support. More importantly, `lucide-react-native` (not relevant here, but indicative of ecosystem lag) and some UI helper libraries still declare `react@^18` as a peer. React 18 is fully supported, actively maintained, and introduces zero risk for a new project in this domain. The gains of React 19 (Server Components, Actions, automatic compiler) are irrelevant for a 100% client-side SPA with no RSC.
-
-**Gotchas:**
-- React 19 peer dependency errors will surface during `npm install` if any library in the tree declares `react@"^16 || ^17 || ^18"`. Pin React 18 to avoid this class of problem entirely.
-- The React 19 compiler's automatic memoization is not a substitute for the explicit `React.memo` strategy required for the recursive GridNode tree. Do not depend on a compiler to fix re-render hot paths.
-
-**Alternatives considered:** React 19 — not recommended yet; ecosystem compatibility risk outweighs marginal gains for this app type.
-
----
-
-### TypeScript 5.8
-
-**Why:** Current stable version. No breaking changes that affect this project. Enables all modern type narrowing patterns needed for the discriminated union `GridNode` tree type.
-
-**Gotchas:** Some older eslint plugins may not yet parse TS 5.8 syntax. Pin `typescript@~5.8` (minor-pinned) rather than `^5` to avoid unexpected type-check behavior upgrades mid-development.
-
----
-
-### Zustand 5.0.x
-
-**Why:** Zustand 5 is the current major version. It drops React < 18 support (which aligns perfectly with this project), removes the `use-sync-external-store` package dependency, and simplifies TypeScript types. The immer middleware (`zustand/middleware/immer`) is bundled — no separate import path change required vs v4.
-
-**Gotchas:**
-- Zustand v5 removed the `create` API's custom equality function parameter. If `shallow` comparison is needed on derived selectors, use `useShallow` from `zustand/react/shallow` — not a custom equality function passed to `create`.
-- TypeScript regression noted in v5.0.9: middleware types broken in some configurations (Discussion #3331). Pin to `^5.0.12` which includes the fix.
-- The `persist` middleware behavior changed: initial state is no longer stored during store creation. This matters for the Phase 7 save/load feature — test persist middleware behavior explicitly.
-
-**Alternatives considered:** Jotai (atom-based, excellent for tree node selection but higher boilerplate for history/undo), Valtio (proxy-based, problematic with serialization/undo). Zustand + Immer is the right pairing for a deeply nested mutable tree with undo history.
-
----
-
-### Immer 10.x (via zustand/middleware/immer)
-
-**Why:** Immer is a peer dependency of the Zustand immer middleware — install it separately (`npm install immer`). v10 is current stable. The `immer` middleware wrapper enables direct draft mutation on deeply nested GridNode trees without manual spreading.
-
-**Gotchas:**
-- Immer must be installed as a direct dependency even though the middleware is inside the zustand package. Omitting it causes a "Cannot find module 'immer'" runtime error.
-- For the undo/redo history array, store plain serializable snapshots (not Immer drafts). Snapshots should be taken of the committed state, not inside a produce call.
-- Do not use `enableMapSet()` unless Map or Set types appear in the store — it adds bundle weight unnecessarily.
-
-**Alternatives considered:** `zustand-mutative` (uses Mutative instead of Immer, ~10x faster according to benchmarks). Worth reconsidering if profiling shows Immer as a bottleneck, but premature for MVP.
-
----
-
-### Tailwind CSS v3.4.x (PIN TO v3 — do not use v4)
-
-**Why (pin to v3):** Tailwind CSS v4 was released in 2025 and is actively developed, but it is a breaking change in several ways that directly conflict with this project:
-
-1. **Config model change:** v4 moves all configuration to CSS `@theme` directives — no `tailwind.config.js`. The PROJECT.md specifies "Tailwind configured with canvas dimensions and safe zone as CSS variables" — this is straightforward in v3. In v4 it requires relearning the config model.
-2. **Browser requirement:** Tailwind v4 requires Safari 16.4+, Chrome 111+, Firefox 128+. The project targets Safari 15+. v4 is incompatible with Safari 15.
-3. **Removed utilities:** `bg-opacity-*`, `text-opacity-*`, container config options, and other v3 utilities are gone. Using v3 means zero migration tax.
-4. **Ecosystem stability:** As of early 2026, many Tailwind component libraries and references still target v3. Developer productivity is higher on the known API.
-
-**Use v3.4.x** (latest stable 3.x) — it receives security patches and will for the foreseeable future.
-
-**Gotchas:**
-- Install `tailwindcss@^3.4`, `postcss`, and `autoprefixer` explicitly.
-- Vite 8 with Tailwind v3 requires the standard PostCSS plugin setup (`postcss.config.js`) — no special integration issues.
-- CSS variables for canvas dimensions and safe zones (`--canvas-width`, `--safe-zone-top`) should be defined in the Tailwind config's `extend.spacing` / `extend.height` sections or directly in a global CSS `:root {}` block and referenced via Tailwind's `arbitrary value` syntax (`h-[var(--canvas-height)]`).
-
-**Alternatives considered:** Tailwind v4 — defer until Safari 15 is out of scope and ecosystem matures. Plain CSS modules — unnecessary complexity for a UI-heavy app.
-
----
-
-### @dnd-kit/core + @dnd-kit/sortable (6.3.1)
-
-**Why:** For StoryGrid, drag-and-drop is used specifically for dragging image files onto cells (not for reordering cells — cells are split/merged, not sorted). `@dnd-kit/core` handles pointer-event-based file drag detection with custom sensors. It is the best-designed DnD library for pointer-event use cases.
-
-**Maintenance caveat:** @dnd-kit/core's last release was ~1 year ago (v6.3.1). There is an active GitHub discussion (Issue #1830) about maintenance status. A new `@dnd-kit/react` adapter (v0.3.x) is in development but is explicitly not production-ready. Use `@dnd-kit/core` v6.3.1 — it is stable and will not receive breaking changes.
-
-**Gotchas:**
-- Performance issue (Issue #389): in large sortable lists, every item re-renders on drag. This project has at most ~20 cells in a grid, so this is irrelevant.
-- Do NOT migrate to `@dnd-kit/react` for this project — it is in alpha/beta, has breaking API changes in progress, and adds migration risk without benefit.
-- For file-drop-onto-cell, the native HTML5 drag API (`onDragOver` + `onDrop` on each Leaf component) may be simpler and more reliable than @dnd-kit for this specific use case. @dnd-kit handles drag-between-cells for media reordering; native drag events handle file-from-desktop drops.
-
-**Alternatives considered:** `react-dnd` — pointer event support is worse, more boilerplate. `pragmatic-drag-and-drop` (Atlassian) — newer, actively maintained, but less community documentation for React-specific use cases. @dnd-kit remains the best documented choice for this use case.
-
----
-
-### html-to-image 1.11.13
-
-**Why:** The only actively used client-side DOM-to-image library that correctly handles modern CSS (flexbox, CSS variables, `object-fit`, custom fonts). `html2canvas` cannot handle CSS `transform: scale()` or `object-fit: cover` reliably, making it unusable for the scaled canvas preview render. `dom-to-image` is deprecated.
-
-**Maintenance concern:** Last publish was ~1 year ago. No releases since. The library has ~3M weekly downloads suggesting it is stable-in-use rather than actively evolved. The GitHub repository (bubkoo/html-to-image) is not archived.
-
-**Alternative worth watching:** `modern-screenshot` (v4.6.8, published 2 months ago, 575K weekly downloads) — actively maintained fork-of-a-fork with better CSS support. It is a valid drop-in alternative if `html-to-image` proves problematic. API is nearly identical (`domToCanvas`, `domToPng`, etc.).
-
-**Gotchas (critical):**
-
-1. **CORS / canvas taint:** Any `<img>` whose `src` is a user-provided object URL (via `URL.createObjectURL()`) is same-origin and will NOT cause CORS issues. However, if any image is loaded from an external URL (e.g., a CDN), the canvas will be tainted and `toPng()` will throw. Mitigation: always use object URLs from `File` objects — never raw external URLs.
-
-2. **Chrome cache/CORS race:** If images are loaded without `crossOrigin="anonymous"` initially and then re-requested with it, Chrome returns a cached response without CORS headers and the export fails. Mitigation: always set `crossOrigin="anonymous"` on all `<img>` elements from the initial render, even for object URLs (it's a no-op for same-origin but prevents cache race conditions).
-
-3. **Off-screen render div must be in DOM:** `html-to-image` requires the target element to be attached to the document. The hidden full-res 1080×1920 div (the dual-render export element) must be in the DOM with `position: absolute; left: -9999px; visibility: hidden` — not `display: none` (which breaks layout).
-
-4. **CSS custom properties on the export div:** The export div must have all CSS variables defined in its scope or on `:root`. If canvas dimensions are CSS variables, verify they resolve correctly on the export div (they will if defined on `:root`).
-
-5. **`requestAnimationFrame` before capture:** Call `toPng()` inside a `requestAnimationFrame` callback after triggering the off-screen render to ensure all layout/paint has settled.
-
-6. **Font embedding:** Fonts from Google Fonts or other external sources will fail to embed unless served with CORS headers. Mitigation: self-host any fonts used in the canvas (Inter, system-ui, etc.) or use only system fonts in the export div.
-
----
-
-### lucide-react 1.7.0
-
-**Why:** Current stable (v1.7.0, published ~1 day ago as of research date). Tree-shakeable by default — only imported icons are bundled. Compatible with React 18 and 19. Comprehensive icon set covering all UI actions needed (split, merge, download, eye, etc.).
-
-**Gotchas:** At v0.x this library had breaking icon renames every few releases. Since reaching v1.x the API is stable. No known issues.
-
-**Alternatives considered:** `heroicons/react`, `react-icons` — both valid. `lucide-react` has better TypeScript types and the cleanest import API.
-
----
-
-### nanoid 5.1.7
-
-**Why:** Current stable (v5.1.7). Tiny, secure, URL-safe IDs for GridNode `id` fields. No external dependencies.
-
-**Gotchas:**
-- nanoid v5 is **ESM-only**. If any tooling in the project is CommonJS (Jest with CJS config, for example), importing nanoid will fail. Mitigation: use Vite's native ESM test runner (Vitest) — no CJS issue. Do not use Jest with CJS config.
-- For Node.js scripts (e.g., config generation), use `import { nanoid } from 'nanoid'` in ESM context or use the `customAlphabet` export with a CJS-compatible alternative if truly needed.
-
-**Alternatives considered:** `uuid` — larger bundle, less ergonomic API. `crypto.randomUUID()` — available in modern browsers but returns hyphenated UUID format; nanoid is more compact.
-
----
-
-### @ffmpeg/ffmpeg 0.12.15 + @ffmpeg/util + @ffmpeg/core (CDN only)
-
-**Why:** The only practical in-browser FFmpeg solution for MP4 encoding. Used exclusively for Phase 6 (video export). Must be lazy-loaded — the WASM core is ~25MB.
-
-**Critical constraints:**
-
-1. **SharedArrayBuffer requirement:** @ffmpeg/ffmpeg v0.12.x uses SharedArrayBuffer, which is only available in cross-origin isolated contexts. You MUST serve the app with:
-   ```
-   Cross-Origin-Opener-Policy: same-origin
-   Cross-Origin-Embedder-Policy: require-corp
-   ```
-   These headers must be set in Vercel/Netlify config (the PROJECT.md already flags this for Phase 6). These headers are NOT needed for the MVP (no video).
-
-2. **Single-threaded vs multi-threaded core:**
-   - `@ffmpeg/core` — single-threaded, compatible with all target browsers, no additional header requirements beyond the two above. Use this for MVP video support.
-   - `@ffmpeg/core-mt` — multi-threaded, faster encoding, but requires SharedArrayBuffer AND Worker support. Use only as an opt-in performance upgrade once single-threaded is validated.
-
-3. **Do NOT bundle the WASM core:** Load `@ffmpeg/core` from jsDelivr CDN at runtime:
-   ```
-   https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.x/dist/esm
-   ```
-   Bundle only `@ffmpeg/ffmpeg` and `@ffmpeg/util` — these are small JS wrappers.
-
-4. **Safari video export is explicitly out of scope** (PROJECT.md) — SharedArrayBuffer support in Safari is unreliable even with COOP/COEP headers in cross-origin contexts.
-
-5. **Maintenance status:** v0.12.15 was the last release, published ~1 year ago. The maintainer has not indicated end-of-life, but activity is low. No viable drop-in alternative exists for in-browser MP4 encoding. This is an accepted risk for Phase 6.
-
-**Alternatives considered:** `wasm-vp9`, MediaRecorder API — MediaRecorder cannot capture a static layout at full resolution; it only records what's playing in the viewport. Not suitable for 1080×1920 export.
-
----
-
-## Version Pinning Recommendations
-
-```json
-{
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zustand": "^5.0.12",
-    "immer": "^10.1.1",
-    "lucide-react": "^1.7.0",
-    "nanoid": "^5.1.7",
-    "html-to-image": "^1.11.13",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^8.0.0",
-    "@dnd-kit/utilities": "^3.2.2"
-  },
-  "devDependencies": {
-    "vite": "^8.0.2",
-    "@vitejs/plugin-react": "^6.0.0",
-    "typescript": "~5.8.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0"
-  }
-}
+## Installation
+
+```bash
+# Add modifiers to the existing dnd-kit install
+npm install @dnd-kit/modifiers
+
+# (Already installed — do NOT reinstall or bump major)
+# @dnd-kit/core@^6.3.1
+# @dnd-kit/sortable@^10.0.0
+# @dnd-kit/utilities@^3.2.2
 ```
 
-**Lazy-loaded at runtime (Phase 6 only — do not bundle):**
-```
-@ffmpeg/ffmpeg@^0.12.15
-@ffmpeg/util@^0.12.1
-```
-Load `@ffmpeg/core` from CDN, not npm.
+**No React, TypeScript, Vite, or Tailwind changes.** The entire DnD rewrite is additive to what's in `package.json` today, except for adding `@dnd-kit/modifiers`.
 
-### Key pinning rationale
+---
 
-| Package | Pin style | Reason |
-|---------|-----------|--------|
-| `typescript` | `~5.8.0` (minor-pinned) | Avoid unexpected type-check changes in patch |
-| `tailwindcss` | `^3.4.0` | Stay on v3 branch; ^ is safe within major |
-| `react` | `^18.3.1` | Explicitly stay on 18; do not allow 19 upgrade |
-| `vite` | `^8.0.2` | Current major; patch updates are safe |
-| `html-to-image` | `^1.11.13` | Low maintenance; ^ is safe since no new releases expected |
-| `@dnd-kit/core` | `^6.3.1` | Stable; no breaking changes expected on 6.x |
+## Evaluation of Considered Options
+
+### Option 1 — `@dnd-kit/core` rebuild with a single PointerSensor ✅ RECOMMENDED
+
+| Criterion | Assessment |
+|-----------|------------|
+| npm + version | `@dnd-kit/core@^6.3.1` — published Dec 2024, no 6.4 or 7.0 in sight; library is in maintenance mode but stable, not abandoned |
+| Bundle size | ~6 kB gzip (@dnd-kit/core) + ~5 kB gzip (sortable) + ~2 kB gzip (utilities) + ~3 kB gzip (modifiers) ≈ **~16 kB gzip total** — under 4% of the 500 kB MVP budget |
+| Unified desktop+mobile | **Single `PointerSensor`** with `activationConstraint: { delay: 500, tolerance: 5 }`. Docs explicitly state "You should not be using both PointerSensor and TouchSensor or MouseSensor at the same time" — StoryGrid's current code violates this, which is a likely root cause of the "1-in-10 swap fires" bug |
+| CSS transform scale | **Partial native support**: `useDraggable` returns `transform: { x, y, scaleX, scaleY }` — scale values reflect source/target scale delta. For full canvas-scale compensation (cursor-to-cell mapping), write one custom modifier that divides `transform.x`/`transform.y` by the editor zoom. Issue #50 (closed) and #398 document this pattern with community workarounds. `DragOverlay` has an `adjustScale` prop specifically for this case. |
+| Drag preview | `DragOverlay` portal — full React control, renders outside the scaled canvas in viewport space (same trick StoryGrid's ActionBar uses in Phase 10). Apply the semi-opaque cell-content preview as normal JSX inside `DragOverlay`. |
+| Drop zone model | 5 `useDroppable` instances per leaf (center + 4 edges). Use `collisionDetection={pointerWithin}` (or custom) so only the zone directly under the pointer fires `onDragOver`. `active.id` + `over.id` in the context drive the bright/dim icon toggle — idiomatic, no hack. |
+| ESC cancel | **Built-in**: `onDragCancel` callback fires on ESC (dnd-kit installs a document `keydown` listener during drag since it runs its own pointer state machine, not native HTML5 drag). No workaround required. |
+| File-drop-from-desktop | **Not unified** — native HTML5 `onDragOver`/`onDrop` remains the right tool. dnd-kit does not intercept file drops. Keep the two paths separate as today (Key Decision "dnd-kit for D&D, native HTML5 events for file drop" ✓ Good). |
+| TypeScript | Full first-class types; no `@types/*` needed. |
+| Maintenance | Last `@dnd-kit/core` release 6.3.1 was Dec 2024 — ~16 months stale as of 2026-04. Maintainer focus has shifted to `@dnd-kit/react`. However, the 6.x API is feature-complete for StoryGrid's needs and there are no React 18 compat issues filed. |
+| React 18.3.1 / Vite 8 / Oxc | No known issues. dnd-kit ships ESM + CJS; Vite 8 ESM consumption works. No JSX-runtime conflicts with Oxc. |
+| Migration cost from current code | **Low** — same library, removal of `TouchSensor + MouseSensor` + `useDndMonitor` + `DragZoneRefContext`, addition of one modifier. `DndContext` stays. Phase 9 `moveLeafToEdge`/`moveCell` callees unchanged. Estimated 2–3 phases, heavily test-covered paths stay green. |
+| What NOT to pair with | Do **not** install `@dnd-kit/react` alongside — different package namespace, different API, would duplicate state. Do **not** re-enable `TouchSensor + MouseSensor` simultaneously — violates dnd-kit docs and causes exactly the inconsistent activation we're trying to eliminate. |
+
+### Option 2 — `@atlaskit/pragmatic-drag-and-drop` ❌ REJECT
+
+| Criterion | Assessment |
+|-----------|------------|
+| npm + version | `@atlaskit/pragmatic-drag-and-drop@1.7.7` — last published ~Nov 2025, actively maintained |
+| Bundle size | ~4.7 kB gzip core + per-adapter packages (pragmatic-drag-and-drop-hitbox, pragmatic-drag-and-drop-flourish, pragmatic-drag-and-drop-auto-scroll, pragmatic-drag-and-drop-react-drop-indicator…). Realistic total for StoryGrid's needs: ~15–20 kB gzip, not the marketed "tiny" |
+| Unified desktop+mobile | **FALSE CLAIM for our targets**. PDND is a thin abstraction over the native HTML5 Drag-and-Drop API. Native HTML5 DnD on touch: unreliable on iOS Safari 15 (our floor), inconsistent on Android WebView. The "Full feature support in Firefox, Safari, and Chrome, iOS and Android" phrasing refers to desktop platforms + modern iOS 15+/Chrome Android 96+; real behavior on Safari 15.0–15.3 is inconsistent. |
+| CSS transform scale | **BLOCKER**: Open issue #203, no maintainer response, no workaround documented. "PDND uses viewport coordinates, and transform:scale doesn't actually change the layout, so there are inaccuracies in the calculations when not at a scale of 100%." Autoscroll and overflow scroll break inside scaled parents. StoryGrid's canvas is *always* scaled. |
+| Drag preview | Native HTML5 `setDragImage` — browser strips opacity to ~0.8, adds a drop shadow, 280px max size on Windows, completely non-stylable. The "semi-opaque cell-content preview" requirement would force a custom workaround (positioned offscreen element referenced via `setDragImage`) — doable but awkward. |
+| Drop zone model | `dropTargetForElements` API is clean, supports nesting, and per-zone `onDrag`/`onDragEnter`/`onDragLeave`. Five-per-cell would work idiomatically. But this is the *only* area where PDND would be ergonomic. |
+| ESC cancel | **BLOCKER**: "While a drag operation is occurring, the browser enters a kind of takeover mode where it overrides handling of input events. More specifically, you cannot even listen for the `esc` keydown." (issue #165, unresolved). You get `dragend` *after* the browser's built-in fly-back animation, with `dataTransfer.dropEffect === 'none'`. No mid-drag ESC UX is possible. |
+| File-drop-from-desktop | **Unified** — the `external` adapter handles desktop file drops natively. This is PDND's one genuine advantage, but StoryGrid already has a stable file-drop implementation (Phase 8 DROP-01/DROP-02) — no incentive to rewrite it. |
+| TypeScript | First-class; authored in TS. |
+| Maintenance | Active (Atlassian-funded, powers Jira/Trello/Confluence). |
+| React 18 / Vite 8 / Oxc | Works; no known issues with our stack. |
+| Migration cost | **High** — entire DnD layer rewritten in a different paradigm (imperative register/unregister vs React hooks), plus workarounds for the three blockers above. |
+| What NOT to pair with | — (not recommending it in the first place) |
+
+**Verdict:** The three simultaneous blockers (scaled canvas, ESC cancel, touch consistency on Safari 15) disqualify PDND for this specific app. It would be the right choice for a kanban board at 1:1 scale with 1,000+ items. StoryGrid has at most ~20 cells on a scaled canvas — the opposite profile.
+
+### Option 3 — `@dnd-kit/react@^0.4.0` ❌ REJECT
+
+| Criterion | Assessment |
+|-----------|------------|
+| npm + version | `@dnd-kit/react@0.4.0`, published April 13, 2025. **No releases between 0.4.0 and today (2026-04-17)** — ~12 months without a point release on a pre-1.0 library |
+| Stability signal | Version 0.x with recurring breaking changes across point releases (event type system redesign, feedback config migration, plugin consolidation). Discussion #1842 requesting roadmap clarity has zero maintainer replies as of ~5 months ago. |
+| API | Cleaner than 6.x (plugin-based architecture, better touch story via `@dnd-kit/dom` abstraction), but the migration guide flags multiple "manual implementation required" gotchas. |
+| Migration cost | **Very high** — entire public API differs from 6.x; not a drop-in. Would invalidate 600+ existing tests that reference dnd-kit 6.x internals. |
+| Production fit | For a milestone whose stated purpose is fixing flaky DnD, adopting a pre-1.0 library with breaking-change history is the opposite of risk reduction. |
+
+**Verdict:** Monitor for 1.0 release. Revisit in v1.6+ if stable.
+
+### Option 4 — Framer Motion / `motion` `drag` API ❌ REJECT
+
+| Criterion | Assessment |
+|-----------|------------|
+| npm + version | `motion@^12.x` (Motion for React, formerly framer-motion) |
+| Bundle size | ~60–80 kB gzip (Motion's full bundle). `LazyMotion` + `m` components reduce, but still >25 kB. This is **5–8× the dnd-kit footprint** for a single feature. |
+| Drop zone model | No native drop-zone API — must roll your own via `onDragEnd` + manual hit-test against `getBoundingClientRect()` of all 5 zones per cell. Reinvents what dnd-kit already solves. |
+| Drag preview | `motion.div drag` animates the element itself, not a portal overlay. Works but requires extra `AnimatePresence` choreography to keep the canvas layout stable during drag. |
+| ESC cancel | No built-in support; must listen manually and call `dragControls.stop()` — doable. |
+| CSS transform scale | Partial — Motion handles nested transforms better than native HTML5, but you still multiply-by-scale manually for coordinate math. |
+| Fit for use case | Motion shines for animated UI gestures on a single element; it's not a DnD framework. Using it here means we still write hit-test logic and lose dnd-kit's accessibility + keyboard support. |
+
+**Verdict:** Bundle cost alone rules it out. Also, it does not solve the 5-zone drop-target problem — you'd effectively be writing the custom pointer engine (Option 6) on top of Motion.
+
+### Option 5 — `react-dnd` ❌ REJECT (confirmed prior)
+
+| Criterion | Assessment |
+|-----------|------------|
+| Touch support | HTML5 backend does not support touch; requires `react-dnd-touch-backend` or `react-dnd-multi-backend`. Both are semi-maintained at best. |
+| Maintenance | `react-dnd@16.0.1` published ~3 years ago; repo low-activity. |
+| API fit | Monads-style API (`connectDragSource`/`connectDropTarget`) is more boilerplate than dnd-kit for equivalent outcomes. |
+
+**Verdict:** Confirmed non-starter, same as v1.0 stack research.
+
+### Option 6 — Custom pointer-events engine (no library) ❌ REJECT
+
+| Criterion | Assessment |
+|-----------|------------|
+| What we'd build | `onPointerDown`/`onPointerMove`/`onPointerUp` with `setPointerCapture`, a state machine for `idle | pressing | dragging | cancelled`, hit-test against `data-zone` attrs via `document.elementFromPoint()`, portal-rendered drag preview, ESC `keydown` listener, autoscroll at viewport edges, keyboard accessibility (Tab + Space + arrows), touch-action CSS management, pointer-cancel cleanup on visibility change / touchcancel |
+| Scope | ~800–1,500 lines of net-new code, 40–60 unit tests, 2–4 weeks of phase work before first feature-parity build |
+| Risk | Every bug we fix in dnd-kit 6.x reappears in our code; no community bug reports; no issue tracker for our implementation |
+| Precedent | StoryGrid already has two custom pointer-event engines: divider resize (`pointerdown`/`setPointerCapture`/`pointerup`) and overlay drag (`OverlayLayer`). Both are small, local, and surgical — not cross-cutting like cell DnD. The cell DnD layer has five distinct concerns (sensor activation, pointer tracking, overlay rendering, drop-zone hit-test, and undo integration) that dnd-kit already separates cleanly. |
+
+**Verdict:** Only worth the cost if dnd-kit proves infeasible. It hasn't.
+
+### Option 7 — `neodrag`, `@formkit/drag-and-drop`, `hello-pangea/dnd`, etc. ❌ REJECT
+
+- **neodrag** is a single-element draggable/resizable library (pointer-event based, good for windowing UIs). No drop-target API — does not model "drag A onto B" as a primitive. Wrong abstraction.
+- **@formkit/drag-and-drop** is ~5 kB and API-ergonomic but targets simple list reorder, lacks keyboard nav, and is pre-1.0 (v0.3). Touch story is minimal.
+- **hello-pangea/dnd** is the maintained fork of the deprecated `react-beautiful-dnd`. API is list-oriented — wrong fit for a recursive tree grid with nested drop zones per cell.
+
+**Verdict:** None of these match StoryGrid's tree-grid + 5-zone-per-cell + scaled-canvas + ESC-cancel profile as well as dnd-kit 6.x.
+
+---
+
+## Alternatives Considered Summary
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| `@dnd-kit/core@^6.3.1` + PointerSensor | `@atlaskit/pragmatic-drag-and-drop` | Never, for this app. Reconsider if StoryGrid ever (a) removes the scaled canvas, (b) drops Safari 15, and (c) can accept platform-owned drag visuals. |
+| `@dnd-kit/core@^6.3.1` | `@dnd-kit/react@^0.4.0` | Reconsider in v1.6+ after 1.0 stable release + ≥3 months of releases without breaking changes |
+| `@dnd-kit/core@^6.3.1` | Custom pointer engine | Only if dnd-kit 6.x is deprecated and no 1.0 `@dnd-kit/react` exists. Unlikely before v2.0 of StoryGrid. |
 
 ---
 
 ## What NOT to Use
 
-| Library | Why Not |
-|---------|---------|
-| Tailwind CSS v4 | Requires Safari 16.4+ (project targets 15+); CSS-first config is a breaking change; ecosystem still maturing |
-| React 19 | Peer dependency compatibility risk with dnd-kit and html-to-image; Server Components / Actions provide zero value for this app |
-| dom-to-image | Deprecated, unmaintained, replaced by html-to-image |
-| html2canvas | Cannot handle `object-fit: cover`, `CSS transform`, or CSS custom properties reliably — will produce incorrect exports |
-| react-dnd | Worse pointer event support than @dnd-kit; more boilerplate |
-| @dnd-kit/react (new adapter) | Alpha/beta, not production-ready, breaking API changes in flight |
-| Vite 6 / Vite 7 | Older; start new projects on v8 |
-| @ffmpeg/core-mt (multi-threaded) | Requires deeper SharedArrayBuffer/Worker browser support; use single-threaded @ffmpeg/core first |
-| webpack / CRA | No DX benefit over Vite; larger config overhead |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `TouchSensor` + `MouseSensor` together | dnd-kit docs: "You should not be using both PointerSensor and TouchSensor or MouseSensor at the same time." This is the likely root cause of the flaky Phase 25 activation (current `TouchSensor + MouseSensor` at delay:500 per Key Decision). | `PointerSensor` alone with `{ delay: 500, tolerance: 5 }` activation constraint |
+| `@atlaskit/pragmatic-drag-and-drop` | Native-HTML5-based: scaled canvas broken (issue #203), ESC cancel impossible mid-drag (issue #165), iOS Safari 15 touch flaky | `@dnd-kit/core` |
+| `@dnd-kit/react` (0.x) | Pre-1.0, no releases in 12 months, breaking changes between points, no roadmap response | `@dnd-kit/core@6.3.1` |
+| `react-dnd` + `react-dnd-touch-backend` | Unmaintained touch backend, boilerplate, no DragOverlay equivalent | `@dnd-kit/core` |
+| `framer-motion` / `motion` for DnD | 60+ kB gzip, no drop-zone API, no accessibility story | `@dnd-kit/core` |
+| Custom `useDndMonitor` + `DragZoneRefContext` (current code) | Parallel pointer tracking that fights dnd-kit's own state machine; likely cause of the "1-in-10 swap" regression | Use `DndContext`'s `onDragStart`/`onDragMove`/`onDragOver`/`onDragEnd`/`onDragCancel` exclusively |
+| `@dnd-kit/react` (new package, v0) migration in this milestone | Migration risk trades the problem we have (flaky touch) for a worse problem (pre-1.0 API churn) | Stay on 6.3.1 and revisit in v1.6+ |
 
 ---
 
-## Open Questions
+## Stack Patterns by Variant
 
-- **html-to-image vs modern-screenshot:** If html-to-image produces rendering artifacts in Phase 4 testing (e.g., CSS blur filters, border-radius clipping at export), swap to `modern-screenshot@^4.6.8` as a direct API-compatible replacement. This should be validated in Phase 4 before declaring the export engine stable.
-- **@dnd-kit/react timeline:** Monitor GitHub Discussion #1842 for production-readiness announcement. If @dnd-kit/react reaches stable before Phase 3 is built, evaluate migration. Otherwise stick to @dnd-kit/core v6.
-- **Vite 8 Rolldown edge cases:** Rolldown is architecturally new. If any dependency produces unusual bundling behavior (especially @ffmpeg WASM), check the Vite 8 migration docs and rolldown-vite compatibility layer.
+**If future milestone needs desktop-file-drop unified with cell-DnD:**
+- Re-evaluate Pragmatic DnD's `external` adapter. Only if we also remove the scaled canvas first (or add canvas-scale compensation to PDND, which no maintainer has shipped). Not this milestone.
+
+**If future milestone needs touch-only mobile app with no desktop surface:**
+- Drop dnd-kit, use `framer-motion` `drag` or raw pointer events — simpler when desktop accessibility is not a requirement. Not this milestone.
+
+**If scaled-canvas drag preview has sub-pixel jitter after the custom modifier:**
+- Fall back to rendering the preview at 1.0 scale in a viewport-space portal (same pattern as the ActionBar), not inside the transformed canvas. `DragOverlay` already does this by default.
+
+---
+
+## Version Compatibility
+
+| Package A | Compatible With | Notes |
+|-----------|-----------------|-------|
+| `@dnd-kit/core@^6.3.1` | `react@^18.3.1`, `react-dom@^18.3.1` | No React 19 peer-dep issues on 6.x; we pin React 18 anyway |
+| `@dnd-kit/core@^6.3.1` | `@dnd-kit/sortable@^10.0.0` | Matched in current package.json; both 6.x-era |
+| `@dnd-kit/core@^6.3.1` | `@dnd-kit/utilities@^3.2.2` | Matched in current package.json |
+| `@dnd-kit/modifiers@^9.0.0` | `@dnd-kit/core@^6.x` | 9.x is the 6.x-compatible modifier line; do not install `@dnd-kit/modifiers@10.x` (that targets `@dnd-kit/react`) |
+| `@dnd-kit/core@^6.3.1` | `vite@^8.0.1` | No bundler issues reported; ESM build works with Rolldown |
+| `@dnd-kit/core@^6.3.1` | `@vitejs/plugin-react@^6.0.1` (Oxc) | No JSX-runtime compatibility issues |
+| `@dnd-kit/core@^6.3.1` | `typescript@~5.9.3` | Types compile cleanly |
+
+**Do NOT mix:**
+- `@dnd-kit/core@6.x` with `@dnd-kit/react@0.x` — different state machines, would install two DndContext providers
+- `@dnd-kit/modifiers@10.x` with `@dnd-kit/core@6.3.1` — modifier major versions are paired to core generation
+
+---
+
+## Integration Notes — Concrete Migration Plan
+
+The roadmapper should plan ~3 phases:
+
+1. **Phase A — Sensor consolidation** (small, high-value)
+   - Replace `TouchSensor + MouseSensor` with a single `PointerSensor` configured `{ activationConstraint: { delay: 500, tolerance: 5 } }`.
+   - Delete `useDndMonitor` hook and `DragZoneRefContext` — consume `active`/`over` from `useDndContext` instead.
+   - Apply `touch-action: none` to the `LeafNode` drag handle (per dnd-kit docs; critical for Safari).
+   - Expected outcome: eliminates the "1-in-10 swap" flakiness without changing visual UX.
+
+2. **Phase B — Scaled-canvas drag preview**
+   - Write `scaleCompensation` modifier that divides `transform.x`/`transform.y` by the current canvas zoom factor (read from `editorStore.zoom`).
+   - Compose with `snapCenterToCursor` from `@dnd-kit/modifiers`.
+   - Render semi-opaque cell-content preview inside `<DragOverlay>` — portal ensures it lives in viewport space (outside the scaled canvas transform).
+   - Verify drag preview tracks finger/cursor at 50%, 75%, 100%, 125% zoom.
+
+3. **Phase C — 5-zone visual overhaul + ESC**
+   - Replace custom zone geometry with 5 `useDroppable` instances per leaf (IDs: `{leafId}:center`, `{leafId}:top`, etc.).
+   - Use `collisionDetection={pointerWithin}` so exactly one zone is "over" at any time.
+   - Bind icon bright/dim state to `over?.id === zoneId`.
+   - Wire `onDragCancel` for ESC feedback (built-in in dnd-kit — no extra listener).
+   - Add press-and-hold start animation in `onDragStart`.
+
+**Code that stays untouched:** `moveLeafToEdge`, `moveCell`, `swapCells`, all tree tests, Phase 25's `MobileCellTray` shell (only its DnD wiring changes), divider resize (different code path entirely), overlay drag (different code path entirely), file-drop (different code path entirely).
 
 ---
 
 ## Sources
 
-- Vite 8 release: https://vite.dev/blog/announcing-vite8
-- Zustand v5 announcement: https://pmnd.rs/blog/announcing-zustand-v5
-- Zustand v5 migration guide: https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-- Tailwind v4 upgrade guide: https://tailwindcss.com/docs/upgrade-guide
-- html-to-image GitHub: https://github.com/bubkoo/html-to-image
-- modern-screenshot npm: https://www.npmjs.com/package/modern-screenshot
-- @dnd-kit maintenance discussion: https://github.com/clauderic/dnd-kit/issues/1830
-- @dnd-kit roadmap discussion: https://github.com/clauderic/dnd-kit/discussions/1842
-- @ffmpeg/ffmpeg npm: https://www.npmjs.com/package/@ffmpeg/ffmpeg
-- nanoid npm: https://www.npmjs.com/package/nanoid
-- lucide-react React 19 issue: https://github.com/lucide-icons/lucide/issues/2951
-- html-to-image CORS issue: https://github.com/bubkoo/html-to-image/issues/40
-- Best HTML-to-canvas solutions 2025: https://portalzine.de/best-html-to-canvas-solutions-in-2025/
+| Source | URL | What verified | Confidence |
+|--------|-----|---------------|------------|
+| @dnd-kit/core PointerSensor docs | https://dndkit.com/api-documentation/sensors/pointer | Single-sensor rule, activation constraints, touch-action requirement | HIGH |
+| @dnd-kit/modifiers `snapCenterToCursor` PR | https://github.com/clauderic/dnd-kit/pull/334 | `activatorEvent` passed to modifiers — enables scale compensation | HIGH |
+| @dnd-kit DragOverlay scale issue (closed) | https://github.com/clauderic/dnd-kit/issues/50 | Workaround for scaled-container DragOverlay via modifier + `getBoundingClientRect` | MEDIUM |
+| @dnd-kit DragOverlay drop-animation scale issue | https://github.com/clauderic/dnd-kit/issues/398 | Additional scale-related workaround reference | MEDIUM |
+| @dnd-kit roadmap discussion (no reply) | https://github.com/clauderic/dnd-kit/discussions/1842 | @dnd-kit/react stability unclear; 0 maintainer responses | HIGH |
+| PDND scaled-container issue (open, unresolved) | https://github.com/atlassian/pragmatic-drag-and-drop/issues/203 | "PDND uses viewport coordinates, transform:scale breaks calculations" — direct quote | HIGH |
+| PDND ESC cancel limitation (open) | https://github.com/atlassian/pragmatic-drag-and-drop/issues/165 | Cannot detect ESC mid-drag | HIGH |
+| PDND web platform constraints | https://atlassian.design/components/pragmatic-drag-and-drop/web-platform-design-constraints | Native preview opacity ~0.8, 280px Windows cap, cursor constraints | HIGH |
+| @atlaskit/pragmatic-drag-and-drop npm | https://www.npmjs.com/package/@atlaskit/pragmatic-drag-and-drop | v1.7.7, published ~Nov 2025 | HIGH |
+| Pragmatic DnD GitHub README | https://github.com/atlassian/pragmatic-drag-and-drop | ~4.7 kB core claim, adapter architecture | HIGH |
+| @dnd-kit/react 0.4.0 release | https://github.com/clauderic/dnd-kit/releases | Latest release April 2025, breaking changes noted | HIGH |
+| Puck editor 2026 DnD comparison | https://puckeditor.com/blog/top-5-drag-and-drop-libraries-for-react | Confirms dnd-kit as default 2026 choice; ~6 kB gzip; recommends for fine-grained control | MEDIUM |
+| dnd-kit vs PDND vs react-beautiful-dnd 2026 | https://www.pkgpulse.com/blog/dnd-kit-vs-react-beautiful-dnd-vs-pragmatic-drag-drop-2026 | @dnd-kit: 6 kB, 2.8M weekly downloads; PDND: 3.5 kB, 180K weekly | MEDIUM |
+| LogRocket PDND guide | https://blog.logrocket.com/implement-pragmatic-drag-drop-library-guide/ | API ergonomics, adapter list | MEDIUM |
+| Native HTML5 DnD on touch devices | https://medium.com/@deepakkadarivel/drag-and-drop-dnd-for-mobile-browsers-fc9bcd1ad3c5 | iOS 15+ / Android Chrome 96+ native support; Safari 15.0–15.3 inconsistent | MEDIUM |
+| Mobile drag-drop polyfill (evidence, not recommending) | https://github.com/drag-drop-touch-js/dragdroptouch | Existence of polyfill confirms native HTML5 DnD does not "just work" on touch | MEDIUM |
+| Pointer events for DnD (custom engine reference) | https://medium.com/@aswathyraj/how-i-built-drag-and-drop-in-react-without-libraries-using-pointer-events-a0f96843edb7 | Scope estimate for custom implementation | LOW |
+
+---
+
+*Stack research for: v1.5 Unified DnD UX (cell drag only)*
+*Researched: 2026-04-17*
+*Confidence: HIGH for recommendation; MEDIUM for exact bundle-size kB figures (Bundlephobia blocked at fetch time)*

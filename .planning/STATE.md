@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Unified Drag-and-Drop UX
-status: planning
-stopped_at: v1.5 milestone defined — defining requirements
-last_updated: "2026-04-17T00:00:00.000Z"
-last_activity: 2026-04-17
+milestone: v1.0
+milestone_name: milestone
+status: Defining requirements
+stopped_at: context exhaustion at 98% (2026-04-17)
+last_updated: "2026-04-17T00:01:46.965Z"
+last_activity: 2026-04-17 — Milestone v1.5 started
 progress:
   total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -232,8 +231,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-16T21:36:52.229Z
-Stopped at: Completed 26-01-PLAN.md (Phase 26 instagram-style-fonts complete)
+Last session: 2026-04-17T00:01:46.955Z
+Stopped at: context exhaustion at 98% (2026-04-17)
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

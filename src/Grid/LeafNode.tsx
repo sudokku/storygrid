@@ -59,7 +59,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTooSmall, setIsTooSmall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const divRef = useRef<HTMLDivElement>(null);
+  const divRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Holds the loaded HTMLImageElement — never rendered to DOM
   const imgElRef = useRef<HTMLImageElement | null>(null);

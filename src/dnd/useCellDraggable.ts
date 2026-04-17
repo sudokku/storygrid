@@ -20,11 +20,14 @@
  * captures `canvas.toDataURL()` ghost snapshot on drag-start.
  */
 import { useDraggable } from '@dnd-kit/core';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 export type UseCellDraggableResult = {
-  // Phase 28 fills this in against the @dnd-kit/core useDraggable return type.
-  attributes: Record<string, unknown>;
-  listeners: Record<string, unknown>;
+  // Mirror dnd-kit's real return types so strict `exactOptionalPropertyTypes`
+  // and index-signature checks don't flag the passthrough below.
+  attributes: DraggableAttributes;
+  listeners: SyntheticListenerMap;
   isDragging: boolean;
   setNodeRef: (node: HTMLElement | null) => void;
 };

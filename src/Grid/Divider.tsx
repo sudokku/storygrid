@@ -113,6 +113,7 @@ export const Divider = React.memo(function Divider({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         data-testid={`divider-hit-${containerId}-${siblingIndex}`}
+        data-dnd-ignore="true"
       >
         {/* Visible 2px line — hidden until canvas hovered (group-hover) */}
         <div

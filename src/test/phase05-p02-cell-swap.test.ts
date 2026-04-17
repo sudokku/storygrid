@@ -1,21 +1,18 @@
 /**
  * phase05-p02-cell-swap.test.ts
- * Tests for cell swap via @dnd-kit drag handle (D-13 through D-16 — POLH-07)
+ * Tests for the gridStore.swapCells action (D-13).
  *
  * Coverage:
  * - swapCells store action swaps media content between two leaves
  * - swapCells pushes to undo history (historyIndex increments)
- * - ActionBar renders GripVertical drag handle when hasMedia=true
- * - ActionBar renders drag handle even when hasMedia=false (EC-06: gate relaxed in Phase 9)
- * - DndContext onDragEnd calls swapCells for different nodes
- * - DndContext onDragEnd does nothing when dropped on same cell
+ * - swap is undoable via undo()
+ *
+ * Phase 28 note: ActionBar drag-handle tests DELETED — DRAG-07 removed the
+ * GripVertical button; the entire cell is now the draggable via
+ * useCellDraggable in LeafNode.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import React from 'react';
-import { ActionBar } from '../Grid/ActionBar';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useGridStore } from '../store/gridStore';
-import { createLeaf } from '../lib/tree';
 import type { ContainerNode, LeafNode, GridNode } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -141,64 +138,5 @@ describe('swapCells store action (D-13)', () => {
 
     expect(revertedA.mediaId).toBe('media-a');
     expect(revertedB.mediaId).toBe('media-b');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// POLH-07-B: ActionBar drag handle button
-// ---------------------------------------------------------------------------
-
-describe('ActionBar drag handle (D-13, D-14)', () => {
-  it('renders drag handle button when hasMedia=true', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
-    setGridState(leaf, { 'mid-1': 'data:image/png;base64,x' });
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: true,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.getByTestId('drag-handle-leaf-1')).toBeInTheDocument();
-  });
-
-  it('renders drag handle on empty cells (EC-06: gate relaxed in Phase 9)', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: null });
-    setGridState(leaf);
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: false,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.queryByTestId('drag-handle-leaf-1')).not.toBeNull();
-    const handle = screen.getByTestId('drag-handle-leaf-1');
-    // Phase 25: native draggable removed from ActionBar button — @dnd-kit listeners
-    // are spread on LeafNode root div instead (touch + mouse unified sensor).
-    expect(handle).not.toHaveAttribute('draggable', 'true');
-    expect(handle).toHaveAttribute('aria-label', 'Drag to move');
-  });
-
-  it('drag handle button has aria-label "Drag to move"', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
-    setGridState(leaf, { 'mid-1': 'data:image/png;base64,x' });
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: true,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.getByTestId('drag-handle-leaf-1')).toHaveAttribute('aria-label', 'Drag to move');
   });
 });

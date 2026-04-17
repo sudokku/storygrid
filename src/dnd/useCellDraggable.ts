@@ -19,6 +19,7 @@
  * Implementation: Phase 28 — wires useDraggable from @dnd-kit/core and
  * captures `canvas.toDataURL()` ghost snapshot on drag-start.
  */
+import { useDraggable } from '@dnd-kit/core';
 
 export type UseCellDraggableResult = {
   // Phase 28 fills this in against the @dnd-kit/core useDraggable return type.
@@ -28,6 +29,24 @@ export type UseCellDraggableResult = {
   setNodeRef: (node: HTMLElement | null) => void;
 };
 
-export function useCellDraggable(_leafId: string): UseCellDraggableResult {
-  throw new Error('useCellDraggable: implementation lands in Phase 28');
+export function useCellDraggable(leafId: string): UseCellDraggableResult {
+  // D-06: ghost snapshot + sourceRect are written by the adapter's onDragStart
+  // callback (Plan 07) — NOT here. This hook stays pure: it just proxies
+  // dnd-kit's useDraggable and normalizes the `listeners` undefined case.
+  //
+  // `data: { nodeId: leafId }` mirrors the Phase 25 call shape so `active.data`
+  // consumers (adapter, downstream side paths) keep reading a stable property.
+  const { attributes, listeners, isDragging, setNodeRef } = useDraggable({
+    id: leafId,
+    data: { nodeId: leafId },
+  });
+  return {
+    attributes,
+    // dnd-kit's useDraggable types `listeners` as `SyntheticListenerMap | undefined`
+    // — it can be undefined before the first pointer-interaction activator mounts.
+    // Nullish-coalesce to `{}` so JSX spread at the LeafNode call site is always safe.
+    listeners: listeners ?? {},
+    isDragging,
+    setNodeRef,
+  };
 }

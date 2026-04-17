@@ -1,16 +1,20 @@
 /**
  * Unit tests for computeDropZone — the pure 5-zone drop-zone resolver.
  *
- * Satisfies REQ: DROP-06 (live recompute per pointermove) and CANCEL-05
- * (zones fully tile each cell — no dead space).
+ * Per-axis threshold semantics (aligned with DropZoneIndicators.tsx band geometry):
+ *   yThreshold = max(20, h * 0.2)   — matches height: 20% on top/bottom indicators
+ *   xThreshold = max(20, w * 0.2)   — matches width: 20% on left/right indicators
+ *
+ * 20px floor preserves CANCEL-05 on degenerate small cells.
  *
  * Coverage:
  *   1-3. Zone table at canvas scales 1.0, 0.5, 0.2
  *   4.   Boundary pixel transitions (±1px around threshold) — strict </>
  *   5.   Non-origin rect (rect.left / rect.top != 0)
  *   6.   Property-based no-dead-space sweep (CANCEL-05 proof)
- *   7.   Degenerate small 20x20 cell (threshold floor = 20)
- *   8.   Exact geometric center → 'center' across multiple sizes
+ *   7.   Per-axis threshold (indicator-aligned, gap-closure 28-12)
+ *   8.   Degenerate small 20x20 cell (threshold floor = 20)
+ *   9.   Exact geometric center → 'center' across multiple sizes
  */
 import { describe, it, expect } from 'vitest';
 import { computeDropZone } from './computeDropZone';
@@ -52,7 +56,8 @@ const ALL_ZONES: ReadonlySet<DropZone> = new Set<DropZone>([
 
 describe('computeDropZone — zone lookup at canvasScale 1.0', () => {
   // Cell 300x600 viewport px (simulates 1.0 scale on a 300x600 canvas).
-  // threshold = max(20, min(300, 600) * 0.2) = max(20, 60) = 60
+  // yThreshold = max(20, 600*0.2) = max(20, 120) = 120
+  // xThreshold = max(20, 300*0.2) = max(20, 60) = 60
   const rect = makeRect(0, 0, 300, 600);
 
   it('returns "center" at exact cell center (150, 300)', () => {
@@ -75,33 +80,34 @@ describe('computeDropZone — zone lookup at canvasScale 1.0', () => {
     expect(computeDropZone(rect, { x: 290, y: 300 })).toBe('right');
   });
 
-  it('returns "top" just inside the top threshold (y=30, threshold=60)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 30 })).toBe('top');
+  it('returns "top" just inside the top threshold (y=100, threshold=120)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 100 })).toBe('top');
   });
 
-  it('returns "center" at y === threshold (strict-less-than semantics: y=60 NOT < 60)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 60 })).toBe('center');
+  it('returns "center" at y === threshold (strict-less-than semantics: y=120 NOT < 120)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 120 })).toBe('center');
   });
 
-  it('returns "center" at y === h - threshold (strict-greater-than semantics: y=540 NOT > 540)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 540 })).toBe('center');
+  it('returns "center" at y === h - threshold (strict-greater-than semantics: y=480 NOT > 480)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 480 })).toBe('center');
   });
 });
 
 describe('computeDropZone — zone lookup at canvasScale 0.5', () => {
   // Cell 150x300 viewport px (simulates 0.5 scale of 300x600 canvas-space).
-  // threshold = max(20, min(150, 300) * 0.2) = max(20, 30) = 30
+  // yThreshold = max(20, 300*0.2) = max(20, 60) = 60
+  // xThreshold = max(20, 150*0.2) = max(20, 30) = 30
   const rect = makeRect(0, 0, 150, 300);
 
   it('returns "center" at (75, 150)', () => {
     expect(computeDropZone(rect, { x: 75, y: 150 })).toBe('center');
   });
 
-  it('returns "top" at (75, 10) — y < 30', () => {
+  it('returns "top" at (75, 10) — y < 60', () => {
     expect(computeDropZone(rect, { x: 75, y: 10 })).toBe('top');
   });
 
-  it('returns "bottom" at (75, 290) — y > 270', () => {
+  it('returns "bottom" at (75, 290) — y > 240', () => {
     expect(computeDropZone(rect, { x: 75, y: 290 })).toBe('bottom');
   });
 
@@ -116,18 +122,19 @@ describe('computeDropZone — zone lookup at canvasScale 0.5', () => {
 
 describe('computeDropZone — zone lookup at canvasScale 0.2', () => {
   // Cell 60x120 viewport px.
-  // threshold = max(20, min(60, 120) * 0.2) = max(20, 12) = 20
+  // yThreshold = max(20, 120*0.2) = max(20, 24) = 24
+  // xThreshold = max(20, 60*0.2) = max(20, 12) = 20 (floor engaged on x)
   const rect = makeRect(0, 0, 60, 120);
 
   it('returns "center" at (30, 60)', () => {
     expect(computeDropZone(rect, { x: 30, y: 60 })).toBe('center');
   });
 
-  it('returns "top" at (30, 5) — y < 20', () => {
+  it('returns "top" at (30, 5) — y < 24', () => {
     expect(computeDropZone(rect, { x: 30, y: 5 })).toBe('top');
   });
 
-  it('returns "bottom" at (30, 115) — y > 100', () => {
+  it('returns "bottom" at (30, 115) — y > 96', () => {
     expect(computeDropZone(rect, { x: 30, y: 115 })).toBe('bottom');
   });
 
@@ -141,36 +148,37 @@ describe('computeDropZone — zone lookup at canvasScale 0.2', () => {
 });
 
 describe('computeDropZone — boundary pixel transitions (±1px around threshold)', () => {
-  // Cell 300x600, threshold = 60
+  // Cell 300x600, yThreshold=120, xThreshold=60
   const rect = makeRect(0, 0, 300, 600);
 
-  it('y=59 → "top" (strict less-than: 59 < 60)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 59 })).toBe('top');
+  it('y=119 → "top" (strict less-than: 119 < 120)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 119 })).toBe('top');
   });
 
-  it('y=60 → "center" (NOT "top": 60 is not < 60)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 60 })).toBe('center');
+  it('y=120 → "center" (NOT "top": 120 is not < 120)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 120 })).toBe('center');
   });
 
-  it('y=61 → "center"', () => {
-    expect(computeDropZone(rect, { x: 150, y: 61 })).toBe('center');
+  it('y=121 → "center"', () => {
+    expect(computeDropZone(rect, { x: 150, y: 121 })).toBe('center');
   });
 
-  it('y=539 → "center"', () => {
-    expect(computeDropZone(rect, { x: 150, y: 539 })).toBe('center');
+  it('y=479 → "center"', () => {
+    expect(computeDropZone(rect, { x: 150, y: 479 })).toBe('center');
   });
 
-  it('y=540 → "center" (NOT "bottom": 540 is not > 540)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 540 })).toBe('center');
+  it('y=480 → "center" (NOT "bottom": 480 is not > 480)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 480 })).toBe('center');
   });
 
-  it('y=541 → "bottom" (strict greater-than: 541 > 540)', () => {
-    expect(computeDropZone(rect, { x: 150, y: 541 })).toBe('bottom');
+  it('y=481 → "bottom" (strict greater-than: 481 > 480)', () => {
+    expect(computeDropZone(rect, { x: 150, y: 481 })).toBe('bottom');
   });
 });
 
 describe('computeDropZone — rect not at origin (rect.left/top non-zero)', () => {
-  // Cell at viewport (100, 200), size 300x600, threshold = 60.
+  // Cell at viewport (100, 200), size 300x600.
+  // yThreshold = max(20, 600*0.2) = 120; xThreshold = max(20, 300*0.2) = 60
   const rect = makeRect(100, 200, 300, 600);
 
   it('pointer (250, 500) → relative (150, 300) → "center"', () => {
@@ -233,8 +241,55 @@ describe('computeDropZone — CANCEL-05 no-dead-space property sweep', () => {
   });
 });
 
+describe('computeDropZone — per-axis threshold (indicator-aligned, gap-closure 28-12)', () => {
+  // Non-square cell (100w × 300h) — the worst-case dead-band under the old
+  // shorter-axis formula (threshold=20). With per-axis thresholds:
+  //   yThreshold = max(20, 300*0.2) = 60
+  //   xThreshold = max(20, 100*0.2) = 20
+  // The visible top-band indicator (20% of 300 = 60px tall) is now covered by
+  // the compute function's 'top' region — no dead-band between indicator and
+  // compute. Regression lock for 28-HUMAN-UAT Gap 2 "extend zones very buggy".
+  const nonSquare = makeRect(0, 0, 100, 300);
+
+  it('100x300 cell: y=40 resolves to "top" (covers the visible top-band indicator)', () => {
+    expect(computeDropZone(nonSquare, { x: 50, y: 40 })).toBe('top');
+  });
+
+  it('100x300 cell: y=59 resolves to "top" (still inside yThreshold=60)', () => {
+    expect(computeDropZone(nonSquare, { x: 50, y: 59 })).toBe('top');
+  });
+
+  it('100x300 cell: y=60 resolves to "center" (strict: 60 NOT < 60)', () => {
+    expect(computeDropZone(nonSquare, { x: 50, y: 60 })).toBe('center');
+  });
+
+  it('100x300 cell: y=241 resolves to "bottom" (241 > 300-60=240)', () => {
+    expect(computeDropZone(nonSquare, { x: 50, y: 241 })).toBe('bottom');
+  });
+
+  it('100x300 cell: x=19 resolves to "left" (xThreshold=20, 19 < 20)', () => {
+    expect(computeDropZone(nonSquare, { x: 19, y: 150 })).toBe('left');
+  });
+
+  it('100x300 cell: x=20 resolves to "center" (20 NOT < 20)', () => {
+    expect(computeDropZone(nonSquare, { x: 20, y: 150 })).toBe('center');
+  });
+
+  // Extreme wide cell: 300w × 40h — yThreshold floor engages.
+  it('300x40 extreme cell: yThreshold floor of 20 preserved; y=19 → "top"', () => {
+    const wide = makeRect(0, 0, 300, 40);
+    expect(computeDropZone(wide, { x: 150, y: 19 })).toBe('top');
+  });
+
+  it('300x40 extreme cell: y=20 → "center" (floor strict)', () => {
+    const wide = makeRect(0, 0, 300, 40);
+    expect(computeDropZone(wide, { x: 150, y: 20 })).toBe('center');
+  });
+});
+
 describe('computeDropZone — degenerate small cell (20x20, threshold floor)', () => {
-  // w=h=20, threshold = max(20, min(20,20)*0.2) = max(20, 4) = 20.
+  // w=h=20, yThreshold = max(20, 20*0.2) = max(20, 4) = 20
+  //         xThreshold = max(20, 20*0.2) = max(20, 4) = 20
   // Center zone collapses — must still return exactly one zone for every
   // integer pointer, and must be deterministic.
   const rect = makeRect(0, 0, 20, 20);

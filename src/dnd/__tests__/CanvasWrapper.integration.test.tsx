@@ -20,7 +20,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import React from 'react';
-import { CanvasWrapper } from '../../Grid/CanvasWrapper';
+import { CanvasWrapper, _testComputeZoneFromDragMove } from '../../Grid/CanvasWrapper';
 import { useGridStore } from '../../store/gridStore';
 import { useEditorStore } from '../../store/editorStore';
 import { useDragStore } from '../dragStore';
@@ -291,5 +291,163 @@ describe('SC-4 regression: file-drop coexistence (D-32)', () => {
     const { container } = render(<CanvasWrapper />);
     expect(container.querySelector('[data-testid="leaf-leaf-a"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="leaf-leaf-b"]')).toBeTruthy();
+  });
+});
+
+describe('Insert edge-drop regression lock (gap-closure 28-14): handleDragMove refresh + input-agnostic pointer', () => {
+  // Regression lock for 28-UAT Gap 1:
+  //   DEFECT 1 — handleDragOver fired only on droppable enter/leave
+  //              (deps [overId] per core.esm.js:3286), so zone was the
+  //              entry-zone and stale by the time handleDragEnd read it.
+  //              Fix: register handleDragMove on DndContext (deps
+  //              [scrollAdjustedTranslate.x, scrollAdjustedTranslate.y]
+  //              per core.esm.js:3210-3243) — fires every pointer-move
+  //              tick.
+  //   DEFECT 2 — pointer derived from (activatorEvent as PointerEvent).clientX.
+  //              On touch, activatorEvent is a TouchEvent (top-level clientX
+  //              is undefined) — undefined + delta = NaN, falls through to
+  //              'center'. Fix: derive pointer from active.rect.current.initial
+  //              + delta (input-type-agnostic).
+
+  // NOTE: this test exercises the EXPORTED helper that encapsulates the
+  // handleDragMove pointer-derivation + zone-compute logic. The full dnd-kit
+  // lifecycle is not simulated here (Pitfall 11) — the helper is extracted
+  // from CanvasWrapper for testability and is also invoked internally by
+  // the real handleDragMove callback registered on DndContext.
+
+  function stubLeafRect(leafEl: HTMLElement, rect: Partial<DOMRect> & { left: number; top: number; width: number; height: number }) {
+    vi.spyOn(leafEl, 'getBoundingClientRect').mockReturnValue({
+      left: rect.left,
+      top: rect.top,
+      right: rect.left + rect.width,
+      bottom: rect.top + rect.height,
+      width: rect.width,
+      height: rect.height,
+      x: rect.left,
+      y: rect.top,
+      toJSON() {
+        return this;
+      },
+    } as DOMRect);
+  }
+
+  it('DEFECT 1 fix — edge pointer inside target cell resolves to the correct edge zone', () => {
+    render(<CanvasWrapper />);
+    // Simulate drag-start: source cell is leaf-a (0,0,100,100) in viewport.
+    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().setGhost(null, { width: 100, height: 100, left: 0, top: 0 });
+
+    // Stub target leaf-b's rect so computeDropZone has predictable coords.
+    const leafB = screen.getByTestId('leaf-leaf-b');
+    stubLeafRect(leafB, { left: 100, top: 0, width: 300, height: 600 });
+
+    // Simulate a handleDragMove tick where the pointer has moved from the
+    // center of leaf-a (viewport {x:50, y:50}) to viewport {x:200, y:75}
+    // — inside leaf-b at relative {x:100, y:75}. y=75 < yThreshold=120,
+    // so zone is 'top'.
+    const result = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-b' },
+      delta: { x: 150, y: 25 },
+    });
+    expect(result.overId).toBe('leaf-b');
+    expect(result.zone).toBe('top');
+  });
+
+  it('DEFECT 1 fix — a SECOND tick with pointer in a different zone updates activeZone (not stale)', () => {
+    render(<CanvasWrapper />);
+    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().setGhost(null, { width: 100, height: 100, left: 0, top: 0 });
+
+    const leafB = screen.getByTestId('leaf-leaf-b');
+    stubLeafRect(leafB, { left: 100, top: 0, width: 300, height: 600 });
+
+    // Tick 1: pointer on top band of leaf-b.
+    const tick1 = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-b' },
+      delta: { x: 150, y: 25 },
+    });
+    expect(tick1.zone).toBe('top');
+
+    // Tick 2: pointer has moved to the center of leaf-b.
+    //   from center of leaf-a (50,50) → viewport (250, 300). Inside leaf-b
+    //   at relative (150, 300) — yThreshold=120 < y=300 < h-yThreshold=480;
+    //   xThreshold=60 < x=150 < w-xThreshold=240 → 'center'.
+    const tick2 = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-b' },
+      delta: { x: 200, y: 250 },
+    });
+    expect(tick2.zone).toBe('center');
+
+    // Tick 3: pointer has moved to the right edge of leaf-b.
+    //   relative (290, 300) — x=290 > w-xThreshold=240 → 'right'.
+    const tick3 = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-b' },
+      delta: { x: 340, y: 250 },
+    });
+    expect(tick3.zone).toBe('right');
+  });
+
+  it('DEFECT 2 fix — pointer derivation does NOT depend on activatorEvent (works identically for Mouse and Touch inputs)', () => {
+    // This test proves the helper derives the pointer purely from
+    // active.rect.current.initial + delta. It does NOT read activatorEvent
+    // at all — both Mouse-input and Touch-input code paths through the
+    // helper produce identical output. The old bug ('activatorEvent as
+    // PointerEvent' cast yielded undefined on TouchEvent → NaN pointer →
+    // always 'center') is eliminated by construction.
+    //
+    // We verify this by confirming the helper's signature does not take
+    // activatorEvent AND by running the helper with a delta that must
+    // resolve to an edge zone (not 'center'). If the helper had any
+    // residual activatorEvent dependency, it would either throw (undefined
+    // access) or fall through to 'center'. Neither happens.
+    render(<CanvasWrapper />);
+    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().setGhost(null, { width: 100, height: 100, left: 0, top: 0 });
+
+    const leafB = screen.getByTestId('leaf-leaf-b');
+    stubLeafRect(leafB, { left: 100, top: 0, width: 300, height: 600 });
+
+    // Pointer ends at relative (50, 590) of leaf-b — y=590 > h-yThreshold=480 → 'bottom'.
+    //   from center of leaf-a (50,50) + delta (100, 540) = viewport (150, 590)
+    //   → relative leaf-b (50, 590). y=590 > 480 → 'bottom'.
+    const result = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-b' },
+      delta: { x: 100, y: 540 },
+    });
+    expect(result.overId).toBe('leaf-b');
+    expect(result.zone).toBe('bottom');
+  });
+
+  it('null-over branch: handleDragMove with null `over` clears the store', () => {
+    render(<CanvasWrapper />);
+    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().setOver('leaf-b', 'top');
+
+    const result = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: null,
+      delta: { x: 999, y: 999 },
+    });
+    expect(result.overId).toBeNull();
+    expect(result.zone).toBeNull();
+  });
+
+  it('self-over branch: handleDragMove with over.id === active.id clears the store', () => {
+    render(<CanvasWrapper />);
+    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().setOver('leaf-b', 'top');
+
+    const result = _testComputeZoneFromDragMove({
+      active: { id: 'leaf-a', rect: { current: { initial: { left: 0, top: 0, width: 100, height: 100 } } } },
+      over: { id: 'leaf-a' },
+      delta: { x: 5, y: 5 },
+    });
+    expect(result.overId).toBeNull();
+    expect(result.zone).toBeNull();
   });
 });

@@ -326,3 +326,35 @@ describe('computeDropZone — exact geometric center is always "center" zone', (
     });
   }
 });
+
+describe('computeDropZone — NaN inputs (gap-closure 28-14 regression lock for touch defect)', () => {
+  // Regression lock for 28-UAT Gap 1 DEFECT 2: the old CanvasWrapper.handleDragOver
+  // cast activatorEvent to PointerEvent and read clientX/Y. On touch, the activator
+  // is a TouchEvent — top-level clientX/Y is `undefined`. Undefined + delta = NaN.
+  // NaN comparisons in computeDropZone (y < yThreshold etc.) all evaluate false, so
+  // the function falls through to 'center'. Result: on touch, edge-drops were
+  // physically unreachable — zone was ALWAYS 'center'.
+  //
+  // This test PINS that fallthrough behavior so:
+  //   (a) the symptom is documented in-code (touch=always-center was a real bug),
+  //   (b) a future 'fix' that makes computeDropZone throw or return null on NaN
+  //       cannot silently change behavior without also updating this test.
+  //
+  // The FIX for DEFECT 2 lives at the PRODUCER (CanvasWrapper — gap-closure 28-14
+  // uses active.rect.current.initial + delta instead of activatorEvent.clientX),
+  // NOT at the consumer. computeDropZone stays pure and NaN-fallthrough is correct
+  // per its contract.
+  const rect = makeRect(0, 0, 300, 600);
+
+  it('returns "center" when both pointer coordinates are NaN (pure fallthrough)', () => {
+    expect(computeDropZone(rect, { x: NaN, y: NaN })).toBe('center');
+  });
+
+  it('returns "center" when only pointer.y is NaN (partial-NaN still falls through)', () => {
+    expect(computeDropZone(rect, { x: 100, y: NaN })).toBe('center');
+  });
+
+  it('returns "center" when only pointer.x is NaN', () => {
+    expect(computeDropZone(rect, { x: NaN, y: 300 })).toBe('center');
+  });
+});

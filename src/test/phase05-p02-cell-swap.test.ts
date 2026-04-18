@@ -149,56 +149,19 @@ describe('swapCells store action (D-13)', () => {
 // ---------------------------------------------------------------------------
 
 describe('ActionBar drag handle (D-13, D-14)', () => {
-  it('renders drag handle button when hasMedia=true', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
-    setGridState(leaf, { 'mid-1': 'data:image/png;base64,x' });
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: true,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.getByTestId('drag-handle-leaf-1')).toBeInTheDocument();
+  it.skip('renders drag handle button when hasMedia=true', () => {
+    // Skipped in Phase 28: ActionBar drag handle button (drag-handle-leaf-1) was removed.
+    // Drag initiation in Phase 28 is via useCellDraggable on the LeafNode root div.
+    // The aria-label 'Drag to move' moved to the root div of LeafNode.
   });
 
-  it('renders drag handle on empty cells (EC-06: gate relaxed in Phase 9)', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: null });
-    setGridState(leaf);
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: false,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.queryByTestId('drag-handle-leaf-1')).not.toBeNull();
-    const handle = screen.getByTestId('drag-handle-leaf-1');
-    // Phase 25: native draggable removed from ActionBar button — @dnd-kit listeners
-    // are spread on LeafNode root div instead (touch + mouse unified sensor).
-    expect(handle).not.toHaveAttribute('draggable', 'true');
-    expect(handle).toHaveAttribute('aria-label', 'Drag to move');
+  it.skip('renders drag handle on empty cells (EC-06: gate relaxed in Phase 9)', () => {
+    // Skipped in Phase 28: ActionBar drag handle button removed.
+    // Phase 28 drag is initiated from LeafNode root div via PointerSensor (8px distance threshold).
   });
 
-  it('drag handle button has aria-label "Drag to move"', () => {
-    const leaf = makeLeaf({ id: 'leaf-1', mediaId: 'mid-1' });
-    setGridState(leaf, { 'mid-1': 'data:image/png;base64,x' });
-
-    render(
-      React.createElement(ActionBar, {
-        nodeId: 'leaf-1',
-        fit: 'cover',
-        hasMedia: true,
-        onUploadClick: vi.fn(),
-      })
-    );
-
-    expect(screen.getByTestId('drag-handle-leaf-1')).toHaveAttribute('aria-label', 'Drag to move');
+  it.skip('drag handle button has aria-label "Drag to move"', () => {
+    // Skipped in Phase 28: ActionBar drag handle button removed.
+    // aria-label 'Drag to move' now lives on the LeafNode root div (role="gridcell").
   });
 });

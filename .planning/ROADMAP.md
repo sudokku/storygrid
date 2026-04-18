@@ -76,7 +76,14 @@
 - [x] Phase 28: Cell-to-Cell Drag (3/3 plans) — completed 2026-04-18
 
 ### Phase 29: ESC-Cancel + Visual Polish
-ESC-to-cancel, 200ms snap-back, drag-start wobble, 80% ghost opacity, active zone bright/dim, 700ms drop flash.
+**Goal:** ESC-to-cancel drag, 200ms snap-back animation, ghost position fix, 20% ghost opacity, 200px ghost size cap, drag-start wobble, 700ms drop flash.
+**Plans:** 4 plans
+
+Plans:
+- [ ] 29-01-PLAN.md — dragStore extension: pointerDownX/Y + lastDropId fields + actions + tests
+- [ ] 29-02-PLAN.md — CSS/Tailwind: --ghost-cap variable + cell-wobble + drop-flash keyframes
+- [ ] 29-03-PLAN.md — DragPreviewPortal + CanvasWrapper: ghost fix + KeyboardSensor + drop flash ordering
+- [ ] 29-04-PLAN.md — LeafNode: pointer capture + wobble class + flash class
 
 ### Phase 30: Mobile Handle + Tray Polish
 Haptics, tray/sheet auto-collapse on drag-start, `touch-action: none`, `-webkit-touch-callout: none`, context-menu suppression.

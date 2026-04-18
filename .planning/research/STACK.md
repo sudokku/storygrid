@@ -1,4 +1,4 @@
-# Stack Research — v1.5 Unified Drag-and-Drop UX
+c p# Stack Research — v1.5 Unified Drag-and-Drop UX
 
 **Domain:** Cross-device cell DnD engine (mouse + touch) inside a CSS `transform: scale()` canvas editor
 **Researched:** 2026-04-17

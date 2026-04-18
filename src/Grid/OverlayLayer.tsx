@@ -49,6 +49,7 @@ export function OverlayLayer() {
   return (
     <div
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}
+      data-dnd-ignore="true"
     >
       {sorted.map((overlay: Overlay) => {
         const isSelected = overlay.id === selectedOverlayId;

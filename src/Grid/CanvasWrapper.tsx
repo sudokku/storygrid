@@ -11,7 +11,7 @@ import {
   useSensors,
   MeasuringStrategy,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent, DragOverEvent, DragMoveEvent } from '@dnd-kit/core';
 import { CellDragMouseSensor, CellDragTouchSensor } from '../dnd/adapter/dndkit';
 import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 import type { DropZone } from '../dnd';
@@ -33,6 +33,53 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
   }) as T;
+}
+
+/**
+ * Test-only export: the pure pointer-derivation + zone-compute logic that
+ * handleDragMove invokes on every pointer-move tick during an active drag.
+ *
+ * Exported as `_test*` because the underscore prefix signals "test-only —
+ * do not import in production code". The real handleDragMove callback in
+ * CanvasWrapper is the sole production consumer.
+ *
+ * Gap-closure 28-14 — DEFECT 2 fix: pointer is derived from
+ *   active.rect.current.initial + delta
+ * which is input-type-agnostic (works identically for Mouse, Touch, Pen
+ * sensors). The previous approach cast activatorEvent to PointerEvent and
+ * read clientX/Y, which yielded `undefined` on TouchEvent → NaN pointer →
+ * always 'center'. See .planning/debug/insert-edge-drop-broken.md.
+ */
+export function _testComputeZoneFromDragMove(event: {
+  active: { id: string | number; rect: { current: { initial: { left: number; top: number; width: number; height: number } | null } } };
+  over: { id: string | number } | null;
+  delta: { x: number; y: number };
+}): { overId: string | null; zone: DropZone | null } {
+  const { over, active, delta } = event;
+
+  // Null-over and self-over: the store must clear so indicators disappear.
+  if (!over || active.id === over.id) {
+    return { overId: null, zone: null };
+  }
+
+  // Input-type-agnostic pointer: anchor at the CENTER of the source cell
+  // at drag-start (active.rect.current.initial is the viewport-space
+  // ClientRect captured by dnd-kit when the drag began, frozen for the
+  // drag's lifetime) and add the cumulative move delta. dnd-kit normalizes
+  // delta across input types — this derivation is identical for Mouse,
+  // Touch, and Pen pointers.
+  const initial = active.rect.current.initial;
+  if (!initial) return { overId: null, zone: null };
+  const pointer = {
+    x: initial.left + initial.width / 2 + delta.x,
+    y: initial.top + initial.height / 2 + delta.y,
+  };
+
+  const targetEl = document.querySelector(`[data-testid="leaf-${over.id}"]`) as HTMLElement | null;
+  if (!targetEl) return { overId: null, zone: null };
+  const rect = targetEl.getBoundingClientRect();
+  const zone: DropZone = computeDropZone(rect, pointer);
+  return { overId: String(over.id), zone };
 }
 
 export const CanvasWrapper = React.memo(function CanvasWrapper() {
@@ -85,29 +132,32 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     useDragStore.getState().setGhost(ghostDataUrl, sourceRect);
   }, []);
 
+  // Gap-closure 28-14 — DEFECT 1 fix: handleDragOver fires only on droppable
+  // enter/leave (dep array [overId] per @dnd-kit/core/dist/core.esm.js:3286),
+  // so it cannot be the continuous zone-compute site. Continuous zone refresh
+  // now lives in handleDragMove below. handleDragOver is retained for the
+  // null-over / self-over CLEAR branch — the store must clear overId when the
+  // pointer leaves the target or re-enters the source cell.
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over, active, activatorEvent, delta } = event;
-
-    // Self-over and null-over: clear any stale overId so indicators disappear.
+    const { over, active } = event;
     if (!over || active.id === over.id) {
       useDragStore.getState().setOver(null, null);
-      return;
     }
+    // Non-null over: handleDragMove will compute + write the zone on the
+    // next pointer-move tick. We intentionally do NOT write here to avoid
+    // racing the first handleDragMove tick with a stale entry-zone.
+  }, []);
 
-    // Single source of pointer truth (Pitfall 2): derive pointer from dnd-kit's
-    // activatorEvent (initial pointer-down) + delta (cumulative move vector).
-    const startX = (activatorEvent as PointerEvent).clientX;
-    const startY = (activatorEvent as PointerEvent).clientY;
-    const pointer = { x: startX + delta.x, y: startY + delta.y };
-
-    const targetEl = document.querySelector(`[data-testid="leaf-${over.id}"]`) as HTMLElement | null;
-    if (!targetEl) {
-      useDragStore.getState().setOver(null, null);
-      return;
-    }
-    const rect = targetEl.getBoundingClientRect();
-    const zone: DropZone = computeDropZone(rect, pointer);
-    useDragStore.getState().setOver(String(over.id), zone);
+  // Gap-closure 28-14 — DEFECT 1 + DEFECT 2 fix: continuous pointer-move
+  // handler that fires on every pointer-move tick during an active drag
+  // (dep array [scrollAdjustedTranslate.x, scrollAdjustedTranslate.y] per
+  // @dnd-kit/core/dist/core.esm.js:3210-3243). This replaces handleDragOver
+  // as the authoritative zone-compute site. Pointer derivation is
+  // input-type-agnostic (active.rect.current.initial + delta) — see
+  // _testComputeZoneFromDragMove above for details.
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    const { overId, zone } = _testComputeZoneFromDragMove(event);
+    useDragStore.getState().setOver(overId, zone);
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -189,6 +239,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
         sensors={sensors}
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}

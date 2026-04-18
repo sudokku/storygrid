@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
 import { OverlayLayer } from './OverlayLayer';
-import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragStartEvent, DragMoveEvent, DragEndEvent } from '@dnd-kit/core';
 import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 
@@ -58,7 +58,11 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const mouseSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
   });
-  const sensors = useSensors(touchSensor, mouseSensor);
+  // CANCEL-01 / D-06: KeyboardSensor enables ESC to cancel an active pointer drag.
+  // This does NOT violate DND-01 — DND-01 forbids TouchSensor+MouseSensor combo;
+  // KeyboardSensor serves a separate purpose (cancel gesture only).
+  const keyboardSensor = useSensor(KeyboardSensor);
+  const sensors = useSensors(touchSensor, mouseSensor, keyboardSensor);
 
   const handleDragStart = useCallback(({ active }: DragStartEvent) => {
     // active.node does not exist in dnd-kit v6.3.1 — query via data-testid instead.
@@ -97,13 +101,34 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
 
   const handleDragEnd = useCallback(({ over }: DragEndEvent) => {
     const { sourceId, activeZone } = useDragStore.getState();
+    // Guard: drag was aborted at start (e.g., dnd-ignore) — no move, just cleanup.
+    if (!sourceId) {
+      useDragStore.getState().end();
+      document.body.style.cursor = '';
+      return;
+    }
+    // CANCEL-03: released outside any drop target → cancel with no move.
+    if (!over) {
+      useDragStore.getState().end();
+      document.body.style.cursor = '';
+      return;
+    }
+    const toId = String(over.id);
+    // CANCEL-04: dropped on origin cell → no move, no undo entry.
+    if (toId === sourceId) {
+      useDragStore.getState().end();
+      document.body.style.cursor = '';
+      return;
+    }
+    moveCell(sourceId, toId, activeZone ?? 'center');
+    // D-08: setLastDrop BEFORE end() — end() resets all fields including lastDropId.
+    // The LeafNode selector reads lastDropId in the same React render cycle after
+    // setLastDrop, so the flash must be set while lastDropId is still populated.
+    useDragStore.getState().setLastDrop(toId);
     useDragStore.getState().end();
     document.body.style.cursor = '';
-    if (!sourceId) return;        // drag was aborted at start (e.g., dnd-ignore)
-    if (!over) return;            // CANCEL-03: released outside any cell → no moveCell
-    const toId = String(over.id);
-    if (toId === sourceId) return; // CANCEL-04: dropped on origin → no moveCell, no undo entry
-    moveCell(sourceId, toId, activeZone ?? 'center');
+    // Clear the flash after 700ms (DROP-08 Atlassian largeDurationMs).
+    setTimeout(() => useDragStore.getState().clearLastDrop(), 700);
   }, [moveCell]);
 
   const handleDragCancel = useCallback(() => {

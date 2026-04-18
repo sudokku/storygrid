@@ -1,6 +1,6 @@
 ---
 phase: 28-cell-to-cell-drag
-verified: 2026-04-17T01:35:00Z
+verified: 2026-04-18T04:25:00Z
 status: human_needed
 score: 19/19 must-haves verified (phase-owned); 4 of 22 requirement IDs routed to other phases
 overrides_applied: 0
@@ -11,32 +11,35 @@ re_verification:
     - "Gap 1 — desktop mouse drag completely dead (sensor key collision fixed by 28-11: CellDragMouseSensor extends MouseSensor / CellDragTouchSensor extends TouchSensor, different React event keys)"
     - "Gap 2 — touch ghost accelerated + edge zones unreliable (scaleCompensationModifier removed by 28-12; MeasuringStrategy.Always + per-axis thresholds added)"
     - "Gap 3a — accent outline on hovered drop cell invisible (dedicated overlay div with z-10 added by 28-13)"
+    - "28-UAT Gap 1 — insert (edge-drop) still broken on desktop + touch (DEFECT 1: missing onDragMove registration + DEFECT 2: unsafe PointerEvent cast undefined on TouchEvent — both fixed by 28-14; handleDragMove now continuous zone-compute site with input-agnostic pointer derivation via active.rect.current.initial + delta)"
+    - "28-UAT Gap 2 — ghost too large on big source cells (spec narrowed by 28-15; GHOST_MAX_DIMENSION = 200 + computeCappedGhostSize aspect-preserving helper applied to both <img> and D-10 fallback <div>)"
   gaps_remaining: []
   regressions: []
   deferred_post_closure:
     - "DROP-02/03 per-zone icon emphasis — deferred Phase 29 per D-15 (design decision, not defect)"
+    - "isSelected / isPanMode ring occlusion on media cells — tracked as follow-up in the 28-13 section (unrelated to 28-UAT)"
 human_verification:
-  - test: "Desktop click-hold drag + drop (SC-1) — confirm gap-closure fix works"
-    expected: "On a ≥2-cell grid, mousedown on one cell, move ≥8px, release on a different cell — cells swap (center drop) or insert (edge drop). Previously BLOCKER (nothing happened). Gap-1 closed by plan 28-11 (CellDragMouseSensor/CellDragTouchSensor)."
-    why_human: "Sensor architecture change requires real browser to confirm the fix works end-to-end. jsdom cannot simulate the full pointer sequence + visual outcome (D-31, Pitfall 11)."
-  - test: "Touch press-and-hold drag + drop (SC-2) — confirm ghost 1:1 + edge zones reliable"
-    expected: "On a touch device, 250ms press-and-hold initiates drag. Ghost moves at same speed as finger (not accelerated). Edge zones (top/bottom/left/right) commit reliably. Per-zone icon emphasis is NOT expected here (deferred Phase 29 per D-15)."
-    why_human: "scaleCompensationModifier removal + MeasuringStrategy.Always fix requires real device to confirm. jsdom cannot simulate touch pointer sequences (D-31, Pitfall 11)."
+  - test: "Desktop click-hold drag + drop (SC-1) — confirm gap-closure 28-11 + 28-14 + 28-15 fixes work"
+    expected: "On a ≥2-cell grid, mousedown on one cell, move ≥8px, release on a different cell — cells swap (center drop) OR insert (edge drop — top/bottom/left/right ALL commit). Previously issue (major) in 28-UAT: 'insert still not working' + 'ghost too large'. Insert closed by 28-14 (handleDragMove continuous zone-refresh). Ghost size closed by 28-15 (200x200 cap). Swap was already closed by 28-11."
+    why_human: "Edge-drop commits can only be confirmed by a real pointer sequence inside a browser (jsdom simulation of dnd-kit lifecycle is unreliable per D-31, Pitfall 11). Ghost size (visual correctness at 200x200 cap) is inherently visual."
+  - test: "Touch press-and-hold drag + drop (SC-2) — confirm 28-12 + 28-14 + 28-15 fixes together"
+    expected: "On a touch device, 250ms press-and-hold initiates drag. Ghost moves at same speed as finger (1:1 — 28-12 removed scaleCompensationModifier). Edge zones (top/bottom/left/right) commit reliably — 28-14 fixed the NaN-on-TouchEvent path that was forcing zone='center'. Ghost capped at 200x200 (28-15). Per-zone icon emphasis is NOT expected (deferred Phase 29 per D-15)."
+    why_human: "Real iOS Safari + Android Chrome are the only ways to confirm touch-specific activation timing (250ms delay), ghost tracking fidelity, and edge-zone commit reliability. jsdom has no TouchEvent simulation (D-31, Pitfall 11)."
   - test: "File-drop onto cell still works (SC-4)"
-    expected: "Dragging an image/video file from OS desktop onto any cell places the media; workspace file-drop still works. PASSED in prior UAT — regression guard only."
+    expected: "Dragging an image/video file from OS desktop onto any cell places the media; workspace file-drop still works. PASSED in prior and re-confirmation UAT — regression guard only."
     why_human: "Native HTML5 file-drop + dataTransfer.types guard coexists with pointer engine (D-28) — cross-system behavior requires browser."
-  - test: "Ghost + zone visuals during drag (SC-5) — confirm ghost tracking + accent outline fix"
-    expected: "Ghost follows pointer at 1:1 speed (no acceleration). Source cell shows 40% opacity. 5-zone indicators appear on hovered target. Accent outline (2px blue ring) visible on hovered cell including cells with media. Per-zone icon emphasis NOT expected (deferred Phase 29 per D-15)."
-    why_human: "All three gap fixes (28-11/12/13) require real browser confirmation. Visual correctness of ghost tracking + ring visibility on media cells is manual UAT (D-33)."
+  - test: "Ghost + zone visuals during drag (SC-5) — confirm ghost tracking + accent outline + size cap"
+    expected: "Ghost follows pointer at 1:1 speed. Source cell shows 40% opacity. 5-zone indicators appear on hovered target. Accent outline (2px blue ring) visible on hovered cell including cells with media. Ghost dimensions capped at 200x200 with aspect preserved (28-15). Per-zone icon emphasis NOT expected (deferred Phase 29 per D-15). Test 4 in 28-UAT already passed except for the 'ghost too large' enhancement request now closed by 28-15."
+    why_human: "Visual correctness (ghost tracking fidelity, ring visibility on media cells, ghost size perceived as 'not occluding zones') is inherently visual and requires browser (D-33)."
 ---
 
 # Phase 28: Cell-to-Cell Drag Verification Report
 
 **Phase Goal (ROADMAP.md):** "Desktop and touch users can drag any cell and drop it onto any other cell using a single `PointerSensor` engine — REMOVING ALL Phase 25 `@dnd-kit` wiring in this same phase, with no parallel engines mounted simultaneously."
 
-**Verified:** 2026-04-17T01:35:00Z
-**Status:** human_needed — all automated gates pass; SC-1 / SC-2 / SC-4 / SC-5 require real-device UAT per D-31 / D-33
-**Re-verification:** Yes — after gap closure plans 28-11, 28-12, 28-13
+**Verified:** 2026-04-18T04:25:00Z (third re-verification pass — after gap-closure plans 28-14 + 28-15)
+**Status:** human_needed — all automated gates pass; SC-1 / SC-2 / SC-4 / SC-5 require real-device UAT re-confirmation per D-31 / D-33
+**Re-verification:** Yes — after five gap closure plans (28-11, 28-12, 28-13, 28-14, 28-15)
 
 ---
 
@@ -564,3 +567,81 @@ None detected. Test suite: 895 tests passing (was 888 before gap-closure), 73 fi
 
 _Verified: 2026-04-17T01:35:00Z (re-verification after gap-closure plans 28-11, 28-12, 28-13)_
 _Verifier: Claude (gsd-verifier, Sonnet 4.6)_
+
+---
+
+## Re-Verification After 28-14 + 28-15 Gap Closure (2026-04-18)
+
+**Re-verified:** 2026-04-18T04:25:00Z
+**Previous status:** human_needed (19/19 automated passed; 28-UAT re-confirmation on 2026-04-18 found Test 1 + Test 2 insert edge-drops still failing + ghost-too-large enhancement request)
+**28-UAT result (re-confirmation, 2026-04-18):** 2 passed (SC-4 file drop, SC-5 ghost + zone visuals with minor "ghost too large" note), 2 issues (SC-1 insert edge-drop broken + ghost size, SC-2 edge zones still broken on touch) → 2 additional gap-closure plans executed (28-14 + 28-15)
+**New status:** human_needed (all automated gates pass; real-device UAT re-confirmation required per D-31)
+
+### Gaps Closed by 28-14 / 28-15
+
+| Gap | Root Cause | Plan | Automated Evidence |
+|-----|------------|------|--------------------|
+| 28-UAT Gap 1 — Insert edge-drop broken on desktop + touch (major) | **DEFECT 1 (desktop + touch):** `handleDragOver` was sole zone-compute site; per @dnd-kit/core/dist/core.esm.js:3286, `onDragOver` fires only on droppable enter/leave (deps `[overId]`). Continuous zone refresh requires `onDragMove` (deps `[scrollAdjustedTranslate.x, .y]` at core.esm.js:3210-3243) — never registered. Zone stale at release. **DEFECT 2 (touch amplifier):** `(activatorEvent as PointerEvent).clientX` unsafe cast — undefined on TouchEvent (clientX lives on `touches[0]`). Undefined + delta = NaN → computeDropZone falls through to 'center'. Touch: zone always 'center'; edges unreachable. | 28-14 | `onDragMove={handleDragMove}` = 1 in CanvasWrapper.tsx; `_testComputeZoneFromDragMove` = 3 (export + internal call + integration-test import); `(activatorEvent as PointerEvent)` = 0 (cast removed); `active.rect.current.initial` = 4 (input-agnostic derivation); NaN-inputs describe block in computeDropZone.test.ts = 1; Insert edge-drop regression lock describe block in CanvasWrapper.integration.test.tsx = 1 |
+| 28-UAT Gap 2 — Ghost too large on big source cells (enhancement, spec_change) | GHOST-04 spec was "ghost at source-cell size — no cap". On desktop with few cells (400×800+ source), ghost occluded drop-zone indicators + accent ring + target visuals. User proposed fixed-preset cap. Not a defect — spec itself was the pain point. | 28-15 | `GHOST_MAX_DIMENSION` = 7 refs in DragPreviewPortal.tsx (named constant + consumers + CSS ceiling); `computeCappedGhostSize` = 2 (export + internal); `width: sourceRect.width,` uncapped pattern = 0 (removed); `objectFit` = 1 (cross-browser aspect robustness); `GHOST-04 size cap (gap-closure 28-15)` describe block = 1; `computeCappedGhostSize (gap-closure 28-15 pure helper)` describe block = 1 (7 pure-math + 7 render tests + updated GHOST-05) |
+
+### Truths Affected by 28-14 + 28-15
+
+| Truth | Pre-28-14/15 Status | Post-28-14/15 Status | Change |
+|-------|---------------------|----------------------|--------|
+| T5 — Zone compute via computeDropZone using dnd-kit pointer | VERIFIED (in `handleDragOver` via `(activatorEvent as PointerEvent).clientX` cast — silently broken on TouchEvent, silently stale on desktop within-droppable) | VERIFIED (in new `handleDragMove` via `active.rect.current.initial + delta` — input-agnostic, continuous) | Handler + pointer-derivation strategy replaced |
+| GHOST-04 row in Requirements Coverage | SATISFIED (ghost at source-cell size — uncapped) | SATISFIED (ghost at source-cell size capped to 200x200 with aspect preserved via uniform scale) | Spec narrowed — no defect |
+
+### Behavioral Spot-Checks Post-28-14 + 28-15
+
+| Behavior | Command | Result | Status |
+|----------|---------|--------|--------|
+| handleDragMove registered on DndContext | `grep -c 'onDragMove={handleDragMove}' src/Grid/CanvasWrapper.tsx` | 1 | PASS |
+| _testComputeZoneFromDragMove exported + consumed | `grep -c '_testComputeZoneFromDragMove' src/Grid/CanvasWrapper.tsx` | 3 | PASS |
+| Unsafe PointerEvent cast removed | `grep -c '(activatorEvent as PointerEvent)' src/Grid/CanvasWrapper.tsx` | 0 | PASS |
+| Input-agnostic pointer derivation wired | `grep -c 'active.rect.current.initial' src/Grid/CanvasWrapper.tsx` | 4 | PASS |
+| NaN-inputs regression lock present | `grep -c 'NaN inputs (gap-closure 28-14' src/dnd/computeDropZone.test.ts` | 1 | PASS |
+| Insert edge-drop regression lock present | `grep -c 'Insert edge-drop regression lock (gap-closure 28-14' src/dnd/__tests__/CanvasWrapper.integration.test.tsx` | 1 | PASS |
+| GHOST_MAX_DIMENSION constant + consumers | `grep -c 'GHOST_MAX_DIMENSION' src/dnd/DragPreviewPortal.tsx` | 7 | PASS |
+| computeCappedGhostSize helper exported + consumed | `grep -c 'computeCappedGhostSize' src/dnd/DragPreviewPortal.tsx` | 2 | PASS |
+| Uncapped width pattern removed | `grep -c 'width: sourceRect.width,' src/dnd/DragPreviewPortal.tsx` | 0 | PASS |
+| objectFit: 'cover' applied on img | `grep -c 'objectFit' src/dnd/DragPreviewPortal.tsx` | 1 | PASS |
+| GHOST-04 cap test block present | `grep -c 'GHOST-04 size cap (gap-closure 28-15' src/dnd/__tests__/DragPreviewPortal.test.tsx` | 1 | PASS |
+| computeCappedGhostSize pure-helper test block present | `grep -c 'computeCappedGhostSize (gap-closure 28-15 pure helper' src/dnd/__tests__/DragPreviewPortal.test.tsx` | 1 | PASS |
+| TypeScript typecheck clean | `npx tsc --noEmit` | exit 0 | PASS |
+| Full test suite green | `npm run test -- --run` | 73 files; 917 passed (+22 from 895 pre-28-14/15), 2 skipped, 4 todo | PASS |
+| Production build clean | `npm run build` | exit 0 (~911ms) | PASS |
+
+### Residual Human Verification (Post-28-14 + 28-15)
+
+All 2 UAT gaps from the 2026-04-18 re-confirmation are addressed by 28-14 + 28-15 code + test changes. The 4 human verification items remain — their purpose is **fix re-confirmation** since the original defects (including insert edge-drop) were surfaced by human UAT in the first place.
+
+| SC | 28-UAT Result (2026-04-18) | Expected Confirmation Result After 28-14 + 28-15 | Risk Level |
+|----|---------------------------|---------------------------------------------------|------------|
+| SC-1 (desktop drag) | ISSUE (major — insert still not working + ghost too large) | PASS — insert closed by 28-14 (handleDragMove continuous zone-compute); ghost size closed by 28-15 (200x200 cap with aspect preserved) | Low — integration test regression lock added + NaN-inputs regression lock pinned; root cause evidenced against @dnd-kit/core source line numbers |
+| SC-2 (touch drag) | ISSUE (major — 1:1 speed resolved but edges still do not work) | PASS — edge-zone commit on touch closed by 28-14's input-agnostic pointer derivation (eliminates NaN path). Per-zone icon emphasis remains deferred (D-15) — NOT a gap-closure target. | Medium — requires real iOS/Android to confirm input-agnostic pointer works end-to-end on TouchEvent at activator time |
+| SC-4 (file drop) | PASS (re-confirmation UAT) | PASS — untouched by 28-14 / 28-15 | Low |
+| SC-5 (ghost + zone visuals) | PASS (re-confirmation UAT, with "ghost too large" minor note now closed) | PASS cleanly — minor-note ghost size closed by 28-15 | Low — visual cap correctness confirmable in browser within seconds |
+
+### Regressions (Post-28-14 + 28-15)
+
+None detected. Test suite: 917 tests passing (was 895 before 28-14; +8 for 28-14 integration + NaN regression tests, +14 for 28-15 pure-math + render tests), 73 files, 0 failures. TypeScript clean. Build clean (911ms). Existing pre-existing act(...) warnings unchanged — not introduced by 28-14 or 28-15.
+
+### Code Review (28-REVIEW.md) Summary
+
+Per user note, `28-REVIEW.md` findings are **informational only** for this verification pass and do NOT block status. Review flagged:
+- 2 WARNINGS: WR-01 (`computeCappedGhostSize` lacks NaN/zero-dim defense), WR-02 (`handleDragMove` + `handleDragOver` double-write `setOver(null, null)` on null/self branches — no correctness impact; redundant call only)
+- 5 INFO items: style/consistency nits (naming, JSDoc clarity, `querySelector`+`getBoundingClientRect` coupling, no onError for malformed data-URL, numeric-vs-string type on `GHOST_MAX_DIMENSION`)
+- 0 CRITICAL issues
+
+These findings are candidates for a future hardening plan but are NOT required for the five gap-closure plans to be considered landed.
+
+### Overall Verdict
+
+All 5 gap-closure plans (28-11, 28-12, 28-13, 28-14, 28-15) are **automation-complete** with automated regression locks in place. All 19 phase-owned observable truths remain VERIFIED. All Phase-28-owned requirements in Requirements Coverage remain SATISFIED. No regressions detected.
+
+**Status: `human_needed`.** Rationale: the 28-UAT cycle has exposed **two waves** of defects that jsdom's limitations hid (Pitfall 11 — sensor lifecycle + TouchEvent simulation). A third real-device UAT pass is required to flip SC-1 + SC-2 from `ISSUE` to `PASS` in `28-UAT.md`. Confidence that the 28-14 + 28-15 fixes close the remaining gaps is HIGH (root causes evidenced against @dnd-kit/core source + integration regression locks added), but high confidence is not the same as device confirmation — and this specific phase has already had two sensor-class defects that jsdom missed. D-31 (real-device UAT as authoritative check) stands.
+
+---
+
+_Verified: 2026-04-18T04:25:00Z (third re-verification pass — after gap-closure plans 28-11, 28-12, 28-13, 28-14, 28-15)_
+_Verifier: Claude (gsd-verifier, Opus 4.7)_

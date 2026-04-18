@@ -1,0 +1,84 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Undo" [ref=e174] [cursor=pointer]:
+      - img [ref=e175]
+    - button "Redo" [disabled] [ref=e178]:
+      - img [ref=e179]
+    - button "Templates" [ref=e184] [cursor=pointer]:
+      - img [ref=e185]
+    - generic [ref=e190]:
+      - button "Export PNG" [ref=e191] [cursor=pointer]:
+        - img [ref=e192]
+      - button "Export settings" [ref=e196] [cursor=pointer]:
+        - img [ref=e197]
+    - button "Clear canvas" [ref=e199] [cursor=pointer]:
+      - img [ref=e200]
+  - main [ref=e35]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - gridcell "Drop image or use Upload button" [ref=e41]:
+            - generic [ref=e43]:
+              - img [ref=e44]
+              - generic [ref=e48]: Drop image or use Upload button
+          - gridcell "Drop image or use Upload button" [ref=e53]:
+            - generic [ref=e55]:
+              - img [ref=e56]
+              - generic [ref=e60]: Drop image or use Upload button
+        - generic [ref=e173]: Double tap to edit
+      - status [ref=e61]
+  - generic [ref=e62]:
+    - generic [ref=e63]:
+      - button "Close panel" [ref=e206] [cursor=pointer]:
+        - img [ref=e207]
+      - generic [ref=e67]: Text Overlay
+    - generic [ref=e209]:
+      - paragraph [ref=e210]: Overlay
+      - generic [ref=e211]:
+        - text: Content
+        - textbox "Overlay content" [ref=e212]: Double tap to edit
+      - generic [ref=e213]:
+        - text: Font
+        - generic [ref=e214]:
+          - button "Bebas Neue font" [pressed] [ref=e215] [cursor=pointer]: Bebas Neue
+          - button "Oswald font" [ref=e216] [cursor=pointer]: Oswald
+          - button "Dancing Script font" [ref=e217] [cursor=pointer]: Dancing Script
+          - button "Playfair Display font" [ref=e218] [cursor=pointer]: Playfair Display
+          - button "Space Mono font" [ref=e219] [cursor=pointer]: Space Mono
+          - button "Pacifico font" [ref=e220] [cursor=pointer]: Pacifico
+          - button "Barlow Condensed font" [ref=e221] [cursor=pointer]: Barlow Condensed
+          - button "Caveat font" [ref=e222] [cursor=pointer]: Caveat
+      - generic [ref=e223]:
+        - generic [ref=e224]:
+          - generic [ref=e225]: Size
+          - generic [ref=e226]: 72px
+        - slider "Font size" [ref=e227]: "72"
+      - generic [ref=e228]:
+        - text: Color
+        - textbox "Text color" [ref=e229] [cursor=pointer]: "#ffffff"
+      - generic [ref=e230]:
+        - text: Weight
+        - generic [ref=e231]:
+          - button "Regular" [ref=e232] [cursor=pointer]
+          - button "Bold" [ref=e233] [cursor=pointer]
+      - generic [ref=e234]:
+        - text: Alignment
+        - generic [ref=e235]:
+          - button "Align left" [ref=e236] [cursor=pointer]:
+            - img [ref=e237]
+          - button "Align center" [ref=e238] [cursor=pointer]:
+            - img [ref=e239]
+          - button "Align right" [ref=e240] [cursor=pointer]:
+            - img [ref=e241]
+      - generic [ref=e242]:
+        - text: Layer order
+        - generic [ref=e243]:
+          - button "Bring forward" [ref=e244] [cursor=pointer]:
+            - img [ref=e245]
+            - text: Bring Forward
+          - button "Send backward" [ref=e247] [cursor=pointer]:
+            - img [ref=e248]
+            - text: Send Backward
+      - button "Delete overlay" [ref=e250] [cursor=pointer]:
+        - img [ref=e251]
+        - text: Delete overlay

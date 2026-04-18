@@ -1,0 +1,79 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - button "Undo" [disabled] [ref=e6]:
+        - img [ref=e7]
+      - button "Redo" [disabled] [ref=e10]:
+        - img [ref=e11]
+      - button "Templates" [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+      - button "Add overlay" [ref=e22] [cursor=pointer]:
+        - img [ref=e23]
+    - generic [ref=e25]:
+      - button "Zoom out" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+      - generic [ref=e28]: 100%
+      - button "Zoom in" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+    - generic [ref=e31]:
+      - button "Toggle safe zone" [ref=e32] [cursor=pointer]:
+        - img [ref=e33]
+      - button "Hide overlays" [pressed] [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+      - generic [ref=e41]:
+        - button "Export PNG" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+          - generic [ref=e46]: Export PNG
+        - button "Export settings" [ref=e48] [cursor=pointer]:
+          - img [ref=e49]
+      - button "New / Clear canvas" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+  - generic [ref=e55]:
+    - main [ref=e56]:
+      - generic [ref=e60]:
+        - gridcell "Drop image or use Upload button Drag to move Upload image Split horizontal Split vertical Switch to contain Remove cell" [ref=e62]:
+          - generic [ref=e64]:
+            - img [ref=e65]
+            - generic [ref=e69]: Drop image or use Upload button
+          - generic [ref=e71]:
+            - button "Drag to move" [ref=e72]:
+              - img [ref=e73]
+            - button "Upload image" [ref=e80] [cursor=pointer]:
+              - img [ref=e81]
+            - button "Split horizontal" [ref=e84] [cursor=pointer]:
+              - img [ref=e85]
+            - button "Split vertical" [ref=e88] [cursor=pointer]:
+              - img [ref=e89]
+            - button "Switch to contain" [ref=e92] [cursor=pointer]:
+              - img [ref=e93]
+            - button "Remove cell" [ref=e98] [cursor=pointer]:
+              - img [ref=e99]
+        - gridcell "Drop image or use Upload button" [ref=e106]:
+          - generic [ref=e108]:
+            - img [ref=e109]
+            - generic [ref=e113]: Drop image or use Upload button
+    - complementary [ref=e114]:
+      - generic [ref=e115]:
+        - paragraph [ref=e116]: Canvas
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - generic [ref=e119]: Cell gap
+            - generic [ref=e120]: 0px
+          - slider "Cell gap" [ref=e121]: "0"
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - generic [ref=e124]: Border radius
+            - generic [ref=e125]: 0px
+          - slider "Border radius" [ref=e126]: "0"
+        - generic [ref=e127]:
+          - text: Background
+          - generic [ref=e128]:
+            - button "Solid" [ref=e129] [cursor=pointer]
+            - button "Gradient" [ref=e130] [cursor=pointer]
+          - textbox "Background color" [ref=e131] [cursor=pointer]: "#ffffff"
+  - generic [ref=e133]:
+    - paragraph [ref=e134]: Step 1 of 3
+    - paragraph [ref=e135]: Click a cell to select. Hover to see split options.
+    - generic [ref=e136]:
+      - button "Skip" [ref=e137] [cursor=pointer]
+      - button "Next" [ref=e138] [cursor=pointer]

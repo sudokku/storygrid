@@ -6,7 +6,7 @@
  * in Phase 28) are isolated from gridStore's undo history
  * (PITFALLS.md Pitfall 11).
  *
- * Shape (8 fields + 3 actions):
+ * Shape (11 fields + 6 actions):
  *   status     : 'idle' | 'dragging'
  *   kind       : 'cell' | null
  *   sourceId   : string | null         (leaf id of the cell being dragged)
@@ -15,6 +15,9 @@
  *   ghostUrl   : string | null         (canvas.toDataURL() of source cell artwork)
  *   sourceW    : number                (source cell width in canvas pixels)
  *   sourceH    : number                (source cell height in canvas pixels)
+ *   pointerDownX: number               (pointer clientX at onPointerDown; 0 if not set)
+ *   pointerDownY: number               (pointer clientY at onPointerDown; 0 if not set)
+ *   lastDropId   : string | null       (cell id of the last successful drop; drives flash)
  *
  * Actions:
  *   beginCellDrag(sourceId, ghostUrl, sourceW, sourceH)
@@ -22,7 +25,10 @@
  *                            atomically; overId+activeZone reset to null (defensive)
  *   setOver(overId, zone)    overId+activeZone updated; status/kind/sourceId/
  *                            ghostUrl/sourceW/sourceH untouched; idempotent
- *   end()                    all 8 fields reset to initial; safe from any status
+ *   end()                    all 11 fields reset to initial; safe from any status
+ *   setPointerDown(x, y)     pointerDownX/Y updated; used by grabOffsetModifier
+ *   setLastDrop(id)          lastDropId set; triggers drop-flash on that cell
+ *   clearLastDrop()          lastDropId reset to null; called after 700ms timeout
  */
 import { create } from 'zustand';
 
@@ -39,9 +45,15 @@ export type DragState = {
   ghostUrl: string | null;
   sourceW: number;
   sourceH: number;
+  pointerDownX: number;
+  pointerDownY: number;
+  lastDropId: string | null;
   beginCellDrag: (sourceId: string, ghostUrl: string | null, sourceW: number, sourceH: number) => void;
   setOver: (overId: string | null, zone: DropZone | null) => void;
   end: () => void;
+  setPointerDown: (x: number, y: number) => void;
+  setLastDrop: (id: string) => void;
+  clearLastDrop: () => void;
 };
 
 const INITIAL_STATE = {
@@ -53,6 +65,9 @@ const INITIAL_STATE = {
   ghostUrl: null as string | null,
   sourceW: 0,
   sourceH: 0,
+  pointerDownX: 0,
+  pointerDownY: 0,
+  lastDropId: null as string | null,
 };
 
 export const useDragStore = create<DragState>((set) => ({
@@ -61,4 +76,7 @@ export const useDragStore = create<DragState>((set) => ({
     set({ status: 'dragging', kind: 'cell', sourceId, overId: null, activeZone: null, ghostUrl, sourceW, sourceH }),
   setOver: (overId, activeZone) => set({ overId, activeZone }),
   end: () => set({ ...INITIAL_STATE }),
+  setPointerDown: (x, y) => set({ pointerDownX: x, pointerDownY: y }),
+  setLastDrop: (id) => set({ lastDropId: id }),
+  clearLastDrop: () => set({ lastDropId: null }),
 }));

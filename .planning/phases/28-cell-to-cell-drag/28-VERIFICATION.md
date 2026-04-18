@@ -50,7 +50,7 @@ human_verification:
 | 2 | Sensors wired in `CanvasWrapper` with separate constraints — mouse 8px / touch 250ms+5px (DRAG-03/04, D-02/03) | VERIFIED | `src/Grid/CanvasWrapper.tsx:63-64`: `useSensor(CellDragMouseSensor, { activationConstraint: { distance: 8 } })` + `useSensor(CellDragTouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })` |
 | 3 | `<DndContext>` receives onDragStart / onDragOver / onDragEnd / onDragCancel handlers | VERIFIED | `src/Grid/CanvasWrapper.tsx:182-188` wires all four handlers; each handler body reads/writes via `useDragStore.getState()` imperatively (D-04) |
 | 4 | `onDragStart` captures `canvas.toDataURL()` + source rect, writes to `dragStore.setGhost` + calls `beginCellDrag` | VERIFIED | `CanvasWrapper.tsx:74-84` — synchronous `toDataURL()`, `getBoundingClientRect()`, followed by `beginCellDrag(sourceId)` and `setGhost(ghostDataUrl, sourceRect)` |
-| 5 | `onDragOver` computes zone via `computeDropZone` using dnd-kit pointer (activatorEvent + delta — single source of truth) | VERIFIED | `CanvasWrapper.tsx:86-109` — derives pointer from `activatorEvent.clientX + delta.x/y`, calls `computeDropZone(rect, pointer)` (Pitfall 2 honored) |
+| 5 | `onDragMove` computes zone via `computeDropZone` using input-agnostic pointer derivation (`active.rect.current.initial` + `delta` — Pitfall 2 single source preserved) | VERIFIED | `CanvasWrapper.tsx` — zone-compute pipeline moved from `handleDragOver` into a new `handleDragMove` (registered on DndContext as `onDragMove`). `handleDragOver` is retained for null-over / self-over clearing only. Pointer derivation is input-type-agnostic: `active.rect.current.initial + delta` (replaces the old PointerEvent cast which was `undefined` on TouchEvent). Logic factored into exported `_testComputeZoneFromDragMove` for unit testability. See gap-closure plan 28-14 + `.planning/debug/insert-edge-drop-broken.md` for the full diagnostic trace. |
 | 6 | `onDragEnd` commits via `gridStore.moveCell(sourceId, overId, zone)` on valid target only, then calls `end()` | VERIFIED | `CanvasWrapper.tsx:111-123` — `moveCell(active.id, over.id, zone)` only when `over && active.id !== over.id && zone`; `end()` always called (CANCEL-04 short-circuit) |
 | 7 | `onDragCancel` calls `useDragStore.getState().end()` (CANCEL-03) | VERIFIED | `CanvasWrapper.tsx:125-128` |
 | 8 | Phase 25 wiring removed — no `MouseSensor`, `TouchSensor`, `KeyboardSensor`, `DragZoneRefContext`, `useDndMonitor` remain (SC-3 relaxed gate, DND-04) | VERIFIED | Relaxed SC-3 grep gate: `grep -rE 'DragZoneRefContext\|useDndMonitor\|KeyboardSensor' src/` = 0 matches. Regression guard: `grep -c "'onPointerDown'" src/dnd/adapter/dndkit.ts` = 0. `MouseSensor`/`TouchSensor` literals ARE now present (base classes for CellDrag* subclasses — intentional per 28-11 gate relaxation) |
@@ -358,6 +358,75 @@ grep -nE 'isOverThisCell\s*\?' src/Grid/LeafNode.tsx       # expected: no matche
 - DROP-02 / DROP-03 active-zone icon emphasis — deferred to Phase 29 per D-15 (design decision, not defect).
 - `isSelected` / `isPanMode` ring occlusion on media cells — tracked as follow-up (this section).
 - Nothing else from 28-HUMAN-UAT.
+
+### Gap-Closure Plan 28-14 — handleDragMove refresh + input-agnostic pointer
+
+**Landed:** 2026-04-18
+**Closes:** 28-UAT Gap 1 'insert (edge-drop) broken on desktop + touch' (reported twice: Test 1 desktop + Test 2 touch).
+
+**Root causes (both in `src/Grid/CanvasWrapper.tsx`):**
+
+- **DEFECT 1 (desktop + touch) — missing `onDragMove` handler.** `handleDragOver` at the old lines 88-111 was the sole zone-compute site. Per `@dnd-kit/core/dist/core.esm.js:3286`, the `onDragOver` effect has deps `[overId]` — fires ONLY on droppable enter/leave. Continuous pointer-move refresh belongs in `onDragMove` (deps `[scrollAdjustedTranslate.x, scrollAdjustedTranslate.y]` per `core.esm.js:3210-3243`) which was never registered. Result: the zone written to the store was the ENTRY zone and stale by the time `handleDragEnd` read it. Users reported "insert still not working" — the real behavior was "insert commits the first zone the pointer touched inside the target, not the release zone."
+
+- **DEFECT 2 (touch-only amplifier) — unsafe `PointerEvent` cast.** Line 99-100 did `const startX = (activatorEvent as PointerEvent).clientX`. `CellDragTouchSensor`'s activator is a `TouchEvent` — top-level `clientX` is `undefined`; coordinates live on `touches[0]`. Undefined + delta = NaN → `computeDropZone` falls through to `'center'`. On touch, zone was ALWAYS `'center'`; edge-insert physically unreachable. This was MISDIAGNOSED in plan 28-12 as the `scaleCompensationModifier` bug — 28-12's fix (`MeasuringStrategy.Always` + per-axis thresholds) improved the mouse path at non-1x scale but did not address the touch NaN path.
+
+**Fixes:**
+
+- **Fix 1 (DEFECT 1):** Register `onDragMove={handleDragMove}` on `DndContext`. Move the pointer → rect → `computeDropZone` → `setOver` pipeline from `handleDragOver` into a new `handleDragMove` callback. `handleDragOver` is REDUCED to the null-over / self-over clearing branch only.
+
+- **Fix 2 (DEFECT 2):** Replace `(activatorEvent as PointerEvent).clientX` with input-type-agnostic pointer derivation using `active.rect.current.initial + delta`. Pointer is computed as the center of the source cell at drag-start plus the cumulative move delta. dnd-kit normalizes delta across input types, so this derivation is identical for Mouse, Touch, and Pen inputs — no `activatorEvent` access needed at all.
+
+- **Factoring:** The pointer-derivation + zone-compute logic is extracted into `_testComputeZoneFromDragMove` — an exported pure helper in `CanvasWrapper.tsx` — so it can be unit-tested in isolation without simulating the full dnd-kit lifecycle (Pitfall 11 forbids that in jsdom).
+
+**Artifact status changes:**
+
+| Artifact | Previous | Now |
+|----------|----------|-----|
+| `src/Grid/CanvasWrapper.tsx` `handleDragOver` | Zone-compute site (lines 88-111) | Null-over / self-over clearer only |
+| `src/Grid/CanvasWrapper.tsx` `handleDragMove` | Not present | Authoritative zone-compute site, registered on DndContext |
+| `src/Grid/CanvasWrapper.tsx` pointer derivation | `(activatorEvent as PointerEvent).clientX + delta.x` — undefined on TouchEvent → NaN | `active.rect.current.initial.left + width/2 + delta.x` — input-type-agnostic |
+| `src/Grid/CanvasWrapper.tsx` `_testComputeZoneFromDragMove` | Not present | Exported test helper encapsulating the new logic |
+| `src/dnd/__tests__/CanvasWrapper.integration.test.tsx` | No `handleDragMove` pipeline coverage | `describe('Insert edge-drop regression lock (gap-closure 28-14)')` block with 5 tests covering edge-zone resolution, stale-zone regression, input-type agnosticism, null-over branch, self-over branch |
+| `src/dnd/computeDropZone.test.ts` | No NaN-input coverage | `describe('computeDropZone — NaN inputs (gap-closure 28-14 regression lock for touch defect)')` block with 3 tests documenting the fallthrough behavior that amplified DEFECT 2 |
+
+**Truth row updates:**
+
+Row 5 (`handleDragOver` → `handleDragMove` rename + input-agnostic pointer) — evidence updated. The truth was previously phrased around `onDragOver` as the compute site; after this plan, `onDragMove` is the compute site and `onDragOver` is a narrow clearer.
+
+**What this plan did NOT change (explicit non-scope):**
+
+- Sensor classes (28-11 territory) — `CellDragMouseSensor` + `CellDragTouchSensor` untouched.
+- `scaleCompensationModifier` / `MeasuringStrategy.Always` / per-axis thresholds (28-12 territory) — untouched.
+- LeafNode drag-over overlay div (28-13 territory) — untouched.
+- Ghost size cap — deferred to plan 28-15.
+- DROP-02 / DROP-03 per-zone icon emphasis — remains Phase 29 scope per D-15.
+- `computeDropZone` source — unchanged; NaN-fallthrough is correct per its contract. The NaN test is a regression LOCK, not a code change.
+
+**Grep gates post-28-14:**
+
+```bash
+grep -c 'onDragMove={handleDragMove}' src/Grid/CanvasWrapper.tsx         # expected: 1
+grep -c '_testComputeZoneFromDragMove' src/Grid/CanvasWrapper.tsx         # expected: >= 2 (export + internal call)
+grep -c '(activatorEvent as PointerEvent)' src/Grid/CanvasWrapper.tsx     # expected: 0
+grep -c 'active.rect.current.initial' src/Grid/CanvasWrapper.tsx          # expected: >= 1
+grep -c 'NaN inputs (gap-closure 28-14' src/dnd/computeDropZone.test.ts   # expected: 1
+grep -c 'Insert edge-drop regression lock (gap-closure 28-14' src/dnd/__tests__/CanvasWrapper.integration.test.tsx  # expected: 1
+```
+
+**Post-fix UAT mapping (all four plans 28-11 / 28-12 / 28-13 / 28-14):**
+
+| UAT Test | Previous Result (28-UAT, 2026-04-18) | Expected After 28-14 |
+|----------|--------------------------------------|----------------------|
+| Test 1 — Desktop click-hold drag + drop | issue (major — insert edges not committing, ghost too large) | Pass for insert (this plan closes edges). Ghost size — plan 28-15. |
+| Test 2 — Touch press-and-hold drag + drop | issue (major — edges do not work on touch) | Pass (this plan closes both the onDragMove-missing defect AND the NaN-pointer defect for touch). Per-zone icon emphasis DEFERRED to Phase 29 (D-15). |
+| Test 3 — File drop | pass | pass (untouched) |
+| Test 4 — Ghost + zone visuals | pass | pass; ghost size cap — plan 28-15. |
+
+**What remains OPEN after plans 28-11 + 28-12 + 28-13 + 28-14:**
+- Ghost size too large on large cells — CLOSED by plan 28-15.
+- DROP-02 / DROP-03 per-zone icon emphasis — deferred to Phase 29 per D-15.
+- `isSelected` / `isPanMode` ring occlusion on media cells — tracked as follow-up (28-13 section).
+- Nothing else from 28-UAT.
 
 ---
 

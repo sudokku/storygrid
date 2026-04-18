@@ -155,7 +155,7 @@ human_verification:
 | DRAG-07 | 28-03, 28-08, 28-10a | Entire cell body is drag-activation region | SATISFIED | LeafNode.tsx:613 spreads dragListeners on root div; drag-handle button removed |
 | GHOST-01 | 28-01, 28-03, 28-07, 28-10b | Ghost via canvas.toDataURL() as `<img>` | SATISFIED | CanvasWrapper.tsx:77 — `canvas.toDataURL()`; DragPreviewPortal.tsx:38 renders `<img src={ghostDataUrl}>` |
 | GHOST-02 | 28-02, 28-07, 28-10b, 28-12 | Grab-point offset preserved (no scale amplification) | SATISFIED | scaleCompensationModifier REMOVED (was amplifying 1/scale×); MeasuringStrategy.Always handles residual drift at non-1x scale. Visual correctness = human UAT |
-| GHOST-04 | 28-01, 28-05, 28-10b | Ghost at source-cell size | SATISFIED | DragPreviewPortal.tsx:41-43 — `width: sourceRect.width, height: sourceRect.height` |
+| GHOST-04 | 28-01, 28-05, 28-10b, 28-15 | Ghost at source-cell size (capped to GHOST_MAX_DIMENSION=200 on both axes with aspect ratio preserved — gap-closure 28-15 narrows the spec after 28-UAT Gap 2) | SATISFIED | DragPreviewPortal.tsx — `computeCappedGhostSize(sourceRect, GHOST_MAX_DIMENSION)` returns aspect-preserved capped dimensions via uniform scale `min(1, max/w, max/h)`; applied to both `<img>` and D-10 fallback `<div>`; defensive `maxWidth`/`maxHeight` CSS ceiling; `objectFit: 'cover'` on the `<img>` for cross-browser aspect robustness. |
 | GHOST-05 | 28-05, 28-10b | Ghost contains artwork only — no chrome | SATISFIED | DragPreviewPortal renders just `<img>` (or empty-cell fallback div); no ActionBar/handles |
 | GHOST-06 | 28-02, 28-05, 28-07, 28-09, 28-10b, 28-12 | Ghost via DragOverlay portal in viewport space | SATISFIED | DragOverlay portal (document.body); `adjustScale={false}`; no modifiers; mount inside DndContext (CanvasWrapper.tsx:208) |
 | GHOST-07 | 28-08, 28-10b | Source cell dims to 40% opacity | SATISFIED | LeafNode.tsx:601 — `...(isSourceOfDrag ? { opacity: 0.4 } : {})` |
@@ -427,6 +427,97 @@ grep -c 'Insert edge-drop regression lock (gap-closure 28-14' src/dnd/__tests__/
 - DROP-02 / DROP-03 per-zone icon emphasis — deferred to Phase 29 per D-15.
 - `isSelected` / `isPanMode` ring occlusion on media cells — tracked as follow-up (28-13 section).
 - Nothing else from 28-UAT.
+
+### Gap-Closure Plan 28-15 — ghost size cap (max 200x200 with aspect preservation)
+
+**Landed:** 2026-04-18
+**Closes:** 28-UAT Gap 2 'ghost size too large — enhancement request' (raised twice: Test 1 desktop + Test 4 ghost visuals).
+**Type:** spec_change (not a defect — narrows the GHOST-04 spec).
+
+**The problem:**
+
+`DragPreviewPortal.tsx:41-43` rendered the ghost `<img>` at `width: sourceRect.width, height: sourceRect.height` — uncapped. On large source cells (common on desktop with few cells, e.g. 400x800 viewport px), the ghost occupied most of the viewport and occluded:
+  - the 5-zone drop indicator overlay,
+  - the accent-ring drag-over indicator (28-13 fix), and
+  - the rest of the canvas content the user needed to see to pick a drop target.
+
+User's exact words (28-UAT.md Gap 2):
+  - Test 1: "The floating copy of the image makes it hard to see what's behind it — let's make it 3/4 times smaller than original cell."
+  - Test 4: "Ghost size too large — user suggests capping with max-width + max-height preset so big cells don't have the ghost occluding drop zones."
+
+This is a SPEC CHANGE, not a defect. The original GHOST-04 spec ("ghost at source-cell size") was implemented correctly — the spec itself is the pain point at large source sizes.
+
+**The fix:**
+
+- New named constant `GHOST_MAX_DIMENSION = 200` in DragPreviewPortal.tsx.
+- New exported pure helper `computeCappedGhostSize(sourceRect, max)` that returns `{ width, height }` with aspect ratio preserved via a single uniform scale factor: `scale = min(1, max/width, max/height)`. When both source axes fit under the cap, scale=1 and the ghost renders at natural size; otherwise the constraining axis hits the cap exactly and the other axis shrinks by the same factor.
+- Both render branches (snapshot `<img>` and D-10 empty-cell fallback `<div>`) consume the capped dims. Aspect ratio is preserved in both.
+- Defensive CSS ceiling: `maxWidth: GHOST_MAX_DIMENSION, maxHeight: GHOST_MAX_DIMENSION` on the style object — belt-and-suspenders in case `sourceRect` were mutated mid-render.
+- `objectFit: 'cover'` added to the `<img>` style for cross-browser aspect robustness (Safari has historically had edge cases with `<img>` width+height overrides; `cover` is safe because the snapshot is a full-rect capture).
+
+**Worked examples (max=200):**
+
+| Source sourceRect | scale | Capped dims | Notes |
+|-------------------|-------|-------------|-------|
+| 100 x 150         | 1     | 100 x 150   | Natural — both axes under cap |
+| 200 x 200         | 1     | 200 x 200   | Exactly at cap on both axes |
+| 400 x 400         | 0.5   | 200 x 200   | Square, both hit cap |
+| 400 x 800         | 0.25  | 100 x 200   | **The 28-UAT Test 1 + 4 case.** aspect 1:2 preserved. |
+| 800 x 100         | 0.25  | 200 x 25    | Wide, width hits cap; aspect 8:1 preserved. |
+| 200 x 300         | 0.667 | ≈133 x 200  | Height hits cap; aspect 2:3 preserved. |
+
+**Artifact status changes:**
+
+| Artifact | Previous | Now |
+|----------|----------|-----|
+| `src/dnd/DragPreviewPortal.tsx` ghost `<img>` | `width: sourceRect.width, height: sourceRect.height` — uncapped | `width: capped.width, height: capped.height, maxWidth: 200, maxHeight: 200, objectFit: 'cover'` |
+| `src/dnd/DragPreviewPortal.tsx` fallback `<div>` | `width: sourceRect.width, height: sourceRect.height` — uncapped | `width: capped.width, height: capped.height, maxWidth: 200, maxHeight: 200` |
+| `src/dnd/DragPreviewPortal.tsx` `GHOST_MAX_DIMENSION` | not present | named constant export = 200 |
+| `src/dnd/DragPreviewPortal.tsx` `computeCappedGhostSize` | not present | exported pure helper (aspect-ratio-preserving uniform scale) |
+| `src/dnd/__tests__/DragPreviewPortal.test.tsx` | No cap coverage; GHOST-05 test asserted uncapped 200x300 | Two new describe blocks: `computeCappedGhostSize (gap-closure 28-15 pure helper)` (7 pure-math tests) + `GHOST-04 size cap (gap-closure 28-15)` (7 render tests); existing GHOST-05 test renamed + assertions updated for the 200x200 cap applied to the 200x300 fixture. |
+
+**Truth row updates:**
+
+Requirements Coverage row GHOST-04 — evidence cell updated to reference `computeCappedGhostSize`, `GHOST_MAX_DIMENSION`, and the aspect-preservation technique. Plans column appended with `28-15`.
+
+**What this plan did NOT change (explicit non-scope):**
+
+- `src/Grid/CanvasWrapper.tsx` — plan 28-14 territory. File-level lock.
+- Sensor classes (28-11 territory).
+- `scaleCompensationModifier` / `MeasuringStrategy.Always` / per-axis thresholds (28-12 territory).
+- LeafNode drag-over overlay div (28-13 territory).
+- `handleDragMove` + input-agnostic pointer (28-14 territory).
+- `src/dnd/dragStore.ts` — `sourceRect` schema unchanged; no new fields, no new actions.
+- `DropZoneIndicators.tsx` — D-15 preserved (no per-zone emphasis).
+- `LeafNode.tsx` — Pitfall 1 (spread-listeners-last) preserved; D-28 (HTML5 file-drop) preserved.
+- `computeDropZone.ts` — producer is correct; no changes.
+- GHOST-06 portal wiring — `<DragOverlay adjustScale={false}>` and the document.body portal still handled by @dnd-kit/core.
+
+**Grep gates post-28-15:**
+
+```bash
+grep -c 'GHOST_MAX_DIMENSION' src/dnd/DragPreviewPortal.tsx                        # >= 4
+grep -c 'computeCappedGhostSize' src/dnd/DragPreviewPortal.tsx                     # >= 2
+grep -c 'width: sourceRect.width,' src/dnd/DragPreviewPortal.tsx                   # == 0 (uncapped style assignment gone; helper's `sourceRect.width * scale` is the intended internal)
+grep -c 'objectFit' src/dnd/DragPreviewPortal.tsx                                  # >= 1
+grep -c 'GHOST-04 size cap (gap-closure 28-15' src/dnd/__tests__/DragPreviewPortal.test.tsx    # == 1
+grep -c 'computeCappedGhostSize (gap-closure 28-15 pure helper' src/dnd/__tests__/DragPreviewPortal.test.tsx    # == 1
+```
+
+**Post-fix UAT mapping (all five gap-closure plans 28-11 / 28-12 / 28-13 / 28-14 / 28-15):**
+
+| UAT Test | Previous Result (28-UAT, 2026-04-18) | Expected After 28-15 |
+|----------|--------------------------------------|----------------------|
+| Test 1 — Desktop click-hold drag + drop | issue (major — insert edges not committing, ghost too large) | pass for both sub-items. Insert closed by 28-14. Ghost size closed by this plan. |
+| Test 2 — Touch press-and-hold drag + drop | issue (major — edges do not work on touch) | pass for all sub-items. Ghost 1:1 speed by 28-12; edge-drop on touch by 28-14. Ghost size on touch same cap as desktop — closed by this plan. Per-zone icon emphasis DEFERRED to Phase 29 per D-15. |
+| Test 3 — File drop | pass | pass (untouched). |
+| Test 4 — Ghost + zone visuals | pass (with "ghost too large" minor note) | pass cleanly — minor note closed by this plan. |
+
+**What remains OPEN after plans 28-11 + 28-12 + 28-13 + 28-14 + 28-15:**
+- Nothing from 28-UAT.
+- DROP-02 / DROP-03 per-zone icon emphasis — deferred to Phase 29 per D-15 (by design).
+- isSelected / isPanMode ring occlusion on media cells — tracked as follow-up in the 28-13 section (unrelated to 28-UAT).
+- Real-device UAT re-confirmation required per D-31 (human UAT) after all five plans land — see execute-phase output.
 
 ---
 

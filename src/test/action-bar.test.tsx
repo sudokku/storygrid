@@ -56,13 +56,14 @@ describe('ActionBar', () => {
   });
 
   describe('Upload/Replace button (D-02)', () => {
-    it('renders Upload button as the first button (D-07, Phase 28 DRAG-07)', () => {
+    it('renders Upload button as the first non-drag button (D-07)', () => {
       const leaf = makeLeaf();
       setStoreRoot(leaf);
       render(<ActionBar nodeId="leaf-1" fit="cover" hasMedia={false} onUploadClick={vi.fn()} />);
       const buttons = screen.getAllByRole('button');
-      // Phase 28 DRAG-07 removed the ActionBar drag handle; Upload is now first.
-      expect(buttons[0]).toHaveAttribute('aria-label', 'Upload image');
+      // Phase 9 EC-06: drag handle is now first on empty cells; Upload is second.
+      expect(buttons[0]).toHaveAttribute('aria-label', 'Drag to move');
+      expect(buttons[1]).toHaveAttribute('aria-label', 'Upload image');
     });
 
     it('shows "Upload image" aria-label when hasMedia=false', () => {

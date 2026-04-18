@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOverlayStore } from '../store/overlayStore';
 import { useEditorStore } from '../store/editorStore';
-import { useDragStore } from '../dnd';
 import { OverlayHandles } from '../Editor/OverlayHandles';
 import { InlineTextEditor } from '../Editor/InlineTextEditor';
 import type { Overlay, TextOverlay } from '../types';
@@ -15,7 +14,6 @@ export function OverlayLayer() {
   const canvasScale = useEditorStore(state => state.canvasScale);
   const showOverlays = useEditorStore(state => state.showOverlays);
   const updateOverlay = useOverlayStore(state => state.updateOverlay);
-  const isDragging = useDragStore((s) => s.status === 'dragging');
   const [editingOverlayId, setEditingOverlayId] = useState<string | null>(null);
 
   // Exit edit mode when the selected overlay changes (e.g. user clicks another overlay)
@@ -50,7 +48,6 @@ export function OverlayLayer() {
 
   return (
     <div
-      data-dnd-ignore="true"
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}
     >
       {sorted.map((overlay: Overlay) => {
@@ -67,7 +64,7 @@ export function OverlayLayer() {
               width: overlay.width,
               transformOrigin: 'center center',
               transform: `translate(-50%, -50%) rotate(${overlay.rotation}deg)`,
-              pointerEvents: isDragging ? 'none' : 'auto',
+              pointerEvents: 'auto',
               cursor: 'move',
             }}
             onPointerDown={(e) => {

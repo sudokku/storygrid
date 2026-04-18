@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect, useContext } from 'react';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -6,13 +6,16 @@ import { autoFillCells, detectAudioTrack } from '../lib/media';
 import { loadImage, drawLeafToCanvas } from '../lib/export';
 import { videoElementRegistry, registerVideo, unregisterVideo } from '../lib/videoRegistry';
 import type { LeafNode } from '../types';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, ArrowLeftRight } from 'lucide-react';
 import { ActionBar } from './ActionBar';
-import { useCellDraggable, useCellDropTarget, DropZoneIndicators, useDragStore } from '../dnd';
+import { useDraggable, useDroppable, useDndMonitor } from '@dnd-kit/core';
+import { DragZoneRefContext } from './CanvasWrapper';
 
 interface LeafNodeProps {
   id: string;
 }
+
+type ActiveZone = 'top' | 'bottom' | 'left' | 'right' | 'center' | null;
 
 /**
  * Recompute totalDuration as the max duration across all registered video elements.
@@ -44,22 +47,20 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
   const isPlaying = useEditorStore(s => s.isPlaying);
+  const canvasScale = useEditorStore(s => s.canvasScale);
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
   const split = useGridStore(s => s.split);
   const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const updateCell = useGridStore(s => s.updateCell);
-
-  // D-12 scoped primitive selectors — only re-render this leaf when its own drag state changes
-  const isOverThisCell = useDragStore((s) => s.overId === id && s.status === 'dragging');
-  const isSourceOfDrag = useDragStore((s) => s.sourceId === id && s.status === 'dragging');
-  const activeZone = useDragStore((s) => (s.overId === id ? s.activeZone : null));
-
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [activeZone, setActiveZone] = useState<ActiveZone>(null);
+  const [isPendingDrag, setIsPendingDrag] = useState(false);
+  const dragZoneRef = useContext(DragZoneRefContext);
   const [isTooSmall, setIsTooSmall] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const divRef = useRef<HTMLDivElement | null>(null);
+  const divRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Holds the loaded HTMLImageElement — never rendered to DOM
   const imgElRef = useRef<HTMLImageElement | null>(null);
@@ -251,14 +252,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
 
     function tick() {
-      // Pitfall 9 belt-and-braces: pause video rAF draw loop when this cell is
-      // the drag source. Prevents toDataURL() in CanvasWrapper.onDragStart from
-      // racing a mid-frame draw on video cells (Phase 28 / Claude's Discretion).
-      const dragState = useDragStore.getState();
-      if (dragState.sourceId === id && dragState.status === 'dragging') {
-        rafIdRef.current = requestAnimationFrame(tick);
-        return;
-      }
       drawRef.current();
       rafIdRef.current = requestAnimationFrame(tick);
     }
@@ -270,7 +263,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         rafIdRef.current = 0;
       }
     };
-  }, [isPlaying, isVideo, id]);
+  }, [isPlaying, isVideo]);
 
   // Subscribe to gridStore for per-cell pan/zoom/fit/media changes (bypass React re-render)
   useEffect(() => {
@@ -303,18 +296,29 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     };
   }, [id]);
 
+  // Phase 25: track pointer position for zone detection inside useDndMonitor
+  const pointerPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   // Track isPanMode for native listener without stale closure
   const isPanModeRef = useRef(false);
 
-  // Phase 28: Cell-to-cell drag via src/dnd hooks (replaces Phase 25 @dnd-kit wiring).
+  useEffect(() => {
+    const handler = (e: PointerEvent) => {
+      pointerPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener('pointermove', handler);
+    return () => document.removeEventListener('pointermove', handler);
+  }, []);
+
+  // Phase 25 D-01/D-04: @dnd-kit draggable — replaces HTML5 ondragstart on ActionBar button
   const {
     setNodeRef: setDragNodeRef,
     listeners: dragListeners,
     isDragging,
     attributes: dragAttributes,
-  } = useCellDraggable(id);
+  } = useDraggable({ id, data: { nodeId: id } });
 
-  const { setNodeRef: setDropNodeRef } = useCellDropTarget(id);
+  // Phase 25 D-01: @dnd-kit droppable — target for other cells being dragged
+  const { setNodeRef: setDropNodeRef } = useDroppable({ id, data: { nodeId: id } });
 
   // Merge divRef + drag ref + drop ref into a single callback ref
   const setRefs = useCallback((el: HTMLDivElement | null) => {
@@ -322,6 +326,52 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     setDragNodeRef(el);
     setDropNodeRef(el);
   }, [setDragNodeRef, setDropNodeRef]);
+
+  // Phase 25 D-03: track active drag state to show 5-zone overlays on non-dragged cells
+  useDndMonitor({
+    onDragStart({ active }) {
+      if (active.id === id) setIsPendingDrag(false);
+    },
+    onDragOver({ over, active }) {
+      if (active.id === id) return; // Don't show zones on the dragged cell itself
+      if (over?.id !== id) { setActiveZone(null); return; }
+      const rect = divRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = pointerPosRef.current.x - rect.left;
+      const y = pointerPosRef.current.y - rect.top;
+      const w = rect.width;
+      const h = rect.height;
+      const threshold = Math.max(20, Math.min(w, h) * 0.2);
+      let zone: ActiveZone;
+      if (y < threshold) zone = 'top';
+      else if (y > h - threshold) zone = 'bottom';
+      else if (x < threshold) zone = 'left';
+      else if (x > w - threshold) zone = 'right';
+      else zone = 'center';
+      setActiveZone(zone);
+      // Write to shared ref so CanvasWrapper's onDragEnd can read it
+      if (dragZoneRef) dragZoneRef.current = zone ?? 'center';
+    },
+    onDragEnd() { setActiveZone(null); setIsPendingDrag(false); },
+    onDragCancel() { setActiveZone(null); setIsPendingDrag(false); },
+  });
+
+  // Native pointerdown listener — fires before React synthetic events, ensuring
+  // isPendingDrag=true is set during the 500ms hold-pulse animation in non-pan mode.
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    const onDown = () => { if (!isPanModeRef.current) setIsPendingDrag(true); };
+    const onUp = () => setIsPendingDrag(false);
+    el.addEventListener('pointerdown', onDown, { passive: true });
+    el.addEventListener('pointerup', onUp, { passive: true });
+    el.addEventListener('pointercancel', onUp, { passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+    };
+  }, []);
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -573,19 +623,6 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     }
   }, []);
 
-  // D-17 / DROP-04: cell-drag-over accent ring is now a DEDICATED OVERLAY DIV
-  // rendered below as a sibling of the canvas-clip-wrapper. It cannot live on
-  // the root's className as `ring-inset` because the sibling canvas-clip-wrapper
-  // occludes the parent's box-shadow (CSS painting order — positioned
-  // descendants paint above their parent's box-shadow). See gap-closure
-  // plan 28-13 + .planning/debug/zone-visuals-broken.md.
-  //
-  // NOTE (scope): `isPanMode` and `isSelected` rings below are likely subject
-  // to the same occlusion on media cells, but this plan deliberately does not
-  // fix them — they are not listed in 28-HUMAN-UAT Gap 3's `missing:` items
-  // and a broader audit of ring-inset-on-root usage is warranted. A future
-  // plan should unify pan/select/drag-over into a single overlay pattern.
-  // Tracked in 28-VERIFICATION.md gap-closure section 28-13.
   const ringClass = isPanMode
     ? 'ring-2 ring-[#f59e0b] ring-inset'
     : isSelected
@@ -607,9 +644,11 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         backfaceVisibility: 'hidden',
         touchAction: 'none',
         transition: 'opacity 150ms ease-out, box-shadow 150ms ease-out',
-        cursor: isPanMode ? undefined : (isDragging ? 'grabbing' : 'grab'),
-        ...(isSourceOfDrag ? { opacity: 0.4 } : {}),
+        cursor: isPanMode ? undefined : (isDragging || isPendingDrag ? 'grabbing' : 'grab'),
+        ...(isDragging ? { opacity: 0.6, boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.6)' } : {}),
+        ...(isPendingDrag && !isDragging ? { animation: 'drag-hold-pulse 500ms ease-in-out forwards' } : {}),
       }}
+      data-hold-pending={isPendingDrag && !isDragging ? 'true' : undefined}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -667,27 +706,54 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       {isPanModeOtherCell && (
         <div className="absolute inset-0 bg-black/65 pointer-events-none z-10" data-testid={`dim-overlay-${id}`} />
       )}
-      {/* Drop target highlight (file drag only — cell drags use the DropZoneIndicators below) */}
+      {/* Drop target highlight (file drag only — cell drags use the 5-zone overlays below) */}
       {isDragOver && (
         <div className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10" data-testid={`drop-target-${id}`} />
       )}
 
-      {/* Phase 28 gap-closure 28-13: cell-drag accent ring as dedicated overlay div.
-          MUST NOT live on the root's className as box-shadow — the canvas-clip-
-          wrapper occludes inset box-shadows on media cells (CSS painting order:
-          positioned descendants paint above their parent's box-shadow). z-10
-          matches the file-drop overlay; DropZoneIndicators carries zIndex: 20 so
-          the 5-zone arrows still paint above this ring. pointer-events-none is
-          mandatory — this overlay must not intercept drop events (DROP-05). */}
-      {isOverThisCell && (
+      {/*
+        Phase 9 D-02: 5-zone drop overlays during cell-to-cell drag.
+        - Edge zones render a thick accent-blue insertion line (scale-stable via 1/canvasScale).
+        - Center zone renders a dimmed swap overlay with an icon.
+        - pointer-events-none prevents overlays from stealing dragover/drop events (Pitfall 4).
+      */}
+      {activeZone === 'top' && (
         <div
-          className="absolute inset-0 ring-2 ring-[#3b82f6] ring-inset pointer-events-none z-10"
-          data-testid={`drag-over-${id}`}
+          data-testid={`edge-line-top-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, left: 0, right: 0, height: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
         />
       )}
-
-      {/* Phase 28 D-12: 5-icon drop-zone overlay while this cell is the hovered drop target. */}
-      {isOverThisCell && <DropZoneIndicators zone={activeZone} />}
+      {activeZone === 'bottom' && (
+        <div
+          data-testid={`edge-line-bottom-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ bottom: 0, left: 0, right: 0, height: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'left' && (
+        <div
+          data-testid={`edge-line-left-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, bottom: 0, left: 0, width: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'right' && (
+        <div
+          data-testid={`edge-line-right-${id}`}
+          className="absolute pointer-events-none z-20"
+          style={{ top: 0, bottom: 0, right: 0, width: `${4 / canvasScale}px`, backgroundColor: '#3b82f6' }}
+        />
+      )}
+      {activeZone === 'center' && (
+        <div
+          data-testid={`swap-overlay-${id}`}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+        >
+          <ArrowLeftRight size={32 / canvasScale} className="text-white" />
+        </div>
+      )}
 
       {/*
         ActionBar — sibling of the canvas-clip-wrapper (NOT a descendant), so it

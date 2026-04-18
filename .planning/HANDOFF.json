@@ -1,33 +1,45 @@
 {
   "version": "1.0",
-  "timestamp": "2026-04-17T02:38:10.072Z",
-  "context": "phase",
-  "phase": "27",
-  "phase_name": "dnd-foundation",
-  "phase_dir": ".planning/phases/27-dnd-foundation",
+  "timestamp": "2026-04-17T01:25:49.925Z",
+  "context": "research",
+  "milestone": "v1.5 Unified Drag-and-Drop UX",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
   "plan": null,
   "task": null,
-  "total_tasks": 4,
+  "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    { "id": "27-01", "name": "DnD scaffolding + @dnd-kit/modifiers install", "status": "done", "commits": ["f6842cd", "6f51b98", "af361ac"] },
-    { "id": "27-02", "name": "computeDropZone 5-zone resolver + 39 tests", "status": "done", "commits": ["454fee5", "e34f576", "5398427"] },
-    { "id": "27-03", "name": "dragStore vanilla Zustand + 24 tests", "status": "done", "commits": ["4859f66", "003454f", "833553a"] },
-    { "id": "27-04", "name": "moveCell no-op guards regression lock + 11 tests", "status": "done", "commits": ["b0d3444", "55e8289"] }
+    {"id": 1, "name": "Update PROJECT.md with v1.5 milestone scope", "status": "done", "commit": "ab3a529"},
+    {"id": 2, "name": "Reset STATE.md for new milestone", "status": "done", "commit": "ab3a529"},
+    {"id": 3, "name": "Run 4 parallel research agents (STACK/FEATURES/ARCHITECTURE/PITFALLS)", "status": "done", "commit": "63a652f"},
+    {"id": 4, "name": "Write .planning/research/SUMMARY.md synthesizing the 4 docs; resolve library conflict to @dnd-kit/core rebuild", "status": "done", "commit": "49e7fb7"},
+    {"id": 5, "name": "Commit research directory", "status": "done", "commit": "49e7fb7"},
+    {"id": 6, "name": "Define .planning/REQUIREMENTS.md via 6-category AskUserQuestion rounds (DND/DRAG/GHOST/DROP/CANCEL/CROSS = 42 REQs)", "status": "done", "commit": "045d3f4"},
+    {"id": 7, "name": "Commit REQUIREMENTS.md", "status": "done", "commit": "045d3f4"},
+    {"id": 8, "name": "Spawn gsd-roadmapper — produced v1.5-ROADMAP.md + updated top-level ROADMAP.md (Phases 27-30, 42/42 REQs mapped)", "status": "done", "commit": "9bfb388"},
+    {"id": 9, "name": "Review + commit roadmap; sync STATE.md and PROJECT.md for gsd-watch visibility", "status": "done", "commit": "fefb0af"}
   ],
-  "remaining_tasks": [
-    { "id": "code_review", "name": "Run gsd-code-review on phase 27 source files", "status": "not_started" },
-    { "id": "verify_phase_goal", "name": "Spawn gsd-verifier for phase goal achievement", "status": "not_started" },
-    { "id": "update_roadmap", "name": "gsd-tools phase complete — mark phase 27 done", "status": "not_started" },
-    { "id": "update_project_md", "name": "Evolve PROJECT.md with phase 27 validated requirements", "status": "not_started" },
-    { "id": "offer_next", "name": "Present next-steps routing (phase 28)", "status": "not_started" }
+  "remaining_tasks": [],
+  "blockers": [
+    {"description": "A hook/linter reverted STATE.md frontmatter fields (milestone, milestone_name, progress.total_phases) back to v1.0/0 after my Edit. Body changes survived but YAML header is stale. Something auto-writes those three fields from an unknown source.", "type": "technical", "workaround": "Investigate which hook in ~/.claude/hooks/* or GSD skill owns those fields. STATE.md body + PROJECT.md Active section + ROADMAP.md / milestones/v1.5-ROADMAP.md already reflect v1.5 truthfully."}
   ],
-  "blockers": [],
-  "human_actions_pending": [],
+  "human_actions_pending": [
+    {"action": "Investigate STATE.md frontmatter auto-revert behavior", "context": "User flagged that gsd-watch isn't picking up v1.5 phases. The frontmatter `milestone`, `milestone_name`, and `progress` fields reverted to v1.0/0 after my Edit in the same turn. Needs to be fixed before gsd-watch will display Phases 27-30.", "blocking": false}
+  ],
   "decisions": [
-    { "decision": "Recovered wave 2+3 commits by merging worktree-agent-a4daf4a3 into main", "rationale": "Earlier per-wave merge commands landed on the wrong branch. a4daf4a3 already contained cbfe523 (inner merge of aed9d9fd) plus all 27-04 commits, so one merge brought main fully up-to-date.", "phase": "27" }
+    {"decision": "Rebuild DnD on @dnd-kit/core@^6.3.1 with single PointerSensor", "rationale": "3 blockers against Pragmatic DnD: issue #203 transform:scale, issue #165 ESC-cancel platform-gating, iOS Safari 15 native touch flakiness. @dnd-kit/react rejected (pre-1.0, 12 months no releases).", "phase": "v1.5-research"},
+    {"decision": "Press-and-hold 250ms + 5px tolerance (replaces Phase 25's 500ms)", "rationale": "500ms collides with iOS 17.2+ image-action menu; 250ms is @dnd-kit default + Linear/Material convention.", "phase": "v1.5-research"},
+    {"decision": "Mouse distance threshold 8px", "rationale": "dnd-kit PointerSensor default — balanced between responsive and click-safe.", "phase": "v1.5-scoping"},
+    {"decision": "Ghost from canvas.toDataURL() as <img>, grab-point preserved, source-size (no cap), artwork-only (no chrome), rendered via DragOverlay in document.body", "rationale": "cloneNode produces empty canvas on <canvas> leaves; grab-point preserves feel; cap unnecessary on <280px cells; artwork-only matches the export; portal avoids double-scale under canvas transform:scale().", "phase": "v1.5-scoping"},
+    {"decision": "Source cell opacity 40% during drag; target cell gets 2px accent outline; active zone 100% white + scale 1.1 + soft glow; inactive 30% white; no insertion line; ghost stays under pointer (no magnetism); no word labels", "rationale": "Atlassian Design System + user brief. Insertion line redundant with icons (Trello model). Magnetism and labels deferred to P2.", "phase": "v1.5-scoping"},
+    {"decision": "ESC snap-back 200ms cubic-bezier(0.15, 1.0, 0.3, 1.0); release outside GridCanvas = cancel; release on origin = snap-back no-op; zones tile cell fully (no dead zones)", "rationale": "Atlassian snap-back idiom; consistent cancel affordance across all three exit paths; threshold formula in computeDropZone guarantees full tiling.", "phase": "v1.5-scoping"},
+    {"decision": "Haptic navigator.vibrate(10) on activation + vibrate(15) on commit; bottom-sheet auto-collapse on drag-start; touch-action:none + -webkit-touch-callout:none + user-select:none + preventDefault on contextmenu", "rationale": "Apple HIG physical-confirmation pattern; iOS Photos sheet-collapse pattern; belt-and-braces suppression of iOS image-action menu + scroll hijack + loupe + right-click.", "phase": "v1.5-scoping"},
+    {"decision": "Whole cell body is drag-activation region (no dedicated handle)", "rationale": "More discoverable on collage canvas than Notion-style handles; matches Figma/Canva. Grab cursor on every cell unconditionally.", "phase": "v1.5-scoping"},
+    {"decision": "4-phase minimum roadmap: Phase 27 Foundation / 28 Cell-to-Cell (wholesale swap) / 29 ESC+Visual Polish / 30 Mobile Handle+Tray. 42 REQs mapped 8/19/8/7.", "rationale": "Architecture module layout + user's 'visual UI/UX first, interactions iteratively' preference; Phase 28 explicitly removes old @dnd-kit wiring in same phase as new engine (no parallel engines).", "phase": "v1.5-roadmap"}
   ],
   "uncommitted_files": [],
-  "next_action": "Run /gsd-execute-phase 27 — all 4 SUMMARY.md files exist so the executor will skip plan execution and jump straight to code_review_gate → regression_gate → verify_phase_goal → update_roadmap.",
-  "context_notes": "Phase 27 (v1.5 Unified DnD UX — dnd-foundation) execution is complete on main at 55e8289. All 4 plans have SUMMARY.md. Test suite: 797 passed / 9 failed (same 9 pre-existing Phase 25/ActionBar baseline failures, documented in deferred-items.md). The 9 failures are OUT OF SCOPE for phase 27 and will be deleted wholesale by Phase 28 DND-04. Work remaining is pure verification/bookkeeping."
+  "next_action": "Run `/gsd-plan-phase 27` to plan Phase 27 DnD Foundation. That phase scaffolds `src/dnd/` (pure computeDropZone, dragStore, DragPreviewPortal), installs @dnd-kit/modifiers, and writes unit tests — with zero UI wiring and zero regressions. Before running it: investigate the STATE.md frontmatter auto-revert so gsd-watch picks up v1.5.",
+  "context_notes": "v1.5 planning phase is COMPLETE. All 9 original tasks done across 5 commits: ab3a529 (PROJECT+STATE kickoff) → 63a652f (4 research docs) → 49e7fb7 (SUMMARY synthesis) → 045d3f4 (REQUIREMENTS) → 9bfb388 (ROADMAP) → fefb0af (gsd-watch visibility sync). Ready for execution phase. User preference noted: no worktrees for phase work (standing feedback rule). User wants visual UI/UX first, then interactions iteratively; may add phases past 30 as needs emerge. Key architectural invariants encoded in REQUIREMENTS.md 'Blocking Anti-Patterns' section — resuming agent MUST honor them (single PointerSensor, no spread-then-handler, separate dragStore, no parallel engines, no cloneNode on canvas). Sonnet rate-limit from original pause was no longer active when gsd-roadmapper ran successfully."
 }

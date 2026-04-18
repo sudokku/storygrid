@@ -608,17 +608,17 @@ const sensors = useSensors(touchSensor, mouseSensor, keyboardSensor);
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`dragStore.end()` timing with dropAnimation**
    - What we know: `dropAnimation` runs after the ghost is dismissed; `dragStore.end()` currently fires immediately in `handleDragEnd`/`handleDragCancel`.
    - What's unclear: If `end()` runs before the snap-back animation completes, the ghost might disappear prematurely (since `isDragging` from `useDragStore` would become false and `DragPreviewPortal` renders `null`).
-   - Recommendation: `DragOverlay` manages the ghost independently during `dropAnimation` — the overlay is not gated on `useDragStore`'s `isDragging`. Confirm by reading DragOverlay's behavior: it uses its own internal `isDraggingRef` from DndContext, not an external store. So calling `dragStore.end()` immediately is safe. [MEDIUM confidence — verify during implementation]
+   - RESOLVED: `DragOverlay` manages the ghost independently during `dropAnimation` — the overlay uses its own internal `isDraggingRef` from DndContext, not `useDragStore`'s `isDragging`. Calling `dragStore.end()` immediately is safe. Proceed with immediate `end()` call.
 
 2. **`onAnimationEnd` for drop flash cleanup alternative**
    - What we know: `setTimeout(clearLastDrop, 700)` is the specified approach (D-08).
    - What's unclear: If animation completes earlier (e.g., user switches tabs), the timeout keeps `lastDropId` set until 700ms.
-   - Recommendation: `setTimeout` approach is correct per spec. `onAnimationEnd` is an alternative but adds complexity; defer unless visual testing reveals issues.
+   - RESOLVED: Use `setTimeout` approach as specified in D-08. `onAnimationEnd` adds complexity without material benefit; deferred unless visual testing reveals issues.
 
 ---
 

@@ -1,11 +1,24 @@
 /**
  * Ephemeral drag state store (REQ: DND-02).
  *
- * This is a VANILLA Zustand store — no Immer middleware, no persist, no
- * history — so 60 Hz pointer-tick writes never enter gridStore's undo
- * history (PITFALLS.md Pitfall 11; ARCHITECTURE.md §3).
+ * Vanilla Zustand — no middleware of any kind (no mutation tracking, no
+ * storage, no history). Pointer-tick writes (60 Hz during an active drag
+ * in Phase 28) are isolated from gridStore's undo history
+ * (PITFALLS.md Pitfall 11).
  *
- * Implementation: Plan 03 (27-03-PLAN.md) — RED→GREEN via dragStore.test.ts.
+ * Shape (5 fields + 3 actions):
+ *   status     : 'idle' | 'dragging'
+ *   kind       : 'cell' | null
+ *   sourceId   : string | null         (leaf id of the cell being dragged)
+ *   overId     : string | null         (leaf id the pointer is currently over)
+ *   activeZone : DropZone | null       (which of the 5 zones the pointer hit)
+ *
+ * Actions:
+ *   beginCellDrag(sourceId)  status→'dragging', kind='cell', sourceId set,
+ *                            overId+activeZone reset to null (defensive)
+ *   setOver(overId, zone)    overId+activeZone updated; status/kind/sourceId
+ *                            untouched; idempotent
+ *   end()                    all 5 fields reset to initial; safe from any status
  */
 import { create } from 'zustand';
 
@@ -24,9 +37,18 @@ export type DragState = {
   end: () => void;
 };
 
-// Plan 03 replaces this stub with the real store. Until then, attempting
-// to use the store throws to prevent accidental consumption from Phase 28
-// work that forks ahead of Plan 03.
-export const useDragStore = create<DragState>(() => {
-  throw new Error('dragStore: implementation lands in Phase 27 Plan 03');
-});
+const INITIAL_STATE = {
+  status: 'idle' as const,
+  kind: null as DragKind,
+  sourceId: null as string | null,
+  overId: null as string | null,
+  activeZone: null as DropZone | null,
+};
+
+export const useDragStore = create<DragState>((set) => ({
+  ...INITIAL_STATE,
+  beginCellDrag: (sourceId) =>
+    set({ status: 'dragging', kind: 'cell', sourceId, overId: null, activeZone: null }),
+  setOver: (overId, activeZone) => set({ overId, activeZone }),
+  end: () => set({ ...INITIAL_STATE }),
+}));

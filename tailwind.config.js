@@ -55,6 +55,22 @@ export default {
       fontFamily: {
         sans: ['var(--font-sans)', 'sans-serif'],
       },
+      animation: {
+        'cell-wobble': 'cell-wobble 150ms ease-in-out',
+        'drop-flash': 'drop-flash 700ms ease-out',
+      },
+      keyframes: {
+        'cell-wobble': {
+          '0%':   { transform: 'rotate(0deg)' },
+          '25%':  { transform: 'rotate(1.5deg)' },
+          '75%':  { transform: 'rotate(-1.5deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
+        'drop-flash': {
+          '0%':   { boxShadow: '0 0 0 3px var(--primary)' },
+          '100%': { boxShadow: 'none' },
+        },
+      },
     },
   },
   plugins: [],

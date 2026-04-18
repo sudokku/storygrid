@@ -203,7 +203,7 @@ This phase contains no user-visible text strings beyond accessibility labels. No
 | Primary CTA | Not applicable — drag is a direct manipulation; no CTA button | — |
 | Empty state | Not applicable — drag only activates on leaf cells with or without media | — |
 | Drag-start aria-label | `"Drag to move"` on each draggable cell root | Existing Phase 9 pattern (STATE.md: "aria-label changed to 'Drag to move'") |
-| Drop zone aria-labels | `"Swap with this cell"` (center), `"Insert above"`, `"Insert below"`, `"Insert to the left"`, `"Insert to the right"` | Default — executor discretion on exact wording |
+| Drop zone aria-labels | `"Swap with this cell"` (center), `"Insert above"`, `"Insert below"`, `"Insert to the left"`, `"Insert to the right"` | Locked — use these exact strings |
 | Error state | Not applicable — failed drags cancel silently; no user-visible error text | — |
 | Destructive confirmation | Not applicable — no destructive actions in this phase | — |
 

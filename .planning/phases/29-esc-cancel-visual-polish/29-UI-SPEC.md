@@ -48,16 +48,7 @@ Exceptions: none — this phase adds no new layout regions.
 
 ## Typography
 
-No new typographic elements introduced in this phase. Existing scale (Geist Variable) carries forward unchanged. Reference only:
-
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Body | 14px | 400 | 1.5 |
-| Label | 12px | 500 | 1.4 |
-| Heading | 20px | 600 | 1.2 |
-| Display | 28px | 600 | 1.2 |
-
-Source: project defaults (no new text elements in Phase 29).
+No new typographic elements introduced in this phase. Existing scale carries forward — see Phase 28 UI-SPEC for type contract.
 
 ---
 

@@ -1,9 +1,9 @@
 /**
- * dragStore — state-transition tests (Plan 27-03)
+ * dragStore — state-transition tests (Plan 27-03, extended in Plan 28-01)
  *
  * Covers: initial state, beginCellDrag, setOver, end,
  *         cross-cycle isolation, middleware-absence assertions,
- *         and action reference stability.
+ *         action reference stability, and ghost field behavior.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useDragStore } from './dragStore';
@@ -18,6 +18,9 @@ beforeEach(() => {
     sourceId: null,
     overId: null,
     activeZone: null,
+    ghostUrl: null,
+    sourceW: 0,
+    sourceH: 0,
   });
 });
 
@@ -44,6 +47,18 @@ describe('dragStore — initial state', () => {
   it('activeZone is null', () => {
     expect(useDragStore.getState().activeZone).toBeNull();
   });
+
+  it('ghostUrl is null', () => {
+    expect(useDragStore.getState().ghostUrl).toBeNull();
+  });
+
+  it('sourceW is 0', () => {
+    expect(useDragStore.getState().sourceW).toBe(0);
+  });
+
+  it('sourceH is 0', () => {
+    expect(useDragStore.getState().sourceH).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -51,7 +66,7 @@ describe('dragStore — initial state', () => {
 // ---------------------------------------------------------------------------
 describe('dragStore — beginCellDrag', () => {
   it('sets status to dragging, kind to cell, sourceId to provided id, overId/activeZone null', () => {
-    useDragStore.getState().beginCellDrag('leaf-abc');
+    useDragStore.getState().beginCellDrag('leaf-abc', 'data:image/png;base64,iVBORw0KG', 200, 300);
     const state = useDragStore.getState();
     expect(state.status).toBe('dragging');
     expect(state.kind).toBe('cell');
@@ -61,10 +76,10 @@ describe('dragStore — beginCellDrag', () => {
   });
 
   it('resets overId and activeZone to null even if a previous setOver left them populated (defensive clean start)', () => {
-    useDragStore.getState().beginCellDrag('leaf-first');
+    useDragStore.getState().beginCellDrag('leaf-first', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('leaf-prev', 'top');
     // Now begin a new drag without calling end() first
-    useDragStore.getState().beginCellDrag('leaf-xyz');
+    useDragStore.getState().beginCellDrag('leaf-xyz', 'data:image/png;base64,iVBORw0KG', 200, 300);
     const state = useDragStore.getState();
     expect(state.overId).toBeNull();
     expect(state.activeZone).toBeNull();
@@ -74,7 +89,7 @@ describe('dragStore — beginCellDrag', () => {
   it('does not mutate gridStore (gridStore.getState().root before and after must be identical)', async () => {
     const { useGridStore } = await import('../store/gridStore');
     const rootBefore = useGridStore.getState().root;
-    useDragStore.getState().beginCellDrag('leaf-abc');
+    useDragStore.getState().beginCellDrag('leaf-abc', null, 0, 0);
     const rootAfter = useGridStore.getState().root;
     expect(rootAfter).toBe(rootBefore);
   });
@@ -85,7 +100,7 @@ describe('dragStore — beginCellDrag', () => {
 // ---------------------------------------------------------------------------
 describe('dragStore — setOver', () => {
   it('updates overId and activeZone, leaves status/kind/sourceId unchanged', () => {
-    useDragStore.getState().beginCellDrag('src');
+    useDragStore.getState().beginCellDrag('src', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('tgt', 'top');
     const state = useDragStore.getState();
     expect(state.overId).toBe('tgt');
@@ -96,7 +111,7 @@ describe('dragStore — setOver', () => {
   });
 
   it('setOver(null, null) clears over fields without changing status/kind/sourceId', () => {
-    useDragStore.getState().beginCellDrag('src');
+    useDragStore.getState().beginCellDrag('src', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('tgt', 'right');
     useDragStore.getState().setOver(null, null);
     const state = useDragStore.getState();
@@ -108,7 +123,7 @@ describe('dragStore — setOver', () => {
   });
 
   it('calling setOver twice in a row leaves state identical to one call (idempotent)', () => {
-    useDragStore.getState().beginCellDrag('src');
+    useDragStore.getState().beginCellDrag('src', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('tgt', 'right');
     const stateAfterFirst = { ...useDragStore.getState() };
     useDragStore.getState().setOver('tgt', 'right');
@@ -138,7 +153,7 @@ describe('dragStore — setOver', () => {
 // ---------------------------------------------------------------------------
 describe('dragStore — end', () => {
   it('after beginCellDrag + setOver, resets ALL five fields to initial values', () => {
-    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().beginCellDrag('leaf-a', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('leaf-b', 'left');
     useDragStore.getState().end();
     const state = useDragStore.getState();
@@ -160,7 +175,7 @@ describe('dragStore — end', () => {
   });
 
   it('calling end() twice is idempotent', () => {
-    useDragStore.getState().beginCellDrag('leaf-a');
+    useDragStore.getState().beginCellDrag('leaf-a', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().end();
     useDragStore.getState().end();
     const state = useDragStore.getState();
@@ -186,7 +201,7 @@ describe('dragStore — cross-cycle isolation (no state leak)', () => {
 
   it('3 full cycles each leave state at initial after end()', () => {
     for (let i = 0; i < 3; i++) {
-      useDragStore.getState().beginCellDrag(`leaf-${i}`);
+      useDragStore.getState().beginCellDrag(`leaf-${i}`, 'data:image/png;base64,iVBORw0KG', 200, 300);
       useDragStore.getState().setOver(`target-${i}`, 'top');
       useDragStore.getState().end();
       const state = useDragStore.getState();
@@ -200,7 +215,7 @@ describe('dragStore — cross-cycle isolation (no state leak)', () => {
 
   it('100 cycles programmatically — final state matches initial', () => {
     for (let i = 0; i < 100; i++) {
-      useDragStore.getState().beginCellDrag(`leaf-${i}`);
+      useDragStore.getState().beginCellDrag(`leaf-${i}`, 'data:image/png;base64,iVBORw0KG', 200, 300);
       useDragStore.getState().setOver(`target-${i}`, 'center');
       useDragStore.getState().end();
     }
@@ -213,10 +228,10 @@ describe('dragStore — cross-cycle isolation (no state leak)', () => {
   });
 
   it('partial cycle: second beginCellDrag (no end() between) reflects second drag cleanly', () => {
-    useDragStore.getState().beginCellDrag('leaf-first');
+    useDragStore.getState().beginCellDrag('leaf-first', 'data:image/png;base64,iVBORw0KG', 200, 300);
     useDragStore.getState().setOver('leaf-over', 'right');
     // No end() — simulate interrupted drag
-    useDragStore.getState().beginCellDrag('leaf-second');
+    useDragStore.getState().beginCellDrag('leaf-second', 'data:image/png;base64,iVBORw0KG', 400, 600);
     const state = useDragStore.getState();
     // Should reflect second drag, not a merge
     expect(state.sourceId).toBe('leaf-second');
@@ -270,5 +285,58 @@ describe('dragStore — action references are stable across ticks (selector refe
     const ref1 = useDragStore.getState().setOver;
     const ref2 = useDragStore.getState().setOver;
     expect(ref1).toBe(ref2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. Ghost field behavior (Plan 28-01)
+// ---------------------------------------------------------------------------
+describe('dragStore — ghost field behavior', () => {
+  it('beginCellDrag populates ghostUrl, sourceW, sourceH alongside other fields', () => {
+    useDragStore
+      .getState()
+      .beginCellDrag('leaf-1', 'data:image/png;base64,XXX', 100, 200);
+    const state = useDragStore.getState();
+    expect(state.ghostUrl).toBe('data:image/png;base64,XXX');
+    expect(state.sourceW).toBe(100);
+    expect(state.sourceH).toBe(200);
+    expect(state.sourceId).toBe('leaf-1');
+    expect(state.status).toBe('dragging');
+    expect(state.kind).toBe('cell');
+  });
+
+  it('beginCellDrag with null ghostUrl and zero dimensions is accepted (ghost capture may fail)', () => {
+    useDragStore.getState().beginCellDrag('leaf-1', null, 0, 0);
+    const state = useDragStore.getState();
+    expect(state.ghostUrl).toBeNull();
+    expect(state.sourceW).toBe(0);
+    expect(state.sourceH).toBe(0);
+    expect(state.status).toBe('dragging');
+  });
+
+  it('end() resets ghostUrl to null, sourceW to 0, sourceH to 0', () => {
+    useDragStore
+      .getState()
+      .beginCellDrag('leaf-1', 'data:image/png;base64,XXX', 100, 200);
+    useDragStore.getState().end();
+    const state = useDragStore.getState();
+    expect(state.ghostUrl).toBeNull();
+    expect(state.sourceW).toBe(0);
+    expect(state.sourceH).toBe(0);
+  });
+
+  it('setOver does NOT mutate ghostUrl/sourceW/sourceH (they retain values from beginCellDrag)', () => {
+    useDragStore
+      .getState()
+      .beginCellDrag('leaf-1', 'data:image/png;base64,XXX', 100, 200);
+    useDragStore.getState().setOver('leaf-2', 'top');
+    const state = useDragStore.getState();
+    // Ghost fields unchanged by setOver
+    expect(state.ghostUrl).toBe('data:image/png;base64,XXX');
+    expect(state.sourceW).toBe(100);
+    expect(state.sourceH).toBe(200);
+    // Over fields updated
+    expect(state.overId).toBe('leaf-2');
+    expect(state.activeZone).toBe('top');
   });
 });

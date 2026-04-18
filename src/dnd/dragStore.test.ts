@@ -21,6 +21,9 @@ beforeEach(() => {
     ghostUrl: null,
     sourceW: 0,
     sourceH: 0,
+    pointerDownX: 0,
+    pointerDownY: 0,
+    lastDropId: null,
   });
 });
 
@@ -338,5 +341,62 @@ describe('dragStore — ghost field behavior', () => {
     // Over fields updated
     expect(state.overId).toBe('leaf-2');
     expect(state.activeZone).toBe('top');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. Pointer-down fields (D-02)
+// ---------------------------------------------------------------------------
+describe('dragStore — pointer down fields (D-02)', () => {
+  it('setPointerDown(x, y) sets pointerDownX and pointerDownY', () => {
+    useDragStore.getState().setPointerDown(120, 340);
+    expect(useDragStore.getState().pointerDownX).toBe(120);
+    expect(useDragStore.getState().pointerDownY).toBe(340);
+  });
+
+  it('setPointerDown updates independently from drag lifecycle fields', () => {
+    useDragStore.getState().setPointerDown(50, 75);
+    const state = useDragStore.getState();
+    expect(state.status).toBe('idle');
+    expect(state.sourceId).toBeNull();
+    expect(state.pointerDownX).toBe(50);
+    expect(state.pointerDownY).toBe(75);
+  });
+
+  it('end() resets pointerDownX and pointerDownY to 0', () => {
+    useDragStore.getState().setPointerDown(100, 200);
+    useDragStore.getState().end();
+    expect(useDragStore.getState().pointerDownX).toBe(0);
+    expect(useDragStore.getState().pointerDownY).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. lastDropId / drop flash (D-08)
+// ---------------------------------------------------------------------------
+describe('dragStore — lastDropId / drop flash (D-08)', () => {
+  it('setLastDrop(id) sets lastDropId', () => {
+    useDragStore.getState().setLastDrop('leaf-42');
+    expect(useDragStore.getState().lastDropId).toBe('leaf-42');
+  });
+
+  it('clearLastDrop() sets lastDropId to null', () => {
+    useDragStore.getState().setLastDrop('leaf-42');
+    useDragStore.getState().clearLastDrop();
+    expect(useDragStore.getState().lastDropId).toBeNull();
+  });
+
+  it('end() resets lastDropId to null', () => {
+    useDragStore.getState().setLastDrop('leaf-99');
+    useDragStore.getState().end();
+    expect(useDragStore.getState().lastDropId).toBeNull();
+  });
+
+  it('setLastDrop does not affect status, sourceId, or other lifecycle fields', () => {
+    useDragStore.getState().setLastDrop('leaf-7');
+    const state = useDragStore.getState();
+    expect(state.status).toBe('idle');
+    expect(state.sourceId).toBeNull();
+    expect(state.lastDropId).toBe('leaf-7');
   });
 });

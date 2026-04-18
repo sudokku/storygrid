@@ -48,7 +48,11 @@ vi.mock('@dnd-kit/core', async (importOriginal) => {
 });
 
 import { DndContext } from '@dnd-kit/core';
-import { DragPreviewPortal } from '../DragPreviewPortal';
+import {
+  DragPreviewPortal,
+  computeCappedGhostSize,
+  GHOST_MAX_DIMENSION,
+} from '../DragPreviewPortal';
 import { useDragStore } from '../dragStore';
 
 beforeEach(() => {
@@ -130,7 +134,7 @@ describe('DragPreviewPortal dragging state (GHOST-01, GHOST-02, GHOST-04, GHOST-
     expect(img?.style.opacity).toBe('0.8');
   });
 
-  it('drag-ghost-img width/height match sourceRect (GHOST-05)', () => {
+  it('drag-ghost-img width/height match capped sourceRect (GHOST-05 + GHOST-04 cap)', () => {
     const { rerender } = renderInsideDndContext();
     useDragStore.setState({
       status: 'dragging',
@@ -148,8 +152,11 @@ describe('DragPreviewPortal dragging state (GHOST-01, GHOST-02, GHOST-04, GHOST-
     );
     const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
     expect(img).not.toBeNull();
-    expect(img?.style.width).toBe('200px');
-    expect(img?.style.height).toBe('300px');
+    // Gap-closure 28-15: sourceRect 200x300 exceeds the 200 cap on the
+    // height axis. scale = min(1, 200/200=1, 200/300) = 200/300 ≈ 0.6667.
+    // Capped dims: 200*(200/300) ≈ 133.33, 300*(200/300) = 200.
+    expect(img?.style.width).toBe(`${200 * (200 / 300)}px`);
+    expect(img?.style.height).toBe('200px');
   });
 
   it('resets to no drag-ghost-img after end() is called', () => {
@@ -198,5 +205,222 @@ describe('DragPreviewPortal dragging state (GHOST-01, GHOST-02, GHOST-04, GHOST-
     );
     expect(screen.queryByTestId('drag-ghost-img')).toBeNull();
     expect(screen.queryByTestId('drag-ghost-fallback')).not.toBeNull();
+  });
+});
+
+describe('computeCappedGhostSize (gap-closure 28-15 pure helper)', () => {
+  // Pure helper — no DndContext / no vi.mock needed. Tests the aspect-
+  // ratio-preserving scale math directly. See 28-UAT.md Gap 2 and the
+  // gap-closure plan 28-15 for the 'ghost too large' rationale.
+
+  it('exports GHOST_MAX_DIMENSION = 200', () => {
+    expect(GHOST_MAX_DIMENSION).toBe(200);
+  });
+
+  it('returns natural size when both axes fit under the cap', () => {
+    expect(computeCappedGhostSize({ width: 100, height: 150 }, 200)).toEqual({
+      width: 100,
+      height: 150,
+    });
+  });
+
+  it('returns natural size when exactly at the cap on both axes', () => {
+    expect(computeCappedGhostSize({ width: 200, height: 200 }, 200)).toEqual({
+      width: 200,
+      height: 200,
+    });
+  });
+
+  it('caps a large square source at the max dimension on both axes (scale=0.5)', () => {
+    expect(computeCappedGhostSize({ width: 400, height: 400 }, 200)).toEqual({
+      width: 200,
+      height: 200,
+    });
+  });
+
+  it('caps a large portrait source with aspect preserved (height axis hits cap)', () => {
+    // The 28-UAT Test 1 + Test 4 case. aspect 1:2 preserved: 100:200.
+    expect(computeCappedGhostSize({ width: 400, height: 800 }, 200)).toEqual({
+      width: 100,
+      height: 200,
+    });
+  });
+
+  it('caps a wide source with aspect preserved (width axis hits cap)', () => {
+    // aspect 8:1 preserved: 200:25.
+    expect(computeCappedGhostSize({ width: 800, height: 100 }, 200)).toEqual({
+      width: 200,
+      height: 25,
+    });
+  });
+
+  it('honors a custom cap value (not hardcoded to 200)', () => {
+    expect(computeCappedGhostSize({ width: 300, height: 600 }, 100)).toEqual({
+      width: 50,
+      height: 100,
+    });
+  });
+});
+
+describe('GHOST-04 size cap (gap-closure 28-15)', () => {
+  // Consumer tests: render DragPreviewPortal with various sourceRects and
+  // assert the <img> / <div> dimensions + the defensive maxWidth/maxHeight
+  // CSS ceiling. All use the vi.mock DragOverlay pass-through from the
+  // top of the file so the ghost reaches the DOM without driving the full
+  // dnd-kit lifecycle (Pitfall 11).
+
+  it('small source (100x150) renders at natural size', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 100, height: 150, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.style.width).toBe('100px');
+    expect(img?.style.height).toBe('150px');
+  });
+
+  it('large square source (400x400) renders at cap (200x200)', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 400, height: 400, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.style.width).toBe('200px');
+    expect(img?.style.height).toBe('200px');
+  });
+
+  it('large portrait source (400x800 — 28-UAT Test 1 + 4 case) renders capped with aspect 1:2 preserved', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 400, height: 800, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    // scale = min(1, 200/400=0.5, 200/800=0.25) = 0.25
+    // 400*0.25 = 100, 800*0.25 = 200
+    expect(img?.style.width).toBe('100px');
+    expect(img?.style.height).toBe('200px');
+  });
+
+  it('wide source (800x100) renders capped with aspect 8:1 preserved', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 800, height: 100, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.style.width).toBe('200px');
+    expect(img?.style.height).toBe('25px');
+  });
+
+  it('drag-ghost-fallback (D-10 empty cell, ghostDataUrl=null) with large source also honors the cap', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-empty',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: null,
+      sourceRect: { width: 400, height: 800, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const fallback = screen.queryByTestId('drag-ghost-fallback') as HTMLDivElement | null;
+    expect(fallback).not.toBeNull();
+    expect(fallback?.style.width).toBe('100px');
+    expect(fallback?.style.height).toBe('200px');
+  });
+
+  it('drag-ghost-img carries defensive maxWidth and maxHeight ceiling', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 100, height: 150, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.style.maxWidth).toBe('200px');
+    expect(img?.style.maxHeight).toBe('200px');
+  });
+
+  it('drag-ghost-img has objectFit: cover for cross-browser aspect robustness', () => {
+    const { rerender } = renderInsideDndContext();
+    useDragStore.setState({
+      status: 'dragging',
+      kind: 'cell',
+      sourceId: 'leaf-a',
+      overId: null,
+      activeZone: null,
+      ghostDataUrl: 'data:image/png;base64,AAAA',
+      sourceRect: { width: 100, height: 150, left: 0, top: 0 },
+    });
+    rerender(
+      <DndContext>
+        <DragPreviewPortal />
+      </DndContext>
+    );
+    const img = screen.queryByTestId('drag-ghost-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.style.objectFit).toBe('cover');
   });
 });

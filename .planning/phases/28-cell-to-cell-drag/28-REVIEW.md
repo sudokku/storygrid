@@ -1,167 +1,155 @@
 ---
 phase: 28-cell-to-cell-drag
-reviewed: 2026-04-17T00:00:00Z
+reviewed: 2026-04-18T00:00:00Z
 depth: standard
-files_reviewed: 29
+files_reviewed: 5
 files_reviewed_list:
+  - src/Grid/CanvasWrapper.tsx
+  - src/dnd/DragPreviewPortal.tsx
   - src/dnd/__tests__/CanvasWrapper.integration.test.tsx
   - src/dnd/__tests__/DragPreviewPortal.test.tsx
-  - src/dnd/__tests__/DropZoneIndicators.test.tsx
-  - src/dnd/__tests__/useCellDraggable.test.tsx
-  - src/dnd/__tests__/useCellDropTarget.test.tsx
-  - src/dnd/adapter/__tests__/dndkit.test.ts
-  - src/dnd/adapter/dndkit.ts
-  - src/dnd/DragPreviewPortal.tsx
-  - src/dnd/dragStore.test.ts
-  - src/dnd/dragStore.ts
-  - src/dnd/DropZoneIndicators.test.tsx
-  - src/dnd/DropZoneIndicators.tsx
-  - src/dnd/index.ts
-  - src/dnd/useCellDraggable.ts
-  - src/dnd/useCellDropTarget.ts
-  - src/Grid/__tests__/ActionBar.test.tsx
-  - src/Grid/__tests__/LeafNode.test.tsx
-  - src/Grid/CanvasWrapper.tsx
-  - src/Grid/Divider.tsx
-  - src/Grid/LeafNode.tsx
-  - src/Grid/OverlayLayer.tsx
-  - src/test/action-bar.test.tsx
-  - src/test/grid-rendering.test.tsx
-  - src/test/phase05-p02-cell-swap.test.ts
-  - src/test/phase05-p02-pan-zoom.test.tsx
-  - src/test/phase09-p03-leafnode-zones.test.ts
-  - src/test/phase22-mobile-header.test.tsx
-  - src/test/phase25-touch-dnd.test.tsx
+  - src/dnd/computeDropZone.test.ts
 findings:
   critical: 0
-  warning: 4
+  warning: 2
   info: 5
-  total: 9
-status: issues_found
+  total: 7
+status: findings
 ---
 
-# Phase 28: Code Review Report
+# Phase 28: Code Review Report (gap-closure 28-14 + 28-15 scope)
 
-**Reviewed:** 2026-04-17
+**Reviewed:** 2026-04-18
 **Depth:** standard
-**Files Reviewed:** 29 (28 present; 1 intentionally deleted)
-**Status:** issues_found
+**Files Reviewed:** 5
+**Status:** findings
+
+**Scope note:** This review supersedes the 2026-04-17 review for the subset of files touched by the gap-closure plans 28-14 (input-agnostic pointer derivation + `handleDragMove` replacing `handleDragOver` as the authoritative zone-compute site in `CanvasWrapper.tsx`) and 28-15 (`computeCappedGhostSize` + `GHOST_MAX_DIMENSION` in `DragPreviewPortal.tsx`). The 2026-04-17 review's findings on files outside this scope (`DropZoneIndicators.tsx`, `adapter/dndkit.ts`, `Divider.tsx`, etc.) remain unchanged and authoritative for those files.
 
 ## Summary
 
-Phase 28 wires the unified @dnd-kit DnD engine through `src/dnd/*` and replaces the Phase 25 in-LeafNode implementation with a single `DndContext` host in `CanvasWrapper`. The architecture is sound: the ephemeral `dragStore` is isolated from `gridStore`'s undo history, sensor discrimination correctly splits mouse vs touch/pen, and the `[data-dnd-ignore]` escape hatch is honored by both sensors. Extensive unit/integration coverage accompanies the changes.
+Both gap-closure changes are mechanically correct and well-justified. The 28-14 fix is particularly strong: deriving the pointer from `active.rect.current.initial + delta` is genuinely input-type-agnostic and eliminates the `activatorEvent as PointerEvent` cast hazard on touch. The accompanying `computeDropZone.test.ts:330-360` NaN-fallthrough regression-lock is an excellent piece of diagnostic pinning — it documents the original defect symptom in the test suite itself.
 
-No Critical issues were found. The findings below cluster around three themes: (1) a small numeric mismatch between the visual drop-zone bands and the hit-test thresholds on small cells; (2) a few defensive-coding gaps around canvas/scale edge cases; and (3) one file in `files_reviewed_list` — `src/test/phase25-touch-dnd.test.tsx` — that was intentionally deleted in commit `4b6d7ca` (D-21) and so was not reviewable. The delete is a legitimate Phase 28 action; the file simply cannot be reviewed.
+The 28-15 cap math (`scale = min(1, max/w, max/h)`) is correct and preserves aspect ratio by construction. The `GHOST_MAX_DIMENSION` constant is used as both the JS cap and the CSS `maxWidth`/`maxHeight` defensive ceiling, so retuning happens in one place.
+
+Two warnings flag real interaction hazards with the @dnd-kit lifecycle:
+- `computeCappedGhostSize` does not defend against NaN or zero-size `sourceRect` inputs, which can propagate `NaNpx` CSS or collapse the ghost to 0×0;
+- `handleDragMove` and `handleDragOver` both write `setOver(null, null)` on the null-over / self-over branches, producing a double store write per tick and contradicting the comment that claims `handleDragMove` is the sole authoritative writer.
+
+Info items are minor style/consistency nits. No critical correctness, security, or crash issues.
 
 ## Warnings
 
-### WR-01: Visual drop-zone bands (20%) and hit-zone thresholds (max(20px, 20%)) diverge on small cells
+### WR-01: `computeCappedGhostSize` propagates NaN to CSS and collapses to 0x0 on zero-dim sourceRect
 
-**File:** `src/dnd/DropZoneIndicators.tsx:50,58,67,75` vs. `src/dnd/computeDropZone.ts:34`
-**Issue:** `DropZoneIndicators` renders top/bottom/left/right bands at a flat `20%` of the cell dimension, while `computeDropZone` resolves zones using `Math.max(20, Math.min(w, h) * 0.2)`. For cells smaller than roughly 100×100 viewport pixels (common at `canvasScale ~ 0.3` or less), the 20px floor in `computeDropZone` makes the real hit-zone wider than the visual band. The ArrowUp/Down/Left/Right icons will sit in a band that no longer matches the zone the user is actually activating, producing a visual-vs-behavior desync (the icon indicates `top` but the pointer is in `center`, or vice versa).
-**Fix:** Mirror the `max(20, 20%)` formula in the visual bands — use inline style with a computed pixel value:
-```tsx
-// In DropZoneIndicators.tsx — thread w/h through via ResizeObserver on the root,
-// or via a new prop. Then:
-const threshold = Math.max(20, Math.min(w, h) * 0.2);
-const bandStyle = { height: `${threshold}px` }; // horizontal bands
-const sideStyle = { width: `${threshold}px` };  // vertical bands
-```
-Alternatively, drop the 20px floor in `computeDropZone` and rely purely on `Math.min(w, h) * 0.2` so both sides use the same proportional formula. Either direction restores agreement — but they must agree.
-
-### WR-02: `DropZoneIndicators` icon sizing does not guard against `canvasScale === 0`
-
-**File:** `src/dnd/DropZoneIndicators.tsx:30`
-**Issue:** `const iconSize = 32 / canvasScale;` — if `canvasScale` is `0` (the bootstrap window before `ResizeObserver` fires, per the comment in `adapter/dndkit.ts:117`), `iconSize` becomes `Infinity`, which lucide-react then stamps into the SVG `width`/`height` attributes. `scaleCompensationModifier` explicitly guards this case with `|| 1`; `DropZoneIndicators` does not. The practical impact is small because `DropZoneIndicators` only renders mid-drag (i.e., after the bootstrap window), but the code diverges from the file-level invariant already established in the same module.
-**Fix:**
-```tsx
-const canvasScale = useEditorStore((s) => s.canvasScale);
-const iconSize = 32 / (canvasScale || 1);
-```
-
-### WR-03: `canvas.toDataURL()` in `handleDragStart` is unguarded against tainted-canvas SecurityError
-
-**File:** `src/Grid/CanvasWrapper.tsx:77`
-**Issue:** `const ghostDataUrl = canvas ? canvas.toDataURL() : null;` — if the cell's canvas has ever been painted with a cross-origin image whose server did not emit permissive CORS headers, `toDataURL()` throws `DOMException: SecurityError`. The handler runs synchronously inside dnd-kit's `onDragStart` callback; an uncaught throw here abandons the drag without ever calling `beginCellDrag` or `setGhost`, leaving dnd-kit's internal `active` state and our `dragStore` desynchronized (dnd-kit believes a drag is in flight; our store is still idle). StoryGrid's MVP media path uses blob URLs / data URIs (same-origin) so the risk is low today, but v1 plans for URL-loaded assets would hit this.
-**Fix:**
+**File:** `src/dnd/DragPreviewPortal.tsx:55-64`
+**Issue:**
 ```ts
-let ghostDataUrl: string | null = null;
-if (canvas) {
-  try {
-    ghostDataUrl = canvas.toDataURL();
-  } catch {
-    // Tainted canvas (cross-origin without CORS) — fall back to the
-    // D-10 empty-cell ghost branch in DragPreviewPortal.
-    ghostDataUrl = null;
-  }
+const scale = Math.min(1, max / sourceRect.width, max / sourceRect.height);
+return { width: sourceRect.width * scale, height: sourceRect.height * scale };
+```
+Two degenerate inputs flow through without guards:
+
+1. **NaN propagation** — if `sourceRect.width` or `.height` is `NaN` (e.g., a future caller passes through an unparsed DOM measurement, or the source cell is unmounted mid-drag), `Math.min(1, NaN, ...) = NaN` → `NaN * w = NaN`. React then emits `style="width: NaNpx"`, which browsers treat as invalid → the declaration is dropped and the `<img>` renders at intrinsic size. The defensive `maxWidth: GHOST_MAX_DIMENSION` on line 92 will cap visible width, but the aspect ratio is lost — the ghost becomes a 200×200 square regardless of source aspect, defeating part of the 28-15 intent.
+2. **Zero-dimension source** — `getBoundingClientRect()` on a display:none or zero-size element returns `{ width: 0, height: 0 }`. `Math.min(1, 200/0, 200/0) = Math.min(1, Infinity, Infinity) = 1`, output `{0, 0}`. The ghost vanishes entirely during drag — no visible preview. Unlikely in current UX (user can't drag a hidden cell) but plausible under media-swap races where `LeafNode` measures mid-render.
+
+The existing `computeCappedGhostSize` test suite (`DragPreviewPortal.test.tsx:211-263`) has no cases for these degenerate inputs, so a future refactor could regress silently.
+
+**Fix:** Add a defensive clamp at the start of the helper and pin the behavior in tests:
+```ts
+export function computeCappedGhostSize(
+  sourceRect: { width: number; height: number },
+  max: number,
+): { width: number; height: number } {
+  // Defensive: NaN / non-finite / non-positive dims collapse to the cap (square)
+  // rather than emit NaN-px CSS or 0x0 invisible ghost.
+  const w = Number.isFinite(sourceRect.width) && sourceRect.width > 0 ? sourceRect.width : max;
+  const h = Number.isFinite(sourceRect.height) && sourceRect.height > 0 ? sourceRect.height : max;
+  const scale = Math.min(1, max / w, max / h);
+  return { width: w * scale, height: h * scale };
 }
 ```
-
-### WR-04: `handleDragOver` / `handleDragStart` use `document.querySelector` keyed on test IDs
-
-**File:** `src/Grid/CanvasWrapper.tsx:74, 101`
-**Issue:** Production code resolves the source and target cell elements with `document.querySelector('[data-testid="leaf-${id}"]')`. Test IDs are a testing affordance — they are conventionally treated as free to rename or remove. Coupling runtime drag-zone resolution to them means a future refactor of the test-id naming scheme silently breaks the drag-over pipeline. The component already has direct access to the source/target DOM via the ref callbacks `setDragNodeRef` / `setDropNodeRef` and dnd-kit's internal node registry; dnd-kit exposes `event.over.rect` in `DragOverEvent` and `event.active.rect.current.initial` for the source rect, neither of which requires a DOM query.
-**Fix:** Prefer dnd-kit's event payload data:
-```ts
-const handleDragOver = useCallback((event: DragOverEvent) => {
-  const { over, active, activatorEvent, delta } = event;
-  if (!over || active.id === over.id) {
-    useDragStore.getState().setOver(null, null);
-    return;
-  }
-  // over.rect is a ClientRect captured by dnd-kit — no DOM query needed.
-  const rect = over.rect as DOMRect;
-  const startX = (activatorEvent as PointerEvent).clientX;
-  const startY = (activatorEvent as PointerEvent).clientY;
-  const pointer = { x: startX + delta.x, y: startY + delta.y };
-  const zone = computeDropZone(rect, pointer);
-  useDragStore.getState().setOver(String(over.id), zone);
-}, []);
-```
-For `handleDragStart`, store the source element/canvas in a module-scoped WeakMap keyed by id, or register a Map in the draggable hook (`useCellDraggable` already has `setNodeRef`), and look up the canvas child without a document query.
-
-## Info
-
-### IN-01: `activatorEvent` cast to `PointerEvent` is unsafe in principle
-
-**File:** `src/Grid/CanvasWrapper.tsx:97-98`
-**Issue:** `(activatorEvent as PointerEvent).clientX` assumes the activator was a pointer event. With the current sensor configuration (two `PointerSensor` subclasses only), this always holds, but `activatorEvent` is typed `Event | null` in dnd-kit. If a future phase adds a `KeyboardSensor`, this cast becomes a runtime error (`undefined.clientX` on a `KeyboardEvent`). DND-01 currently forbids this, but the cast still deserves a defensive narrow.
-**Fix:**
-```ts
-if (!(activatorEvent instanceof PointerEvent)) {
-  useDragStore.getState().setOver(null, null);
-  return;
-}
-const startX = activatorEvent.clientX;
-const startY = activatorEvent.clientY;
-```
-
-### IN-02: `ResizeObserverEntry` array access without length check
-
-**File:** `src/Grid/CanvasWrapper.tsx:147`
-**Issue:** `const { height, width } = entries[0].contentRect;` assumes at least one entry. The ResizeObserver spec guarantees entries are non-empty for an observed element, so this is essentially fine; still, the adjacent entry in LeafNode.tsx (line 97) uses the defensive `entries[0]?.contentRect.height ?? h` form. Consistency is cheap here.
-**Fix:** `const entry = entries[0]; if (!entry) return; const { height, width } = entry.contentRect;` or use the optional-chaining form.
-
-### IN-03: `src/test/phase25-touch-dnd.test.tsx` listed for review but was intentionally deleted
-
-**File:** `src/test/phase25-touch-dnd.test.tsx` (not present on disk)
-**Issue:** The phase-28 review file list includes `phase25-touch-dnd.test.tsx`, but it was removed in commit `4b6d7ca` (D-21) as part of the Phase 25 → Phase 28 wiring replacement. No review could be performed. This is documentary only — the deletion itself is expected per Phase 28 plan 10a.
-**Fix:** None required. Flagging so future re-reviews do not attempt to diff a file that no longer exists.
-
-### IN-04: Divide-by-zero guard duplication — `canvasScale || 1` appears in 3 places with minor variations
-
-**File:** `src/dnd/adapter/dndkit.ts:117`, `src/dnd/DropZoneIndicators.tsx:30` (missing), `src/Grid/Divider.tsx:75`
-**Issue:** Three modules consume `canvasScale` and each handles the `0` case inconsistently: `scaleCompensationModifier` uses `|| 1`, `Divider` divides directly (line 75 — `pixelDelta / canvasScale / containerPixels`) with no guard, and `DropZoneIndicators` also lacks a guard (WR-02). A small helper in `editorStore` (e.g., `useCanvasScaleSafe()`) or a shared constant avoids the drift.
-**Fix:** Consider exposing a selector like `useEditorStore((s) => s.canvasScale || 1)` wrapped into a named hook, and using it in all three sites.
-
-### IN-05: `DragPreviewPortal.test.tsx` uses `vi.mock` to replace `DragOverlay` — divergence from production render path
-
-**File:** `src/dnd/__tests__/DragPreviewPortal.test.tsx:40-48`
-**Issue:** The test mocks `@dnd-kit/core.DragOverlay` with a pass-through div so it can assert `drag-ghost-img` rendering without simulating a real dnd-kit drag lifecycle. The rationale is documented in-file (Rule 1 bug fix). This correctly isolates `DragPreviewPortal`'s own branching, but it means the tests do not exercise the actual `DragOverlay` portal mounting or animation manager. The companion `CanvasWrapper.integration.test.tsx` documents this gap and covers structural mount evidence via `DndLiveRegion`. This is acceptable given the constraints but worth flagging so future maintainers know the isolation tests alone do not prove end-to-end ghost rendering under the real portal.
-**Fix:** None required. If e2e coverage via Playwright becomes feasible, a real-drag ghost render assertion would close the coverage gap.
+Mirror the NaN regression-lock pattern from `computeDropZone.test.ts:330-360` by adding `{ width: 0, height: 100 }`, `{ width: NaN, height: 100 }`, and `{ width: 0, height: 0 }` cases to the `computeCappedGhostSize` describe block.
 
 ---
 
-_Reviewed: 2026-04-17_
+### WR-02: `handleDragMove` and `handleDragOver` both write `setOver(null, null)` on the null-over / self-over branch
+
+**File:** `src/Grid/CanvasWrapper.tsx:141-161`
+**Issue:** Both callbacks are registered on `DndContext` and both fire on overlapping lifecycle events. `handleDragOver` writes `setOver(null, null)` explicitly on line 144; `handleDragMove` invokes `_testComputeZoneFromDragMove` which also returns `{ overId: null, zone: null }` on the same branches (`CanvasWrapper.tsx:61-62`), then writes the same `setOver(null, null)` on line 160. This yields two store writes per pointer-move tick whenever the pointer is outside all droppables or back over the source cell.
+
+Consequences:
+- Two Zustand subscription notifications fire per tick instead of one. Zustand's default referential-equality check skips re-renders when `overId` and `activeZone` are already `null` (both stored values are the same literal `null`), so React subscribers are protected — but the store-write path still runs synchronously and re-triggers any `subscribe()`-based effects that listen for arbitrary state changes.
+- The comment on `CanvasWrapper.tsx:146-149` states "Non-null over: handleDragMove will compute + write the zone on the next pointer-move tick. We intentionally do NOT write here". The stated division of labor is: `handleDragMove` owns ALL writes; `handleDragOver` only clears. But the implementation writes in both handlers on the same null/self branch — the comment becomes misleading.
+- If a future maintainer adds side effects behind `setOver` (e.g., analytics, auto-scroll), the double-call could double-count.
+
+This is not a correctness bug (the final state is identical), but it is a real interaction hazard with the dnd-kit lifecycle and contradicts the file's own stated architecture.
+
+**Fix:** Pick one owner for the clear. The simplest option, aligned with the `handleDragMove`-is-authoritative comment at lines 151-157, is to make `handleDragOver` a pure no-op:
+```ts
+// Gap-closure 28-14: handleDragMove is the authoritative store writer for all
+// zone transitions, including the null-over / self-over clear branches. Retained
+// as a no-op in case dnd-kit later requires a listener for keyboard-drag events
+// or A11Y announcements.
+const handleDragOver = useCallback(() => {}, []);
+```
+Alternatively, keep `handleDragOver` as the clear-owner and make `handleDragMove` skip null/self:
+```ts
+const handleDragMove = useCallback((event: DragMoveEvent) => {
+  const { over, active } = event;
+  if (!over || active.id === over.id) return; // handleDragOver owns the clear
+  const { overId, zone } = _testComputeZoneFromDragMove(event);
+  useDragStore.getState().setOver(overId, zone);
+}, []);
+```
+Either way, one write path per tick and the comment matches the code.
+
+## Info
+
+### IN-01: `_testComputeZoneFromDragMove` is exported as test-only but is the production implementation
+
+**File:** `src/Grid/CanvasWrapper.tsx:38-83, 158-161`
+**Issue:** The doc comment at lines 38-52 states the `_test` prefix signals "test-only — do not import in production code", but `handleDragMove` on line 159 calls it as its only implementation. The function is therefore both test-exported AND the real production engine extracted for testability — the underscore naming contract is slightly misleading.
+**Fix:** Either rename to `computeZoneFromDragMove` (no underscore) and update the comment to "exported for unit testing; production-consumed by handleDragMove below", or leave the code unchanged but adjust the comment to: "exported with `_test` prefix because the only non-test call site is handleDragMove below; external code MUST NOT import it". Update the single import in `CanvasWrapper.integration.test.tsx:23` accordingly if renaming.
+
+### IN-02: `_testComputeZoneFromDragMove` anchors at source cell CENTER, not pointer-down position — semantic change from the broken original
+
+**File:** `src/Grid/CanvasWrapper.tsx:65-76`
+**Issue:** The new pointer derivation is `initial.left + initial.width / 2 + delta.x` (center of source at drag start + delta). The broken original derivation attempted `activatorEvent.clientX + delta.x` — where `activatorEvent.clientX` was the pointer-down position (e.g., wherever the user actually pressed). These two anchors differ by up to `±cellWidth/2` horizontally.
+
+For zone compute this is usually irrelevant — the user drags well past the source cell's width before reaching another droppable — but for degenerate drags (drag to an adjacent cell with a tiny delta), the reported pointer may be outside the actual physical pointer's cell. The 28-UAT tests pass because the test-helper's delta values push the pointer firmly inside target-cell zones. In real-world use, a very short drag from edge-of-source to edge-of-target might report a slightly different zone than the user perceives.
+
+The change is correct for the touch-fix contract (the derivation is now input-type-agnostic), and the mathematical offset is bounded by source-cell dimensions. Flagging as Info because the center-anchor choice is not explicitly documented as a semantic tradeoff — the comment at lines 65-76 explains HOW the new derivation works but not WHY center was chosen over pointer-down (which would require `activatorEvent.clientX` + a type narrow).
+**Fix:** Either document the semantic choice explicitly ("center-anchor chosen over pointer-down-anchor for input-type-agnosticism — see .planning/debug/insert-edge-drop-broken.md for trade-off analysis"), or switch to a type-narrowed `activatorEvent.clientX/Y` read that falls back to `initial` center when the activator is not a PointerEvent. The current implementation is defensible; it just needs an explicit comment.
+
+### IN-03: `getBoundingClientRect()` via `querySelector` in per-tick handler bypasses dnd-kit's measured rect cache
+
+**File:** `src/Grid/CanvasWrapper.tsx:78-80`
+**Issue:** `document.querySelector('[data-testid="leaf-${over.id}"]')` + `getBoundingClientRect()` runs every pointer-move tick during a drag. dnd-kit already provides `event.over.rect` (a fresh `ClientRect` maintained by `MeasuringStrategy.Always` per the `DndContext` prop at line 240), so the DOM query is redundant. Two minor consequences:
+1. Perf: `querySelector` + `getBoundingClientRect()` is cheaper than it used to be, but still runs synchronously at ~60Hz during drag.
+2. Fragility: the `data-testid` key couples production drag logic to a testing affordance. A future test-id rename silently breaks zone computation.
+
+**Fix:** The `event.over` object in `DragOverEvent`/`DragMoveEvent` exposes `event.over.rect` as a `ClientRect`. Replace lines 78-80 with:
+```ts
+const rect = (event as any).over?.rect as DOMRect | undefined;
+if (!rect) return { overId: null, zone: null };
+```
+The parent 2026-04-17 review (WR-04) flagged the same coupling on `handleDragOver` + `handleDragStart` — this is the same class of issue on the new 28-14 code path.
+
+### IN-04: `DragPreviewPortal` `<img>` has no `onError` handler for malformed data-URL
+
+**File:** `src/dnd/DragPreviewPortal.tsx:87-101`
+**Issue:** If `ghostDataUrl` is malformed (e.g., `canvas.toDataURL()` returned a truncated string, or a tainted-canvas case that the caller didn't guard — see parent review WR-03), the `<img>` fires `onerror` and renders a broken-image icon at capped dims. The D-10 empty-cell fallback `<div>` only activates when `ghostDataUrl === null`, not on invalid-but-non-null values.
+**Fix:** Either add an `onError` handler that swaps to the dark-div fallback, or accept the current behavior and document it. Low priority — StoryGrid's MVP media pipeline is same-origin (no tainted-canvas risk) per project constraints in `CLAUDE.md`.
+
+### IN-05: `GHOST_MAX_DIMENSION` used both as JS cap and raw CSS `maxWidth`/`maxHeight` — numeric-vs-string coupling
+
+**File:** `src/dnd/DragPreviewPortal.tsx:38, 92-93, 112-113`
+**Issue:** `GHOST_MAX_DIMENSION = 200` (a number) is passed directly to `style={{ maxWidth: GHOST_MAX_DIMENSION, maxHeight: GHOST_MAX_DIMENSION }}`. React accepts numeric style values and converts to `px`, so `maxWidth: 200` renders as `max-width: 200px`. This works today, but it's worth noting that if `GHOST_MAX_DIMENSION` is ever changed to a string (e.g., `'12.5rem'` for responsive sizing), the JS math in `computeCappedGhostSize` (`max / sourceRect.width`) will `NaN`-propagate silently. Keeping the constant numeric is fine; a type annotation `export const GHOST_MAX_DIMENSION: number = 200` makes the contract explicit.
+**Fix:** Annotate the type: `export const GHOST_MAX_DIMENSION: number = 200;`. No runtime change.
+
+---
+
+_Reviewed: 2026-04-18_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_

@@ -72,8 +72,7 @@
 <details>
 <summary>🚧 v1.5 Unified Drag-and-Drop UX (Phases 27–30) — IN PROGRESS</summary>
 
-### Phase 27: DnD Foundation
-`src/dnd/` module scaffold, `computeDropZone`, `dragStore`, unit tests. No UI wiring.
+- [x] Phase 27: DnD Foundation (4/4 plans) — completed 2026-04-18
 
 ### Phase 28: Cell-to-Cell Drag
 Unified `PointerSensor` engine wired to `LeafNode`; Phase 25 wiring removed; ghost + 5-zone overlay working on desktop and touch.

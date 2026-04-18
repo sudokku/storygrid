@@ -4,7 +4,7 @@ milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
 last_updated: "2026-04-18T00:00:00.000Z"
-last_activity: 2026-04-18 -- Phase 28 planning complete (3 plans, verified)
+last_activity: 2026-04-18 -- Phase 28 execution complete (3/3 plans)
 progress:
   total_phases: 4
   completed_phases: 1
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 
 ## Current Position
 
-Phase: 27 DnD Foundation (not yet planned)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-04-17 -- Phase 27 planning complete
+Phase: 28 Cell-to-Cell Drag (complete)
+Plan: 28-03 (all plans done)
+Status: Verifying
+Last activity: 2026-04-18 -- Phase 28 execution complete, 3/3 plans done
 
 ## Performance Metrics
 

@@ -73,9 +73,7 @@
 <summary>🚧 v1.5 Unified Drag-and-Drop UX (Phases 27–30) — IN PROGRESS</summary>
 
 - [x] Phase 27: DnD Foundation (4/4 plans) — completed 2026-04-18
-
-### Phase 28: Cell-to-Cell Drag
-Unified `PointerSensor` engine wired to `LeafNode`; Phase 25 wiring removed; ghost + 5-zone overlay working on desktop and touch.
+- [x] Phase 28: Cell-to-Cell Drag (3/3 plans) — completed 2026-04-18
 
 ### Phase 29: ESC-Cancel + Visual Polish
 ESC-to-cancel, 200ms snap-back, drag-start wobble, 80% ghost opacity, active zone bright/dim, 700ms drop flash.

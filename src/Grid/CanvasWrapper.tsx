@@ -61,10 +61,8 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const sensors = useSensors(touchSensor, mouseSensor);
 
   const handleDragStart = useCallback(({ active }: DragStartEvent) => {
-    // CANCEL: drag was initiated on an element flagged data-dnd-ignore
-    // (Divider hit-area or OverlayLayer). useDraggable already fired;
-    // we abort by NOT calling beginCellDrag and the drop will be a no-op.
-    const node = active.node.current as HTMLElement | null;
+    // active.node does not exist in dnd-kit v6.3.1 — query via data-testid instead.
+    const node = document.querySelector(`[data-testid="leaf-${String(active.id)}"]`) as HTMLElement | null;
     if (!node || node.closest('[data-dnd-ignore="true"]')) {
       return;
     }

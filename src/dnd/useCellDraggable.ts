@@ -20,14 +20,24 @@
  * captures `canvas.toDataURL()` ghost snapshot on drag-start.
  */
 
+import { useDraggable } from '@dnd-kit/core';
+
 export type UseCellDraggableResult = {
-  // Phase 28 fills this in against the @dnd-kit/core useDraggable return type.
   attributes: Record<string, unknown>;
   listeners: Record<string, unknown>;
   isDragging: boolean;
   setNodeRef: (node: HTMLElement | null) => void;
 };
 
-export function useCellDraggable(_leafId: string): UseCellDraggableResult {
-  throw new Error('useCellDraggable: implementation lands in Phase 28');
+export function useCellDraggable(leafId: string): UseCellDraggableResult {
+  const { attributes, listeners, isDragging, setNodeRef } = useDraggable({
+    id: leafId,
+    data: { nodeId: leafId, kind: 'cell' },
+  });
+  return {
+    attributes: attributes as Record<string, unknown>,
+    listeners: (listeners ?? {}) as Record<string, unknown>,
+    isDragging,
+    setNodeRef,
+  };
 }

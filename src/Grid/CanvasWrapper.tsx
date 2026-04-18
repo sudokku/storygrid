@@ -5,19 +5,9 @@ import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
 import { OverlayLayer } from './OverlayLayer';
-import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-
-// Shared ref context so LeafNode useDndMonitor callbacks can write the active zone
-// and CanvasWrapper's onDragEnd can read it when a drop completes.
-export const DragZoneRefContext = React.createContext<React.MutableRefObject<'center' | 'top' | 'bottom' | 'left' | 'right'> | null>(null);
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragStartEvent, DragMoveEvent, DragEndEvent } from '@dnd-kit/core';
+import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
@@ -57,26 +47,71 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       backgroundGradientDir: s.backgroundGradientDir,
     })));
 
-  // Phase 25: unified sensor config — MouseSensor for desktop, TouchSensor for mobile
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: { delay: 500, tolerance: 5 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 500, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor),
-  );
-
-  // Shared ref written by LeafNode useDndMonitor, read by onDragEnd
-  const activeZoneRef = useRef<'center' | 'top' | 'bottom' | 'left' | 'right'>('center');
   const moveCell = useGridStore(s => s.moveCell);
 
-  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    moveCell(String(active.id), String(over.id), activeZoneRef.current);
-    activeZoneRef.current = 'center';
+  // DRAG-03 + DRAG-04 + DND-01: single PointerSensor engine; two configs registered so
+  // the touch (delay/tolerance) constraint and mouse (distance) constraint can both apply.
+  // dnd-kit evaluates sensors in registration order and the first to satisfy its constraint wins.
+  const touchSensor = useSensor(PointerSensor, {
+    activationConstraint: { delay: 250, tolerance: 5 },
+  });
+  const mouseSensor = useSensor(PointerSensor, {
+    activationConstraint: { distance: 8 },
+  });
+  const sensors = useSensors(touchSensor, mouseSensor);
+
+  const handleDragStart = useCallback(({ active }: DragStartEvent) => {
+    // CANCEL: drag was initiated on an element flagged data-dnd-ignore
+    // (Divider hit-area or OverlayLayer). useDraggable already fired;
+    // we abort by NOT calling beginCellDrag and the drop will be a no-op.
+    const node = active.node.current as HTMLElement | null;
+    if (!node || node.closest('[data-dnd-ignore="true"]')) {
+      return;
+    }
+    const sourceId = String(active.id);
+    // GHOST-01: capture ghost from the cell's <canvas> element.
+    const canvas = node.querySelector('canvas') as HTMLCanvasElement | null;
+    let ghostUrl: string | null = null;
+    try {
+      ghostUrl = canvas?.toDataURL('image/png') ?? null;
+    } catch {
+      ghostUrl = null; // tainted canvas safety; should not occur for local media
+    }
+    // GHOST-04: ghost dimensions = source cell viewport rect (no cap).
+    const rect = node.getBoundingClientRect();
+    useDragStore.getState().beginCellDrag(sourceId, ghostUrl, rect.width, rect.height);
+    // DRAG-02: body cursor → grabbing.
+    document.body.style.cursor = 'grabbing';
+  }, []);
+
+  const handleDragMove = useCallback(({ over, activatorEvent, delta }: DragMoveEvent) => {
+    if (!over) {
+      useDragStore.getState().setOver(null, null);
+      return;
+    }
+    // PITFALL 2: zone coords come ONLY from this callback's args — no parallel listener.
+    const rect = over.rect as unknown as DOMRect;
+    const ev = activatorEvent as PointerEvent;
+    const pointer = { x: ev.clientX + delta.x, y: ev.clientY + delta.y };
+    const zone = computeDropZone(rect, pointer);
+    useDragStore.getState().setOver(String(over.id), zone);
+  }, []);
+
+  const handleDragEnd = useCallback(({ over }: DragEndEvent) => {
+    const { sourceId, activeZone } = useDragStore.getState();
+    useDragStore.getState().end();
+    document.body.style.cursor = '';
+    if (!sourceId) return;        // drag was aborted at start (e.g., dnd-ignore)
+    if (!over) return;            // CANCEL-03: released outside any cell → no moveCell
+    const toId = String(over.id);
+    if (toId === sourceId) return; // CANCEL-04: dropped on origin → no moveCell, no undo entry
+    moveCell(sourceId, toId, activeZone ?? 'center');
   }, [moveCell]);
+
+  const handleDragCancel = useCallback(() => {
+    useDragStore.getState().end();
+    document.body.style.cursor = '';
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -117,26 +152,32 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       className="flex flex-1 h-full items-start justify-center overflow-hidden"
       data-testid="canvas-container"
     >
-      <DragZoneRefContext.Provider value={activeZoneRef}>
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div
-            className="relative group mt-8 flex-shrink-0"
-            style={{
-              width: CANVAS_W,
-              height: CANVAS_H,
-              transform: `scale(${finalScale})`,
-              transformOrigin: 'top center',
-              background: canvasBackground,
-            }}
-            onClick={handleBgClick}
-            data-testid="canvas-surface"
-          >
-            <GridNodeComponent id={rootId} />
-            <OverlayLayer />
-            {showSafeZone && <SafeZoneOverlay />}
-          </div>
-        </DndContext>
-      </DragZoneRefContext.Provider>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div
+          className="relative group mt-8 flex-shrink-0"
+          style={{
+            width: CANVAS_W,
+            height: CANVAS_H,
+            transform: `scale(${finalScale})`,
+            transformOrigin: 'top center',
+            background: canvasBackground,
+          }}
+          onClick={handleBgClick}
+          data-testid="canvas-surface"
+          id="grid-canvas"
+        >
+          <GridNodeComponent id={rootId} />
+          <OverlayLayer />
+          {showSafeZone && <SafeZoneOverlay />}
+        </div>
+        <DragPreviewPortal />
+      </DndContext>
     </div>
   );
 });

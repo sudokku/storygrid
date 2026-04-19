@@ -4,11 +4,11 @@ milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
 last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: 2026-04-19 -- Phase 29.1 execution complete (1/1 plans)
+last_activity: 2026-04-19 -- Phase 30 planning complete (5 plans)
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 12
+  total_plans: 17
   completed_plans: 12
   percent: 80
 ---

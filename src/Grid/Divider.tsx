@@ -105,11 +105,12 @@ export const Divider = React.memo(function Divider({
         className={`
           group/hit absolute z-10
           ${isVerticalContainer
-            ? '-top-[11px] left-0 right-0 h-[22px]'
-            : '-left-[11px] top-0 bottom-0 w-[22px]'
+            ? '-top-[20px] left-0 right-0 h-[40px]'
+            : '-left-[20px] top-0 bottom-0 w-[40px]'
           }
           ${cursorClass}
         `}
+        style={{ touchAction: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

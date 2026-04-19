@@ -58,13 +58,15 @@ describe('Divider drag interaction (REND-03)', () => {
     useGridStore.setState({ resize: mockResize } as Partial<ReturnType<typeof useGridStore.getState>>);
   });
 
-  it('renders with 22px hit area and 2px visible line (expanded for touch, D-14)', () => {
+  it('renders with 40px hit area and 2px visible line (expanded for touch, D-04)', () => {
     renderDivider();
     // The hit area element should exist with the divider hit testid
     const hitArea = screen.getByTestId('divider-hit-root-0');
     expect(hitArea).toBeTruthy();
-    // It has the w-[22px] class for horizontal container (vertical divider) — expanded from 8px for touch
-    expect(hitArea.className).toContain('w-[22px]');
+    // It has the w-[40px] class for horizontal container (vertical divider) — expanded from 22px for touch
+    expect(hitArea.className).toContain('w-[40px]');
+    // D-05: touch-action: none prevents browser scroll hijack during divider drag
+    expect((hitArea as HTMLElement).style.touchAction).toBe('none');
   });
 
   it('calls setPointerCapture on pointerdown', () => {

@@ -1,12 +1,14 @@
 /**
- * dragStore — state-transition tests (Plan 27-03, extended in Plan 28-01)
+ * dragStore — state-transition tests (Plan 27-03, extended in Plan 28-01, Plan 30-02)
  *
  * Covers: initial state, beginCellDrag, setOver, end,
  *         cross-cycle isolation, middleware-absence assertions,
- *         action reference stability, and ghost field behavior.
+ *         action reference stability, ghost field behavior,
+ *         and prevSheetSnapState lifecycle (CROSS-08b, D-01).
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useDragStore } from './dragStore';
+import { useEditorStore } from '../store/editorStore';
 
 // ---------------------------------------------------------------------------
 // Reset to initial state before each test
@@ -398,5 +400,64 @@ describe('dragStore — lastDropId / drop flash (D-08)', () => {
     expect(state.status).toBe('idle');
     expect(state.sourceId).toBeNull();
     expect(state.lastDropId).toBe('leaf-7');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 12. prevSheetSnapState lifecycle (D-01, CROSS-08b) — RED in Wave 0, GREEN after Plan 30-02
+// ---------------------------------------------------------------------------
+describe('dragStore — prevSheetSnapState lifecycle (D-01, CROSS-08b)', () => {
+  beforeEach(() => {
+    // Reset editorStore sheetSnapState to a known value before each test
+    useEditorStore.setState({ sheetSnapState: 'full' });
+  });
+
+  it('INITIAL_STATE.prevSheetSnapState is null', () => {
+    // Reset to initial via end()
+    useDragStore.getState().end();
+    expect(useDragStore.getState().prevSheetSnapState).toBeNull();
+  });
+
+  it('beginCellDrag saves sheetSnapState="full" to prevSheetSnapState when sheet is full', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    useDragStore.getState().beginCellDrag('leaf-1', null, 100, 100);
+    expect(useDragStore.getState().prevSheetSnapState).toBe('full');
+  });
+
+  it('beginCellDrag collapses the sheet when sheet is full', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    useDragStore.getState().beginCellDrag('leaf-1', null, 100, 100);
+    expect(useEditorStore.getState().sheetSnapState).toBe('collapsed');
+  });
+
+  it('beginCellDrag saves sheetSnapState="collapsed" to prevSheetSnapState when sheet is already collapsed', () => {
+    useEditorStore.setState({ sheetSnapState: 'collapsed' });
+    useDragStore.getState().beginCellDrag('leaf-1', null, 100, 100);
+    expect(useDragStore.getState().prevSheetSnapState).toBe('collapsed');
+  });
+
+  it('end() restores sheetSnapState to prevSheetSnapState when it was "full"', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    useDragStore.getState().beginCellDrag('leaf-1', null, 100, 100);
+    // At this point sheetSnapState is 'collapsed' and prevSheetSnapState is 'full'
+    useDragStore.getState().end();
+    expect(useEditorStore.getState().sheetSnapState).toBe('full');
+  });
+
+  it('end() resets prevSheetSnapState to null after restoring', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    useDragStore.getState().beginCellDrag('leaf-1', null, 100, 100);
+    useDragStore.getState().end();
+    expect(useDragStore.getState().prevSheetSnapState).toBeNull();
+  });
+
+  it('end() does NOT call setSheetSnapState when prevSheetSnapState is null', () => {
+    useEditorStore.setState({ sheetSnapState: 'collapsed' });
+    const setSheetSnapState = vi.fn();
+    useEditorStore.setState({ setSheetSnapState });
+    // Force prevSheetSnapState to null without going through beginCellDrag
+    useDragStore.setState({ prevSheetSnapState: null });
+    useDragStore.getState().end();
+    expect(setSheetSnapState).not.toHaveBeenCalled();
   });
 });

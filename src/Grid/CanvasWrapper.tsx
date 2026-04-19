@@ -12,6 +12,10 @@ import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
 
+// CROSS-05: stable reference required for removeEventListener matching (cannot use inline arrow per drag).
+// Module-scope is correct for this single-instance component.
+const suppressContextMenu = (e: Event) => e.preventDefault();
+
 // Pointer-first collision: determines "over" from actual pointer position, not the
 // dragging element's translated rect. Required because grabOffsetModifier shifts the
 // DragOverlay visually without affecting the rect that rectIntersection uses — causing
@@ -92,6 +96,9 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     useDragStore.getState().beginCellDrag(sourceId, ghostUrl, rect.width, rect.height);
     // DRAG-02: body cursor → grabbing.
     document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';                              // CROSS-04
+    document.addEventListener('contextmenu', suppressContextMenu, true);  // CROSS-05 (capture phase)
+    navigator.vibrate?.(10);                                              // CROSS-06
   }, []);
 
   const handleDragMove = useCallback(({ over, activatorEvent, delta }: DragMoveEvent) => {
@@ -113,12 +120,16 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     if (!sourceId) {
       useDragStore.getState().end();
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';                                       // CROSS-04
+      document.removeEventListener('contextmenu', suppressContextMenu, true);   // CROSS-05
       return;
     }
     // CANCEL-03: released outside any drop target → cancel with no move.
     if (!over) {
       useDragStore.getState().end();
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';                                       // CROSS-04
+      document.removeEventListener('contextmenu', suppressContextMenu, true);   // CROSS-05
       return;
     }
     const toId = String(over.id);
@@ -126,6 +137,8 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     if (toId === sourceId) {
       useDragStore.getState().end();
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';                                       // CROSS-04
+      document.removeEventListener('contextmenu', suppressContextMenu, true);   // CROSS-05
       return;
     }
     moveCell(sourceId, toId, activeZone ?? 'center');
@@ -135,6 +148,9 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     useDragStore.getState().end();
     useDragStore.getState().setLastDrop(toId);
     document.body.style.cursor = '';
+    document.body.style.userSelect = '';                                         // CROSS-04
+    document.removeEventListener('contextmenu', suppressContextMenu, true);     // CROSS-05
+    navigator.vibrate?.(15);                                                     // CROSS-07: haptic on successful drop
     // Clear the flash after 700ms (DROP-08 Atlassian largeDurationMs).
     setTimeout(() => useDragStore.getState().clearLastDrop(), 700);
   }, [moveCell]);
@@ -142,6 +158,9 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   const handleDragCancel = useCallback(() => {
     useDragStore.getState().end();
     document.body.style.cursor = '';
+    document.body.style.userSelect = '';                                      // CROSS-04
+    document.removeEventListener('contextmenu', suppressContextMenu, true);  // CROSS-05
+    // No vibrate on cancel
   }, []);
 
   useEffect(() => {

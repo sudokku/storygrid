@@ -336,17 +336,19 @@ No security-relevant changes. Phase 31 modifies only CSS properties and one HTML
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **PointerSensor delay discrepancy**
    - What we know: CanvasWrapper.tsx uses `{ delay: 500, tolerance: 8 }` (line 71); REQUIREMENTS.md DRAG-03 specifies `{ delay: 250, tolerance: 5 }`.
    - What's unclear: Phase 29.1 likely changed 250ms to 500ms intentionally to fix a specific regression. The git commit message is not visible in this research session.
    - Recommendation: Leave at 500ms for Phase 31 (out of scope). The planner may want to flag this as a follow-up if the discrepancy is not intentional.
+   - **RESOLVED: Out of scope for Phase 31 — deferred. No action taken.**
 
 2. **`data-dnd-ignore` on OverlayLayer**
    - What we know: `src/Grid/OverlayLayer.tsx` line 52 also carries `data-dnd-ignore="true"` — the attribute is applied consistently to non-draggable interactive zones.
    - What's unclear: Whether the existing `.closest()` guard in `handleDragStart` is also protecting overlay interactions correctly.
    - Recommendation: No action for Phase 31; out of scope.
+   - **RESOLVED: Out of scope for Phase 31 — deferred. No action taken.**
 
 ---
 

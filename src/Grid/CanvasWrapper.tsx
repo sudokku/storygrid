@@ -49,23 +49,18 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
 
   const moveCell = useGridStore(s => s.moveCell);
 
-  // DRAG-03 + DRAG-04 + DND-01: single PointerSensor engine; two configs registered so
-  // the touch (delay/tolerance) constraint and mouse (distance) constraint can both apply.
-  // dnd-kit evaluates sensors in registration order and the first to satisfy its constraint wins.
-  // 500ms hold activates drag without requiring pointer movement (UX: hold-to-drag).
-  // Tolerance 8px allows minor hand tremor; the distance sensor remains as a fallback
-  // so a deliberate quick flick (≥8px) still works.
+  // D-07: single PointerSensor with 500ms hold constraint — the ONLY activation path for
+  // pointer drag. The distance-based mouseSensor was removed because it fired immediately
+  // on any quick pointer movement, bypassing the hold intent.
+  // KeyboardSensor remains for ESC-cancel (CANCEL-01 / D-08). Does NOT violate DND-01.
   const touchSensor = useSensor(PointerSensor, {
     activationConstraint: { delay: 500, tolerance: 8 },
   });
-  const mouseSensor = useSensor(PointerSensor, {
-    activationConstraint: { distance: 8 },
-  });
-  // CANCEL-01 / D-06: KeyboardSensor enables ESC to cancel an active pointer drag.
+  // CANCEL-01 / D-08: KeyboardSensor enables ESC to cancel an active pointer drag.
   // This does NOT violate DND-01 — DND-01 forbids TouchSensor+MouseSensor combo;
   // KeyboardSensor serves a separate purpose (cancel gesture only).
   const keyboardSensor = useSensor(KeyboardSensor);
-  const sensors = useSensors(touchSensor, mouseSensor, keyboardSensor);
+  const sensors = useSensors(touchSensor, keyboardSensor);
 
   const handleDragStart = useCallback(({ active }: DragStartEvent) => {
     // active.node does not exist in dnd-kit v6.3.1 — query via data-testid instead.

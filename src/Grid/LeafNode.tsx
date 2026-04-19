@@ -308,6 +308,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
   // dragStore selectors for per-cell visual state
   const isSource = useDragStore((s) => s.sourceId === id && s.status === 'dragging');
   const isDropTarget = useDragStore((s) => s.overId === id && s.status === 'dragging');
+  const isLastDrop = useDragStore((s) => s.lastDropId === id);
 
   if (!node || node.type !== 'leaf') return null;
 
@@ -492,6 +493,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
 
   // Fix: setPointerCapture on the wrapper div, not e.target
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // D-01/D-02: record pointer coords at true pointerdown time.
+    // MUST be called before the !isPanMode guard — the grab-point offset fix
+    // in grabOffsetModifier reads these coords regardless of pan mode.
+    useDragStore.getState().setPointerDown(e.clientX, e.clientY);
     if (!isPanMode) return;
     e.preventDefault();
     e.stopPropagation();
@@ -574,6 +579,8 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         relative w-full h-full overflow-visible select-none
         ${isHovered && !isPanMode ? 'z-20' : ''}
         ${isDragging ? 'z-50' : ''}
+        ${isDragging ? 'animate-cell-wobble' : ''}
+        ${isLastDrop ? 'animate-drop-flash' : ''}
         ${ringClass}
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}

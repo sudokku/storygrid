@@ -28,6 +28,7 @@ beforeEach(() => {
     pointerDownX: 0,
     pointerDownY: 0,
     lastDropId: null,
+    prevSheetSnapState: null,
   });
   useEditorStore.setState({ sheetSnapState: 'collapsed' });
   document.body.style.userSelect = '';

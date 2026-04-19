@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import React from 'react';
 import { MobileCellTray } from './MobileCellTray';
 import { useDragStore } from '../dnd/dragStore';
@@ -52,6 +52,7 @@ beforeEach(() => {
     pointerDownX: 0,
     pointerDownY: 0,
     lastDropId: null,
+    prevSheetSnapState: null,
   });
   useEditorStore.setState({ selectedNodeId: 'cell-1', sheetSnapState: 'collapsed' });
 });
@@ -65,7 +66,29 @@ describe('MobileCellTray — CROSS-08a: drag visibility (D-03)', () => {
     expect(el.style.pointerEvents).toBe('auto');
   });
 
-  it.todo('opacity is 0 when dragStore.status is "dragging" (D-03, CROSS-08a)');
-  it.todo('pointerEvents is "none" when dragStore.status is "dragging" (D-03)');
-  it.todo('opacity restores to 1 when drag ends and selectedNodeId still set');
+  it('opacity is "0" when dragStore.status is "dragging" (D-03, CROSS-08a)', () => {
+    useDragStore.setState({ status: 'dragging' });
+    const { getByTestId } = render(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.opacity).toBe('0');
+  });
+
+  it('pointerEvents is "none" when dragStore.status is "dragging" (D-03)', () => {
+    useDragStore.setState({ status: 'dragging' });
+    const { getByTestId } = render(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.pointerEvents).toBe('none');
+  });
+
+  it('opacity restores to "1" after drag ends with selectedNodeId still set', () => {
+    useDragStore.setState({ status: 'dragging' });
+    const { getByTestId, rerender } = render(React.createElement(MobileCellTray));
+    // End drag — wrap in act to flush React state updates
+    act(() => {
+      useDragStore.setState({ status: 'idle' });
+    });
+    rerender(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.opacity).toBe('1');
+  });
 });

@@ -26,6 +26,7 @@ beforeEach(() => {
     pointerDownX: 0,
     pointerDownY: 0,
     lastDropId: null,
+    prevSheetSnapState: null,   // ADD (Phase 30 Plan 02)
   });
 });
 

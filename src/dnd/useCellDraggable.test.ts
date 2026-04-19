@@ -39,7 +39,7 @@ beforeEach(() => {
     pointerDownX: 0,
     pointerDownY: 0,
     lastDropId: null,
-    // prevSheetSnapState: null  <-- add after Wave 1 (Plan 30-04 will update this reset)
+    prevSheetSnapState: null,
   });
 });
 

@@ -21,6 +21,7 @@
  */
 
 import { useDraggable } from '@dnd-kit/core';
+import { useDragStore } from './dragStore';
 
 export type UseCellDraggableResult = {
   attributes: Record<string, unknown>;
@@ -34,9 +35,23 @@ export function useCellDraggable(leafId: string): UseCellDraggableResult {
     id: leafId,
     data: { nodeId: leafId, kind: 'cell' },
   });
+
+  // Compose setPointerDown into the sensor's onPointerDown so the grab-point
+  // offset modifier always has the correct clientX/Y — even though LeafNode
+  // spreads these listeners LAST (overriding the explicit onPointerDown handler).
+  const rawPointerDown = listeners?.onPointerDown;
+  const composedListeners = {
+    ...(listeners ?? {}),
+    onPointerDown: (e: Event) => {
+      const pe = e as PointerEvent;
+      useDragStore.getState().setPointerDown(pe.clientX, pe.clientY);
+      rawPointerDown?.(e);
+    },
+  };
+
   return {
     attributes: attributes as Record<string, unknown>,
-    listeners: (listeners ?? {}) as Record<string, unknown>,
+    listeners: composedListeners as Record<string, unknown>,
     isDragging,
     setNodeRef,
   };

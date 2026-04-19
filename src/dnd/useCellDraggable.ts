@@ -52,7 +52,7 @@ export function useCellDraggable(leafId: string): UseCellDraggableResult {
   };
 
   return {
-    attributes: attributes as Record<string, unknown>,
+    attributes: attributes as unknown as Record<string, unknown>,
     listeners: composedListeners as Record<string, unknown>,
     isDragging,
     setNodeRef,

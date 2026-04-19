@@ -5,12 +5,22 @@ import { useShallow } from 'zustand/react/shallow';
 import { SafeZoneOverlay } from './SafeZoneOverlay';
 import { GridNodeComponent } from './GridNode';
 import { OverlayLayer } from './OverlayLayer';
-import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragStartEvent, DragMoveEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection } from '@dnd-kit/core';
+import type { DragStartEvent, DragMoveEvent, DragEndEvent, CollisionDetection } from '@dnd-kit/core';
 import { useDragStore, computeDropZone, DragPreviewPortal } from '../dnd';
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
+
+// Pointer-first collision: determines "over" from actual pointer position, not the
+// dragging element's translated rect. Required because grabOffsetModifier shifts the
+// DragOverlay visually without affecting the rect that rectIntersection uses — causing
+// drop targets near the opposite edge from the grab point to be unreachable.
+// Falls back to rectIntersection for keyboard drags (pointerCoordinates is null).
+const pointerFirstCollision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  return hits.length > 0 ? hits : rectIntersection(args);
+};
 
 const GRADIENT_DIR_MAP = {
   'to-bottom': 'to bottom',
@@ -175,6 +185,7 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
     >
       <DndContext
         sensors={sensors}
+        collisionDetection={pointerFirstCollision}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}

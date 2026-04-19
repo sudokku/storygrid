@@ -2,11 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
-status: complete
-last_updated: "2026-04-19T21:30:00.000Z"
-last_activity: 2026-04-19 -- Phase 30 execution complete, 5/5 plans done
+status: completed
+stopped_at: Phase 31 planning complete
+last_updated: "2026-04-19T20:30:00.000Z"
+last_activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans ready to execute
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 17
   completed_plans: 17
@@ -25,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 
 ## Current Position
 
-Phase: 29.1 Fix drag-and-drop starting and ghost cell (complete)
-Plan: 29.1-01 (all plans done)
-Status: Complete
-Last activity: 2026-04-19 -- Phase 29.1 execution complete, 1/1 plans done
+Phase: 31 Improve mobile interactions UI/UX (ready to execute)
+Plan: 31-01 (1 plan, 4 tasks — ready)
+Status: Ready to execute
+Last activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans verified
 
 ## Performance Metrics
 
@@ -237,6 +238,7 @@ None yet.
 - v1.3 phases 17–21 added: Filters, Video Tools & Playback (2026-04-11)
 - v1.4 phases 22–26 added: Mobile-First Overhaul & Instagram Fonts (2026-04-15)
 - Phase 29.1 inserted after Phase 29: Fix drag-and-drop starting and ghost cell (URGENT)
+- Phase 31 added: Improve mobile interactions UI/UX
 
 ### Blockers/Concerns
 
@@ -244,8 +246,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-19T16:15:02.787Z
-Stopped at: Completed 30-04-PLAN.md
-Resume file: None
+Last session: 2026-04-19T19:55:04.336Z
+Stopped at: Phase 31 UI-SPEC approved
+Resume file: .planning/phases/31-improve-mobile-interactions-ui-ux/31-UI-SPEC.md
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

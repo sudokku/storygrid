@@ -78,7 +78,6 @@
 - [x] Phase 29: ESC-Cancel + Visual Polish (4/4 plans) — completed 2026-04-19
 - [x] Phase 29.1: Fix drag-and-drop starting and ghost cell (1/1 plans) — completed 2026-04-19
 
-### Phase 30: Mobile Handle + Tray Polish
-Haptics, tray/sheet auto-collapse on drag-start, `touch-action: none`, `-webkit-touch-callout: none`, context-menu suppression.
+- [x] Phase 30: Mobile Handle + Tray Polish (5/5 plans) — completed 2026-04-19
 
 </details>

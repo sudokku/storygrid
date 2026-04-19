@@ -4,13 +4,13 @@ milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: executing
 last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: 2026-04-19 -- Phase 29 execution complete (4/4 plans)
+last_activity: 2026-04-19 -- Phase 29.1 execution complete (1/1 plans)
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 11
-  completed_plans: 11
-  percent: 75
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-17)
 
 ## Current Position
 
-Phase: 28 Cell-to-Cell Drag (complete)
-Plan: 28-03 (all plans done)
-Status: Verifying
-Last activity: 2026-04-18 -- Phase 28 execution complete, 3/3 plans done
+Phase: 29.1 Fix drag-and-drop starting and ghost cell (complete)
+Plan: 29.1-01 (all plans done)
+Status: Complete
+Last activity: 2026-04-19 -- Phase 29.1 execution complete, 1/1 plans done
 
 ## Performance Metrics
 
@@ -224,6 +224,7 @@ None yet.
 - Phase 15 added: Replace HTMLVideoElement seeking with WebCodecs VideoDecoder for fast video export
 - v1.3 phases 17–21 added: Filters, Video Tools & Playback (2026-04-11)
 - v1.4 phases 22–26 added: Mobile-First Overhaul & Instagram Fonts (2026-04-15)
+- Phase 29.1 inserted after Phase 29: Fix drag-and-drop starting and ghost cell (URGENT)
 
 ### Blockers/Concerns
 

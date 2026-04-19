@@ -80,6 +80,15 @@ export function DragPreviewPortal() {
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Replicate grabOffsetModifier's scale so ghost renders at identical dimensions.
+  // Without this, Tailwind axis caps (max-w/max-h) could clip each axis independently,
+  // making the rendered ghost differ from the modifier's ghostW/ghostH — causing a shift.
+  const CAP = 200;
+  const ghostScale =
+    sourceW > 0 && sourceH > 0 ? Math.min(CAP / sourceW, CAP / sourceH, 1) : 1;
+  const ghostW = sourceW * ghostScale;
+  const ghostH = sourceH * ghostScale;
+
   return (
     <DragOverlay
       dropAnimation={prefersReducedMotion ? null : { duration: 200, easing: 'ease-in' }}
@@ -90,14 +99,13 @@ export function DragPreviewPortal() {
           src={ghostUrl}
           width={sourceW}
           height={sourceH}
-          className="max-w-[var(--ghost-cap)] max-h-[var(--ghost-cap)]"
           style={{
             // D-05: 20% opacity so drop-zone indicators show through the ghost.
             opacity: 0.2,
             display: 'block',
             pointerEvents: 'none',
-            width: `${sourceW}px`,
-            height: `${sourceH}px`,
+            width: `${ghostW}px`,
+            height: `${ghostH}px`,
           }}
           alt=""
           draggable={false}

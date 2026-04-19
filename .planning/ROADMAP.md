@@ -83,6 +83,6 @@
 - [ ] Phase 31: Improve mobile interactions UI/UX (1/1 plans)
 
 Plans:
-- [ ] 31-01-PLAN.md — Fix touch-action, viewport meta, divider hit area, and test assertions
+- [x] 31-01-PLAN.md — Fix touch-action, viewport meta, divider hit area, and test assertions
 
 </details>

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
-status: completed
-stopped_at: Phase 31 planning complete
-last_updated: "2026-04-19T20:30:00.000Z"
-last_activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans ready to execute
+status: executing
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-04-19T20:53:57.937Z"
+last_activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans verified
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
+  completed_phases: 6
+  total_plans: 18
+  completed_plans: 18
   percent: 100
 ---
 
@@ -87,6 +87,7 @@ Last activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans verified
 | Phase 30-mobile-handle-tray-polish P02 | 151 | 2 tasks | 4 files |
 | Phase 30-mobile-handle-tray-polish P03 | 5 | 1 tasks | 1 files |
 | Phase 30-mobile-handle-tray-polish P04 | 8 | 2 tasks | 5 files |
+| Phase 31-improve-mobile-interactions-ui-ux P01 | 8 | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -198,6 +199,8 @@ Recent decisions affecting current work:
 - [Phase 30-mobile-handle-tray-polish]: CROSS-07 vibrate(15) placed only in the successful-drop branch — cancel/same-cell/no-target branches do not vibrate
 - [Phase 30-mobile-handle-tray-polish]: isDragging composed with isVisible in MobileCellTray: opacity:0 during drag regardless of selection state; drag takes highest visibility priority
 - [Phase 30-mobile-handle-tray-polish]: act() wrapper required for Zustand setState in React testing-library rerender tests — ensures subscription updates are flushed before assertion
+- [Phase 31-improve-mobile-interactions-ui-ux]: touch-action:none made unconditional in CanvasArea — sheetOpen guard was allowing browser zoom when sheet collapsed
+- [Phase 31-improve-mobile-interactions-ui-ux]: Divider hit area widened from 22px to 40px — Apple HIG 44px minimum, 4px tolerance per D-04; touch-action:none added to hit-area div only
 
 ### Pending Todos
 
@@ -246,8 +249,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-19T19:55:04.336Z
-Stopped at: Phase 31 UI-SPEC approved
-Resume file: .planning/phases/31-improve-mobile-interactions-ui-ux/31-UI-SPEC.md
+Last session: 2026-04-19T20:53:57.934Z
+Stopped at: Completed 31-01-PLAN.md
+Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

@@ -38,15 +38,30 @@ export const grabOffsetModifier: Modifier = ({
   // Using activatorEvent coords would give the position after the 8px/250ms
   // sensor threshold fires — too late. pointerDownX/Y are set in LeafNode's
   // handlePointerDown before the sensor activates.
-  const { pointerDownX, pointerDownY } = useDragStore.getState();
+  const { pointerDownX, pointerDownY, sourceW, sourceH } = useDragStore.getState();
   // Guard: keyboard-initiated drags fire no pointer event → coords stay 0.
   if (pointerDownX === 0 && pointerDownY === 0) return transform;
 
   const offsetX = pointerDownX - draggingNodeRect.left;
   const offsetY = pointerDownY - draggingNodeRect.top;
-  // Delta between the actual grab point and the overlay's default centre anchor.
-  const centreDeltaX = offsetX - draggingNodeRect.width / 2;
-  const centreDeltaY = offsetY - draggingNodeRect.height / 2;
+
+  // Ghost is CSS-capped at --ghost-cap (200px). Compute scale so the grab
+  // fraction maps to ghost-space rather than source-rect-space. Without this,
+  // clicks near the bottom-right of large cells shift proportionally further off
+  // because the unscaled offset overshoots the smaller ghost dimensions.
+  const CAP = 200;
+  const ghostScale =
+    sourceW > 0 && sourceH > 0 ? Math.min(CAP / sourceW, CAP / sourceH, 1) : 1;
+  const ghostW = sourceW * ghostScale;
+  const ghostH = sourceH * ghostScale;
+  const ghostOffsetX =
+    draggingNodeRect.width > 0 ? (offsetX / draggingNodeRect.width) * ghostW : offsetX;
+  const ghostOffsetY =
+    draggingNodeRect.height > 0 ? (offsetY / draggingNodeRect.height) * ghostH : offsetY;
+
+  // Delta from ghost centre to the grab point (DragOverlay anchors at centre).
+  const centreDeltaX = ghostOffsetX - ghostW / 2;
+  const centreDeltaY = ghostOffsetY - ghostH / 2;
 
   return {
     ...transform,

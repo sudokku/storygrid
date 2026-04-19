@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
 status: completed
-stopped_at: Completed 30-02-PLAN.md
-last_updated: "2026-04-19T16:04:57.085Z"
+stopped_at: Completed 30-03-PLAN.md
+last_updated: "2026-04-19T16:09:37.320Z"
 last_activity: 2026-04-19 -- Phase 29.1 execution complete, 1/1 plans done
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 17
-  completed_plans: 14
-  percent: 82
+  completed_plans: 15
+  percent: 88
 ---
 
 # Project State
@@ -85,6 +85,7 @@ Last activity: 2026-04-19 -- Phase 29.1 execution complete, 1/1 plans done
 | Phase 26-instagram-style-fonts P01 | 8 | 3 tasks | 6 files |
 | Phase 30-mobile-handle-tray-polish P01 | 178 | 3 tasks | 3 files |
 | Phase 30-mobile-handle-tray-polish P02 | 151 | 2 tasks | 4 files |
+| Phase 30-mobile-handle-tray-polish P03 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -192,6 +193,8 @@ Recent decisions affecting current work:
 - [Phase 30-mobile-handle-tray-polish]: useCellDraggable tests deliberately RED in Wave 0: style field added in Plan 30-02
 - [Phase 30-mobile-handle-tray-polish]: prevSheetSnapState read via useDragStore.getState() before set() in end() — Pitfall 2 (read-before-reset)
 - [Phase 30-mobile-handle-tray-polish]: dragStyle spread first in LeafNode style — single-source-of-truth touch CSS from hook (D-02)
+- [Phase 30-mobile-handle-tray-polish]: suppressContextMenu defined at module scope (not inline per drag) — required for removeEventListener identity matching
+- [Phase 30-mobile-handle-tray-polish]: CROSS-07 vibrate(15) placed only in the successful-drop branch — cancel/same-cell/no-target branches do not vibrate
 
 ### Pending Todos
 
@@ -239,8 +242,8 @@ None active. Phase 22 ready to plan.
 
 ## Session Continuity
 
-Last session: 2026-04-19T16:04:57.080Z
-Stopped at: Completed 30-02-PLAN.md
+Last session: 2026-04-19T16:09:37.314Z
+Stopped at: Completed 30-03-PLAN.md
 Resume file: None
 | 2026-04-08 | fast | ActionBar tooltips sized to match empty-cell placeholder | done |
 | 2026-04-10 | fast | Add hardwareAcceleration + latencyMode to CanvasSource in videoExport.ts | ✅ |

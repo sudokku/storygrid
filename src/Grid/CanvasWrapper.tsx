@@ -52,8 +52,11 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
   // DRAG-03 + DRAG-04 + DND-01: single PointerSensor engine; two configs registered so
   // the touch (delay/tolerance) constraint and mouse (distance) constraint can both apply.
   // dnd-kit evaluates sensors in registration order and the first to satisfy its constraint wins.
+  // 500ms hold activates drag without requiring pointer movement (UX: hold-to-drag).
+  // Tolerance 8px allows minor hand tremor; the distance sensor remains as a fallback
+  // so a deliberate quick flick (≥8px) still works.
   const touchSensor = useSensor(PointerSensor, {
-    activationConstraint: { delay: 250, tolerance: 5 },
+    activationConstraint: { delay: 500, tolerance: 8 },
   });
   const mouseSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },

@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Unified Drag-and-Drop UX
-status: executing
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-04-19T20:53:57.937Z"
-last_activity: 2026-04-19 -- Phase 31 planning complete, 1/1 plans verified
+status: completed
+stopped_at: Phase 31 complete — v1.5 milestone shipped
+last_updated: "2026-04-20T00:00:00.000Z"
+last_activity: 2026-04-20 -- Phase 31 complete, v1.5 Unified Drag-and-Drop UX shipped
 progress:
   total_phases: 6
   completed_phases: 6

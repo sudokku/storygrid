@@ -7,7 +7,7 @@
 - ✅ **v1.2 Effects, Overlays & Persistence** — Phases 11–16 (shipped 2026-04-11) — see `.planning/milestones/v1.2-ROADMAP.md`
 - ✅ **v1.3 Filters, Video Tools & Playback** — Phases 17–21 (shipped 2026-04-14) — see `.planning/milestones/v1.3-ROADMAP.md`
 - ✅ **v1.4 Mobile-First Overhaul & Instagram Fonts** — Phases 22–26 (shipped 2026-04-17) — see `.planning/milestones/v1.4-ROADMAP.md`
-- 🚧 **v1.5 Unified Drag-and-Drop UX** — Phases 27–30 (IN PROGRESS) — see `.planning/milestones/v1.5-ROADMAP.md`
+- ✅ **v1.5 Unified Drag-and-Drop UX** — Phases 27–31 (shipped 2026-04-20) — see `.planning/milestones/v1.5-ROADMAP.md`
 
 ## Phases
 
@@ -70,7 +70,7 @@
 </details>
 
 <details>
-<summary>🚧 v1.5 Unified Drag-and-Drop UX (Phases 27–30) — IN PROGRESS</summary>
+<summary>✅ v1.5 Unified Drag-and-Drop UX (Phases 27–31) — SHIPPED 2026-04-20</summary>
 
 - [x] Phase 27: DnD Foundation (4/4 plans) — completed 2026-04-18
 - [x] Phase 28: Cell-to-Cell Drag (3/3 plans) — completed 2026-04-18
@@ -80,7 +80,7 @@
 
 - [x] Phase 30: Mobile Handle + Tray Polish (5/5 plans) — completed 2026-04-19
 
-- [ ] Phase 31: Improve mobile interactions UI/UX (1/1 plans)
+- [x] Phase 31: Improve mobile interactions UI/UX (1/1 plans) — completed 2026-04-20
 
 Plans:
 - [x] 31-01-PLAN.md — Fix touch-action, viewport meta, divider hit area, and test assertions

@@ -121,11 +121,11 @@ export const CanvasWrapper = React.memo(function CanvasWrapper() {
       return;
     }
     moveCell(sourceId, toId, activeZone ?? 'center');
-    // D-08: setLastDrop BEFORE end() — end() resets all fields including lastDropId.
-    // The LeafNode selector reads lastDropId in the same React render cycle after
-    // setLastDrop, so the flash must be set while lastDropId is still populated.
-    useDragStore.getState().setLastDrop(toId);
+    // D-08: end() first, then setLastDrop() — end() resets all fields including
+    // lastDropId. Calling setLastDrop after end() keeps lastDropId populated for
+    // the 700ms timeout while all other drag state is cleared.
     useDragStore.getState().end();
+    useDragStore.getState().setLastDrop(toId);
     document.body.style.cursor = '';
     // Clear the flash after 700ms (DROP-08 Atlassian largeDurationMs).
     setTimeout(() => useDragStore.getState().clearLastDrop(), 700);

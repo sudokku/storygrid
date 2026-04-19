@@ -1,14 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import type React from 'react';
 import { CanvasWrapper } from '../Grid/CanvasWrapper';
-import { useEditorStore } from '../store/editorStore';
 import { useGridStore } from '../store/gridStore';
 import { autoFillCells } from '../lib/media';
 import { PlaybackTimeline } from './PlaybackTimeline';
 
 export function CanvasArea() {
-  const sheetSnapState = useEditorStore(s => s.sheetSnapState);
-  const sheetOpen = sheetSnapState !== 'collapsed';
   const hasVideos = useGridStore(s => Object.values(s.mediaTypeMap).some(t => t === 'video'));
   const addMedia = useGridStore(s => s.addMedia);
   const setMedia = useGridStore(s => s.setMedia);
@@ -85,7 +82,7 @@ export function CanvasArea() {
         'relative flex flex-col flex-1 items-center overflow-hidden bg-[#0f0f0f] p-0 pt-2 md:p-8' +
         (isFileDragOver ? ' ring-4 ring-[#3b82f6] ring-inset' : '')
       }
-      style={{ overscrollBehavior: 'contain', ...(sheetOpen ? { touchAction: 'none' } : {}) }}
+      style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

@@ -6,6 +6,7 @@
  */
 import React, { useCallback, useRef } from 'react';
 import { useEditorStore } from '../store/editorStore';
+import { useDragStore } from '../dnd';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
 import type { LeafNode } from '../types';
@@ -24,6 +25,8 @@ const BTN_CLASS =
 export const MobileCellTray = React.memo(function MobileCellTray() {
   const selectedNodeId = useEditorStore(s => s.selectedNodeId);
   const isVisible = selectedNodeId !== null;
+  // CROSS-08a (D-03): hide tray completely during drag to prevent ghost tap-throughs
+  const isDragging = useDragStore(s => s.status === 'dragging');
 
   const split = useGridStore(s => s.split);
   const updateCell = useGridStore(s => s.updateCell);
@@ -101,9 +104,9 @@ export const MobileCellTray = React.memo(function MobileCellTray() {
       className="fixed left-0 right-0 z-[45] md:hidden motion-reduce:transition-none"
       style={{
         bottom: '60px',
-        opacity: isVisible ? 1 : 0,
+        opacity: isDragging ? 0 : (isVisible ? 1 : 0),
         transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-        pointerEvents: isVisible ? 'auto' : 'none',
+        pointerEvents: (isDragging || !isVisible) ? 'none' : 'auto',
         transition:
           'opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1), transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
       }}

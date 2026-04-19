@@ -296,6 +296,7 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
     listeners: dragListeners,
     attributes: dragAttributes,
     isDragging,
+    style: dragStyle,  // CROSS-02 + CROSS-03 (D-02)
   } = useCellDraggable(id);
   const { setNodeRef: setDropRef } = useCellDropTarget(id);
 
@@ -585,11 +586,12 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
         ${hasMedia ? '' : 'bg-[#1c1c1c]'}
       `}
       style={{
+        ...dragStyle,                        // touchAction:'none', WebkitTouchCallout:'none' (D-02)
         backfaceVisibility: 'hidden',
-        touchAction: 'none',
         transition: 'opacity 150ms ease-out',
         cursor: isPanMode ? undefined : 'grab',  // DRAG-01: grab on hover at all times
         opacity: isSource ? 0.4 : 1,             // GHOST-07: source cell dims to 40%
+        // NOTE: touchAction:'none' removed here — now sourced from dragStyle (D-02 single-source-of-truth)
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}

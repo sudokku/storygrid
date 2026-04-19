@@ -20,6 +20,7 @@
  * captures `canvas.toDataURL()` ghost snapshot on drag-start.
  */
 
+import type React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useDragStore } from './dragStore';
 
@@ -28,6 +29,7 @@ export type UseCellDraggableResult = {
   listeners: Record<string, unknown>;
   isDragging: boolean;
   setNodeRef: (node: HTMLElement | null) => void;
+  style: React.CSSProperties;  // CROSS-02 + CROSS-03 (D-02)
 };
 
 export function useCellDraggable(leafId: string): UseCellDraggableResult {
@@ -54,5 +56,9 @@ export function useCellDraggable(leafId: string): UseCellDraggableResult {
     listeners: composedListeners as Record<string, unknown>,
     isDragging,
     setNodeRef,
+    style: {
+      touchAction: 'none',          // CROSS-02: prevents iOS/Android scroll hijack
+      WebkitTouchCallout: 'none',   // CROSS-03: suppresses iOS long-press image menu
+    } as React.CSSProperties,
   };
 }

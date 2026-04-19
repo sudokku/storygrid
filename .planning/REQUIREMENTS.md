@@ -60,13 +60,13 @@ Requirements for a wholesale rebuild of cell-to-cell drag-and-drop: unified desk
 ### Cross-device Unification (CROSS-*)
 
 - [ ] **CROSS-01**: A single pointer-event stream drives both desktop and touch — no separate `mousedown` / `touchstart` handler branches.
-- [ ] **CROSS-02**: Draggable cells carry `touch-action: none` while drag is available, preventing iOS/Android scroll hijack.
-- [ ] **CROSS-03**: Draggable cells carry `-webkit-touch-callout: none` to suppress the iOS long-press image-action menu.
-- [ ] **CROSS-04**: Document body gains `user-select: none` during an active drag to prevent text selection and iOS loupe.
-- [ ] **CROSS-05**: `contextmenu` events are `preventDefault`'d while drag is active (suppresses right-click menu mid-drag).
-- [ ] **CROSS-06**: `navigator.vibrate(10)` fires on successful drag activation (after the 250ms touch hold).
-- [ ] **CROSS-07**: `navigator.vibrate(15)` fires on successful drop commit.
-- [ ] **CROSS-08**: The mobile `MobileCellTray` / bottom sheet **auto-collapses to tab-strip on drag-start** and restores to its previous snap state on drag-end / drag-cancel.
+- [x] **CROSS-02**: Draggable cells carry `touch-action: none` while drag is available, preventing iOS/Android scroll hijack.
+- [x] **CROSS-03**: Draggable cells carry `-webkit-touch-callout: none` to suppress the iOS long-press image-action menu.
+- [x] **CROSS-04**: Document body gains `user-select: none` during an active drag to prevent text selection and iOS loupe.
+- [x] **CROSS-05**: `contextmenu` events are `preventDefault`'d while drag is active (suppresses right-click menu mid-drag).
+- [x] **CROSS-06**: `navigator.vibrate(10)` fires on successful drag activation (after the 250ms touch hold).
+- [x] **CROSS-07**: `navigator.vibrate(15)` fires on successful drop commit.
+- [x] **CROSS-08**: The mobile `MobileCellTray` / bottom sheet **auto-collapses to tab-strip on drag-start** and restores to its previous snap state on drag-end / drag-cancel.
 
 ## Future Requirements (Post-v1.5)
 

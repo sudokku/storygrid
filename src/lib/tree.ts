@@ -116,7 +116,7 @@ export function createLeaf(): LeafNode {
     panY: 0,
     panScale: 1,
     effects: { ...DEFAULT_EFFECTS },
-    audioEnabled: true,
+    audioEnabled: false,       // D-04B: users must opt in; reduces iOS AudioContext surface
     hasAudioTrack: false,   // no media assigned yet → no audio track
   };
 }

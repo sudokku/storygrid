@@ -104,9 +104,9 @@ Plans:
 **Goal:** All four iOS Safari video breakages fixed: runtime codec pre-flight replaces UA sniff (D-01), detectAudioTrack branching comments accurate (D-02), video first-frame reliability via play() activation in LeafNode and captureVideoThumbnail (D-03), AudioContext pre-created before first await in exportVideoGrid and audioEnabled default changed to false (D-04).
 **Requirements:** D-01, D-02, D-03, D-04A, D-04B
 **Depends on:** Phase 32
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans executed — completed 2026-04-20
 
 Plans:
 - [x] 33-01-PLAN.md — D-04B audioEnabled default false + D-02 detectAudioTrack comment fix + branch-coverage tests
-- [ ] 33-02-PLAN.md — D-03 first-frame reliability: video.load() + play().catch() in captureVideoThumbnail and LeafNode
-- [ ] 33-03-PLAN.md — D-01 runtime codec pre-flight + D-04A AudioContext pre-creation in exportVideoGrid
+- [x] 33-02-PLAN.md — D-03 first-frame reliability: video.load() + play().catch() in captureVideoThumbnail and LeafNode
+- [x] 33-03-PLAN.md — D-01 runtime codec pre-flight + D-04A AudioContext pre-creation in exportVideoGrid

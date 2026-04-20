@@ -360,17 +360,17 @@ const SNAP_TRANSLATE: Record<SheetSnapState, string> = {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Audio button: `isVideo` only vs. `isVideo && hasAudioTrack`**
+1. **Audio button: `isVideo` only vs. `isVideo && hasAudioTrack`** — RESOLVED
    - What we know: D-02 says `mediaTypeMap[mediaId] === 'video'`. ActionBar uses both conditions.
    - What's unclear: Should the tray show a disabled/locked audio button for no-audio video cells (like ActionBar does), or hide it entirely?
-   - Recommendation: Mirror the ActionBar fully — interactive when `isVideo && hasAudioTrack`, disabled/locked when `isVideo && !hasAudioTrack`, hidden when not video.
+   - **Resolution: Mirror the ActionBar fully** — interactive button when `isVideo && hasAudioTrack`, disabled/locked button when `isVideo && !hasAudioTrack`, hidden when not video. Implemented in Plan 01 Task 1 step 10.
 
-2. **Header height: `h-11` (44px) vs `h-10` (40px)**
+2. **Header height: `h-11` (44px) vs `h-10` (40px)** — RESOLVED
    - What we know: Mobile header is `h-12` (48px). Buttons are `w-11 h-11` (44px). CONTEXT.md says target `h-10` or tighter "if padding allows 44px buttons."
    - What's unclear: At `h-10` (40px), the 44px buttons overflow. The only way this works is if the buttons are shrunk to `h-10` too — but that breaks Apple HIG.
-   - Recommendation: Use `h-11` (44px) for the outer header and rely on reduced padding (not shrinking the buttons) to recover vertical space. Document in plan.
+   - **Resolution: Use `h-11` (44px)** — outer header matches the button height exactly with zero overflow. `h-10` would clip 44px buttons and violate Apple HIG. Confirmed in UI-SPEC.md spacing scale. Implemented in Plan 02 Task 1.
 
 ---
 

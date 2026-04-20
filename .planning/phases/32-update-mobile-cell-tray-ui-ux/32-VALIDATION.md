@@ -2,7 +2,7 @@
 phase: 32
 slug: update-mobile-cell-tray-ui-ux
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-20
 ---
@@ -38,11 +38,10 @@ created: 2026-04-20
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 32-01-01 | 01 | 1 | D-03/D-04 | — | N/A | manual | `npm run build` | ✅ | ⬜ pending |
-| 32-01-02 | 01 | 1 | D-06 | — | N/A | manual | `npm run build` | ✅ | ⬜ pending |
-| 32-01-03 | 01 | 1 | D-07/D-08 | — | N/A | manual | `npm run build` | ✅ | ⬜ pending |
-| 32-01-04 | 01 | 1 | D-09 | — | N/A | manual | `npm run build` | ✅ | ⬜ pending |
-| 32-01-05 | 01 | 1 | D-11/D-12/D-13 | — | N/A | manual | `npm run build` | ✅ | ⬜ pending |
+| 32-01-01 | 01 | 1 | D-01/D-02/D-03/D-04/D-05/D-06/D-07/D-08 | T-32-01–T-32-05 | N/A | unit | `npx vitest run src/Editor/MobileCellTray.test.ts` | ✅ | ⬜ pending |
+| 32-01-02 | 01 | 1 | D-09/D-10/D-12/D-13 | — | N/A | unit | `npx vitest run --run` | ✅ | ⬜ pending |
+| 32-01-03 | 01 | 1 | D-07 (test coverage) | — | N/A | unit | `npx vitest run src/Editor/MobileCellTray.test.ts` | ✅ | ⬜ pending |
+| 32-02-01 | 02 | 1 | D-11 | T-32-06 | N/A | build | `npm run build && grep "h-11 px-2" src/Editor/Toolbar.tsx` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

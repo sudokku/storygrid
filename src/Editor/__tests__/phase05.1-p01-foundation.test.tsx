@@ -87,10 +87,10 @@ describe('MobileSheet', () => {
     expect(screen.getByTestId('mobile-sheet')).toBeInTheDocument();
   });
 
-  it('starts in collapsed state (transform contains calc(100% - 60px))', () => {
+  it('starts in collapsed state (transform contains calc(100% - 48px))', () => {
     render(<MobileSheet />);
     const sheet = screen.getByTestId('mobile-sheet');
-    expect(sheet.style.transform).toContain('calc(100% - 60px)');
+    expect(sheet.style.transform).toContain('calc(100% - 48px)');
   });
 
   it('has md:hidden class to be hidden on desktop', () => {
@@ -176,13 +176,14 @@ describe('Phase 23 — toggle + tab strip', () => {
     expect(screen.getByText('Cell Settings')).toBeInTheDocument();
   });
 
-  it('auto-expand: selecting a node triggers setSheetSnapState("full")', () => {
+  it('cell selection no longer auto-expands sheet (D-09 Phase 32 removal)', () => {
     render(<MobileSheet />);
     expect(useEditorStore.getState().sheetSnapState).toBe('collapsed');
     act(() => {
       useEditorStore.setState({ selectedNodeId: 'leaf-1' });
     });
-    expect(useEditorStore.getState().sheetSnapState).toBe('full');
+    // D-09: cell tap no longer auto-opens the sheet; tray is the primary interaction
+    expect(useEditorStore.getState().sheetSnapState).toBe('collapsed');
   });
 
   it('data-sheet-snap attribute reflects the current store state', () => {

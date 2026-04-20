@@ -107,10 +107,10 @@ describe('CELL-01: Tray visibility', () => {
     expect(tray.className).toContain('md:hidden');
   });
 
-  it('tray is positioned with bottom:60px above the tab strip', () => {
+  it('tray is positioned with bottom:48px above the tab strip', () => {
     render(<MobileCellTray />);
     const tray = screen.getByTestId('mobile-cell-tray');
-    expect(tray.style.bottom).toBe('60px');
+    expect(tray.style.bottom).toBe('48px');
   });
 
   it('tray uses z-[45] to layer above sheet but below overlays', () => {

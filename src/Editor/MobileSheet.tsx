@@ -11,8 +11,8 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 type SheetSnapState = 'collapsed' | 'full';
 
 const SNAP_TRANSLATE: Record<SheetSnapState, string> = {
-  full: 'translateY(max(calc(env(safe-area-inset-top) + 56px), 72px))',
-  collapsed: 'translateY(calc(100% - 60px))',
+  full: 'translateY(max(calc(env(safe-area-inset-top) + 44px), 60px))',
+  collapsed: 'translateY(calc(100% - 48px))',
 };
 
 // ---------------------------------------------------------------------------
@@ -26,14 +26,6 @@ export const MobileSheet = React.memo(function MobileSheet() {
   const panModeNodeId = useEditorStore(s => s.panModeNodeId);
   const setPanModeNodeId = useEditorStore(s => s.setPanModeNodeId);
   const selectedOverlayId = useEditorStore(s => s.selectedOverlayId);
-
-  // Auto-expand sheet to full only on null → non-null transitions (cell newly selected)
-  const prevSelectedRef = useRef(selectedNodeId);
-  useEffect(() => {
-    const prev = prevSelectedRef.current;
-    prevSelectedRef.current = selectedNodeId;
-    if (!prev && selectedNodeId) setSheetSnapState('full');
-  }, [selectedNodeId, setSheetSnapState]);
 
   // Auto-expand sheet to full on null → non-null overlay selection
   const prevOverlayRef = useRef(selectedOverlayId);
@@ -54,10 +46,10 @@ export const MobileSheet = React.memo(function MobileSheet() {
       data-testid="mobile-sheet"
       data-sheet-snap={sheetSnapState}
     >
-      {/* Tab strip — 60px, toggle button + label */}
+      {/* Tab strip — 48px, toggle button + label */}
       <div
         className="flex items-center px-4 gap-2"
-        style={{ height: 60 }}
+        style={{ height: 48 }}
         data-testid="sheet-drag-handle"
       >
         <button
@@ -83,7 +75,7 @@ export const MobileSheet = React.memo(function MobileSheet() {
       <div
         className="overflow-y-auto"
         style={{
-          height: 'calc(100dvh - 60px - max(calc(env(safe-area-inset-top) + 56px), 72px))',
+          height: 'calc(100dvh - 48px - max(calc(env(safe-area-inset-top) + 44px), 60px))',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
         }}

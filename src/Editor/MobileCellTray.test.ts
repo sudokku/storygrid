@@ -22,9 +22,13 @@ vi.mock('lucide-react', () => ({
   Maximize2: () => React.createElement('span'),
   Minimize2: () => React.createElement('span'),
   ImageOff: () => React.createElement('span'),
+  SlidersHorizontal: () => React.createElement('span', { 'data-testid': 'icon-effects' }),
+  Volume2: () => React.createElement('span', { 'data-testid': 'icon-volume2' }),
+  VolumeX: () => React.createElement('span', { 'data-testid': 'icon-volumex' }),
 }));
 
-// Mock useGridStore — MobileCellTray reads split, updateCell, removeMedia, addMedia, setMedia, fit, mediaId
+// Mock useGridStore — MobileCellTray reads split, updateCell, removeMedia, addMedia, setMedia, fit, mediaId,
+// toggleAudioEnabled, mediaTypeMap (Phase 32 additions)
 vi.mock('../store/gridStore', () => ({
   useGridStore: vi.fn((selector: (s: unknown) => unknown) => {
     const mockState = {
@@ -33,6 +37,8 @@ vi.mock('../store/gridStore', () => ({
       removeMedia: vi.fn(),
       addMedia: vi.fn(),
       setMedia: vi.fn(),
+      toggleAudioEnabled: vi.fn(),
+      mediaTypeMap: {},
       root: { id: 'root', type: 'container', children: [], direction: 'horizontal', weights: [] },
     };
     return selector(mockState);
@@ -87,6 +93,31 @@ describe('MobileCellTray — CROSS-08a: drag visibility (D-03)', () => {
     act(() => {
       useDragStore.setState({ status: 'idle' });
     });
+    rerender(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.opacity).toBe('1');
+  });
+});
+
+describe('MobileCellTray — D-07: sheetSnapState full hides tray', () => {
+  it('opacity is "0" when sheetSnapState is "full"', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    const { getByTestId } = render(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.opacity).toBe('0');
+  });
+
+  it('pointerEvents is "none" when sheetSnapState is "full"', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    const { getByTestId } = render(React.createElement(MobileCellTray));
+    const el = getByTestId('mobile-cell-tray');
+    expect(el.style.pointerEvents).toBe('none');
+  });
+
+  it('opacity restores to "1" when sheetSnapState returns to "collapsed"', () => {
+    useEditorStore.setState({ sheetSnapState: 'full' });
+    const { getByTestId, rerender } = render(React.createElement(MobileCellTray));
+    act(() => { useEditorStore.setState({ sheetSnapState: 'collapsed' }); });
     rerender(React.createElement(MobileCellTray));
     const el = getByTestId('mobile-cell-tray');
     expect(el.style.opacity).toBe('1');

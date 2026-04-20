@@ -29,7 +29,7 @@ export type FillActions = {
 /**
  * Detects whether a video file contains an audio track using HTMLVideoElement.
  *
- * Uses the AudioTrackList API (Chrome/Safari) or mozHasAudio (Firefox) to
+ * Uses the AudioTrackList API (desktop Safari / newer Chrome) or mozHasAudio (Firefox) to
  * detect audio presence after loading video metadata. Falls open (returns true)
  * when detection fails, the video element errors, times out, or the browser
  * does not support either API.
@@ -54,7 +54,7 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
         const mozHasAudio = (video as unknown as { mozHasAudio?: boolean }).mozHasAudio;
 
         if (audioTracks !== undefined) {
-          // Chrome/Safari: AudioTrackList API available
+          // Desktop Safari / newer Chrome: AudioTrackList API available
           if (audioTracks.length > 0) {
             resolve(true);
           } else if (mozHasAudio === true) {
@@ -67,9 +67,8 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
           // Firefox: mozHasAudio available, audioTracks not
           resolve(mozHasAudio === true);
         } else {
-          // Chrome: neither audioTracks nor mozHasAudio — try captureStream()
-          // Chrome supports captureStream() and getAudioTracks() reflects the
-          // video's actual audio track structure before playback starts.
+          // Chrome-only: when both audioTracks AND mozHasAudio are undefined, try captureStream().
+          // iOS Safari also reaches this else branch but lacks captureStream — falls through below.
           const captureStream =
             (video as unknown as { captureStream?: () => MediaStream }).captureStream ??
             (video as unknown as { mozCaptureStream?: () => MediaStream }).mozCaptureStream;
@@ -84,7 +83,7 @@ export async function detectAudioTrack(file: File): Promise<boolean> {
               resolve(true);
             }
           } else {
-            // No detection API available — fail-open
+            // iOS Safari: lacks audioTracks, mozHasAudio, and captureStream — fail-open.
             resolve(true);
           }
         }

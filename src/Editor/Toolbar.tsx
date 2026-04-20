@@ -42,7 +42,7 @@ export function Toolbar() {
 
   if (isMobile) {
     return (
-      <header className="flex items-center justify-around h-12 px-2 gap-2 bg-[var(--card)] border-b border-[var(--border)] shrink-0">
+      <header className="flex items-center justify-around h-11 px-2 gap-2 bg-[var(--card)] border-b border-[var(--border)] shrink-0">
         {/* Undo */}
         <button
           className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--foreground)] disabled:opacity-40"

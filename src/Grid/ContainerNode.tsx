@@ -20,18 +20,31 @@ export const ContainerNodeComponent = React.memo(function ContainerNodeComponent
 
   const activeSizes = localSizes ?? node.sizes;
 
+  const halfGap = gap / 2;
+  const isVertical = node.direction === 'vertical';
+
   return (
     <div
       ref={containerRef}
       className={`flex ${node.direction === 'horizontal' ? 'flex-row' : 'flex-col'} w-full h-full`}
-      style={{ gap }}
       data-testid={`container-${id}`}
     >
       {node.children.map((child, i) => (
         <React.Fragment key={child.id}>
           <div
             className="min-h-0 min-w-0"
-            style={{ flex: activeSizes[i] }}
+            style={{
+              flex: activeSizes[i],
+              ...(isVertical
+                ? {
+                    marginTop: i > 0 ? halfGap : 0,
+                    marginBottom: i < node.children.length - 1 ? halfGap : 0,
+                  }
+                : {
+                    marginLeft: i > 0 ? halfGap : 0,
+                    marginRight: i < node.children.length - 1 ? halfGap : 0,
+                  }),
+            }}
           >
             <GridNodeComponent id={child.id} />
           </div>

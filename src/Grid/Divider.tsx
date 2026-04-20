@@ -117,26 +117,26 @@ export const Divider = React.memo(function Divider({
         data-testid={`divider-hit-${containerId}-${siblingIndex}`}
         data-dnd-ignore="true"
       >
-        {/* Visible 2px line — hidden until canvas hovered (group-hover) */}
+        {/* Visible 2px line — centered in hit area via top/left 50% + translate */}
         <div
           className={`
             absolute opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${isVerticalContainer
-              ? 'top-[10px] left-0 right-0 h-[2px] bg-[#444444]'
-              : 'left-[10px] top-0 bottom-0 w-[2px] bg-[#444444]'
+              ? 'top-1/2 -translate-y-1/2 left-0 right-0 h-[2px] bg-[#444444]'
+              : 'left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-[#444444]'
             }
           `}
         />
-        {/* Grab handle — appears on this specific divider hover, scaled to constant visual size */}
+        {/* Grab handle — centered in hit area via top/left 50%; inline style handles both axes + canvas scale */}
         <div
           className={`
-            absolute opacity-0 group-hover/hit:opacity-100 transition-opacity duration-150
+            absolute opacity-0 group-hover/hit:opacity-100 transition-opacity duration-150 top-1/2 left-1/2
             ${isVerticalContainer
-              ? 'top-[8px] left-1/2 -translate-x-1/2 w-[24px] h-[6px] rounded-full bg-[#888888]'
-              : 'left-[8px] top-1/2 -translate-y-1/2 h-[24px] w-[6px] rounded-full bg-[#888888]'
+              ? 'w-[24px] h-[6px] rounded-full bg-[#888888]'
+              : 'h-[24px] w-[6px] rounded-full bg-[#888888]'
             }
           `}
-          style={{ transform: `${isVerticalContainer ? 'translateX(-50%)' : 'translateY(-50%)'} scale(${1 / canvasScale})` }}
+          style={{ transform: `translate(-50%, -50%) scale(${1 / canvasScale})` }}
         />
       </div>
     </div>

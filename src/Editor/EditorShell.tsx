@@ -4,6 +4,7 @@ import { CanvasArea } from './CanvasArea';
 import { Sidebar } from './Sidebar';
 import { Onboarding } from './Onboarding';
 import { MobileSheet } from './MobileSheet';
+import { MobileCellTray } from './MobileCellTray';
 import { useGridStore } from '../store/gridStore';
 import { useEditorStore } from '../store/editorStore';
 import { findNode } from '../lib/tree';
@@ -86,11 +87,12 @@ export function EditorShell() {
   return (
     <div className="flex flex-col h-screen w-screen bg-[#0a0a0a]">
       <Toolbar />
-      <div className="flex flex-1 overflow-hidden pb-[60px] md:pb-0">
+      <div className="flex flex-1 overflow-hidden pb-[48px] md:pb-0">
         <CanvasArea />
         <Sidebar />
       </div>
       <MobileSheet />
+      <MobileCellTray />
       <Onboarding />
     </div>
   );

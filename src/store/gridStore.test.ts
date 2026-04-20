@@ -278,23 +278,23 @@ describe('effects actions', () => {
 });
 
 describe('toggleAudioEnabled', () => {
-  it('defaults audioEnabled to true for new leaves', () => {
+  it('defaults audioEnabled to false for new leaves (D-04B: opt-in default)', () => {
     const leaf = createLeaf();
-    expect(leaf.audioEnabled).toBe(true);
+    expect(leaf.audioEnabled).toBe(false);
   });
 
-  it('flips audioEnabled from true to false', () => {
+  it('flips audioEnabled from false to true', () => {
     const id = firstLeafId();
+    expect(getLeaf(id).audioEnabled).toBe(false);
+    useGridStore.getState().toggleAudioEnabled(id);
     expect(getLeaf(id).audioEnabled).toBe(true);
+  });
+
+  it('flips audioEnabled back to false on second call', () => {
+    const id = firstLeafId();
+    useGridStore.getState().toggleAudioEnabled(id);
     useGridStore.getState().toggleAudioEnabled(id);
     expect(getLeaf(id).audioEnabled).toBe(false);
-  });
-
-  it('flips audioEnabled back to true on second call', () => {
-    const id = firstLeafId();
-    useGridStore.getState().toggleAudioEnabled(id);
-    useGridStore.getState().toggleAudioEnabled(id);
-    expect(getLeaf(id).audioEnabled).toBe(true);
   });
 
   it('pushes exactly one history snapshot per toggle', () => {
@@ -312,10 +312,10 @@ describe('toggleAudioEnabled', () => {
 
   it('undo restores previous audioEnabled value', () => {
     const id = firstLeafId();
-    expect(getLeaf(id).audioEnabled).toBe(true);
-    useGridStore.getState().toggleAudioEnabled(id);
     expect(getLeaf(id).audioEnabled).toBe(false);
-    useGridStore.getState().undo();
+    useGridStore.getState().toggleAudioEnabled(id);
     expect(getLeaf(id).audioEnabled).toBe(true);
+    useGridStore.getState().undo();
+    expect(getLeaf(id).audioEnabled).toBe(false);
   });
 });

@@ -209,4 +209,61 @@ describe('captureVideoThumbnail helper', () => {
     createSpy.mockRestore();
   });
 
+  it('calls video.play() and video.load() during first-frame capture (D-03)', async () => {
+    const origCreateElement = document.createElement.bind(document);
+    const handlers: Record<string, () => void> = {};
+    const playMock = vi.fn().mockResolvedValue(undefined);
+    const loadMock = vi.fn();
+    let srcWasSet = false;
+    const fakeVideo = {
+      muted: false,
+      playsInline: false,
+      crossOrigin: '',
+      videoWidth: 320,
+      videoHeight: 240,
+      currentTime: 0,
+      play: playMock,
+      load: loadMock,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+      }),
+      removeEventListener: vi.fn(),
+    };
+    Object.defineProperty(fakeVideo, 'src', {
+      set(val: string) {
+        if (val && !srcWasSet) {
+          srcWasSet = true;
+          // Simulate loadedmetadata firing after src is set
+          setTimeout(() => handlers['loadedmetadata']?.(), 0);
+        }
+      },
+      get() { return srcWasSet ? 'blob:fake' : ''; },
+      configurable: true,
+    });
+    const createSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return fakeVideo as unknown as HTMLVideoElement;
+      if (tag === 'canvas') {
+        // Return a real canvas so toDataURL works
+        return origCreateElement('canvas');
+      }
+      return origCreateElement(tag);
+    });
+
+    // Fire loadedmetadata → onMeta sets currentTime → play() called
+    // Fire seeked → onSeeked draws thumbnail
+    const capturePromise = captureVideoThumbnail('blob:http://localhost/test');
+
+    // Allow loadedmetadata to fire (set by src setter above)
+    await new Promise(r => setTimeout(r, 10));
+    // Fire seeked to complete the thumbnail capture
+    handlers['seeked']?.();
+
+    await capturePromise;
+
+    expect(playMock).toHaveBeenCalledTimes(1);
+    expect(loadMock).toHaveBeenCalledTimes(1);
+
+    createSpy.mockRestore();
+  });
+
 });

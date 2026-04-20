@@ -206,6 +206,10 @@ export const LeafNodeComponent = React.memo(function LeafNodeComponent({ id }: L
       recomputeTotalDuration();
       // Seek to time 0 to get first frame
       video.currentTime = 0;
+      // D-03: iOS Safari does not fire seeked unless the decoder is activated by play().
+      // File drop is a user gesture — play() is allowed even on unmuted video.
+      // Do NOT await — seeked fires as a side effect; AbortError is benign.
+      video.play().catch(() => { /* AbortError from seek-triggered pause is benign */ });
     };
 
     const onSeeked = () => {

@@ -291,3 +291,111 @@ describe('autoFillCells', () => {
     expect(actions.addMedia).toHaveBeenCalledTimes(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// detectAudioTrack branch coverage (D-02)
+// ---------------------------------------------------------------------------
+
+describe('detectAudioTrack', () => {
+  let origCreateObjectURL: typeof URL.createObjectURL;
+  let origRevokeObjectURL: typeof URL.revokeObjectURL;
+  let origCreateElement: typeof document.createElement;
+
+  beforeEach(() => {
+    origCreateObjectURL = URL.createObjectURL;
+    origRevokeObjectURL = URL.revokeObjectURL;
+    origCreateElement = document.createElement.bind(document);
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:fake-url');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    URL.createObjectURL = origCreateObjectURL;
+    URL.revokeObjectURL = origRevokeObjectURL;
+    vi.restoreAllMocks();
+  });
+
+  function makeVideoFile(): File {
+    return new File([''], 'clip.mp4', { type: 'video/mp4' });
+  }
+
+  it('resolves true when audioTracks is defined and length > 0 (desktop Safari / Chrome path)', async () => {
+    const handlers: Record<string, () => void> = {};
+    const captureStreamMock = vi.fn();
+    const mockVideo = {
+      preload: '',
+      audioTracks: { length: 1 },
+      captureStream: captureStreamMock,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+      }),
+      removeEventListener: vi.fn(),
+      load: vi.fn(),
+    };
+    Object.defineProperty(mockVideo, 'src', {
+      set(_val: string) { setTimeout(() => handlers['loadedmetadata']?.(), 0); },
+      get() { return ''; },
+      configurable: true,
+    });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return origCreateElement(tag);
+    });
+    const result = await mediaModule.detectAudioTrack(makeVideoFile());
+    expect(result).toBe(true);
+    // captureStream must NOT be called when audioTracks is defined
+    expect(captureStreamMock).not.toHaveBeenCalled();
+  });
+
+  it('resolves false when audioTracks is defined and length === 0 (no audio track)', async () => {
+    const handlers: Record<string, () => void> = {};
+    const mockVideo = {
+      preload: '',
+      audioTracks: { length: 0 },
+      // no mozHasAudio
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+      }),
+      removeEventListener: vi.fn(),
+      load: vi.fn(),
+    };
+    Object.defineProperty(mockVideo, 'src', {
+      set(_val: string) { setTimeout(() => handlers['loadedmetadata']?.(), 0); },
+      get() { return ''; },
+      configurable: true,
+    });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return origCreateElement(tag);
+    });
+    const result = await mediaModule.detectAudioTrack(makeVideoFile());
+    expect(result).toBe(false);
+  });
+
+  it('resolves true via fail-open when iOS-like (no audioTracks, no mozHasAudio, no captureStream)', async () => {
+    const handlers: Record<string, () => void> = {};
+    const mockVideo = {
+      preload: '',
+      // audioTracks: undefined (not set) — iOS Safari has no AudioTrackList
+      // mozHasAudio: undefined (not set) — iOS Safari has no mozHasAudio
+      // captureStream: undefined (not set) — iOS Safari has no captureStream
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        handlers[event] = handler;
+      }),
+      removeEventListener: vi.fn(),
+      load: vi.fn(),
+    };
+    Object.defineProperty(mockVideo, 'src', {
+      set(_val: string) { setTimeout(() => handlers['loadedmetadata']?.(), 0); },
+      get() { return ''; },
+      configurable: true,
+    });
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'video') return mockVideo as unknown as HTMLVideoElement;
+      return origCreateElement(tag);
+    });
+    // iOS-like: all undefined → fail-open → true
+    const result = await mediaModule.detectAudioTrack(makeVideoFile());
+    expect(result).toBe(true);
+  });
+});

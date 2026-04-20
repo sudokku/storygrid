@@ -47,6 +47,9 @@ export async function captureVideoThumbnail(blobUrl: string): Promise<string | n
     const onMeta = () => {
       try {
         video.currentTime = 0;
+        // D-03: iOS Safari does not fire seeked on muted video unless the decoder
+        // is activated. play() activates the decoder; AbortError is benign.
+        video.play().catch(() => { /* AbortError from immediate pause is benign */ });
       } catch {
         finish(null);
       }
@@ -72,6 +75,7 @@ export async function captureVideoThumbnail(blobUrl: string): Promise<string | n
     video.addEventListener('seeked', onSeeked);
     video.addEventListener('error', onError);
     video.src = blobUrl;
+    video.load(); // D-03: explicit load() for iOS Safari reliability (mirrors media.ts:99)
   });
 }
 

@@ -189,6 +189,8 @@ describe('captureVideoThumbnail helper', () => {
           listeners[type] = typeof handler === 'function' ? handler : handler.handleEvent.bind(handler);
         };
         fakeVideo.removeEventListener = () => {};
+        // D-03: load() is now called after src assignment; add noop so the mock doesn't throw
+        (fakeVideo as unknown as { load: () => void }).load = () => {};
         Object.defineProperty(fakeVideo, 'src', {
           set(_val: string) {
             setTimeout(() => {

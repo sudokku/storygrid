@@ -6,6 +6,7 @@ import {
   AudioBufferSource,
   QUALITY_HIGH,
   canEncodeAudio,
+  getFirstEncodableVideoCodec,
   BlobSource,
   Input,
   VideoSampleSink,
@@ -324,6 +325,7 @@ async function mixAudioForExport(
   mediaRegistry: Record<string, string>,
   audioEnabledMediaIds: Set<string>,
   totalDurationSeconds: number,
+  providedCtx: AudioContext | null = null, // D-04A: pre-created in gesture handler
 ): Promise<AudioBuffer | null> {
   if (audioEnabledMediaIds.size === 0) return null;
 
@@ -333,7 +335,10 @@ async function mixAudioForExport(
   // Step 1: Decode each video's audio via fetch + decodeAudioData
   // Use a temporary AudioContext for decoding (OfflineAudioContext works too,
   // but we need a real-time one to call decodeAudioData correctly on blob URLs)
-  const tempCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  // Use pre-created context if provided (stays within iOS Safari gesture window).
+  // Fall back to new AudioContext only when caller did not provide one.
+  const tempCtx = providedCtx ?? new AudioContext({ sampleRate: SAMPLE_RATE });
+  const shouldCloseCtx = !providedCtx; // only close what we created
   const decodedBuffers: AudioBuffer[] = [];
 
   try {
@@ -354,7 +359,7 @@ async function mixAudioForExport(
       }
     }
   } finally {
-    await tempCtx.close();
+    if (shouldCloseCtx) await tempCtx.close();
   }
 
   if (decodedBuffers.length === 0) return null;
@@ -503,9 +508,24 @@ export async function exportVideoGrid(
     throw new Error('Canvas 2D context not available');
   }
 
-  // D-12: Codec selection — VP9 on Firefox, AVC on all other browsers.
-  const isFirefox = navigator.userAgent.includes('Firefox');
-  const videoCodec = isFirefox ? 'vp9' : 'avc';
+  // D-04A: Pre-create AudioContext synchronously before any await.
+  // iOS Safari invalidates the user gesture window after the first await completes.
+  let gestureAudioContext: AudioContext | null = null;
+  try {
+    gestureAudioContext = new AudioContext({ sampleRate: 48000 });
+  } catch {
+    // AudioContext unavailable — audio mixing will be skipped
+  }
+
+  // D-01: Runtime codec pre-flight — replaces UA sniff. iOS Safari resolves 'avc'.
+  // Throws user-visible error if no encoder found in this browser.
+  const videoCodec = await getFirstEncodableVideoCodec(
+    ['avc', 'vp9', 'av1'],
+    { width: 1080, height: 1920, bitrate: QUALITY_HIGH }
+  );
+  if (!videoCodec) {
+    throw new Error('No supported video encoder found in this browser.');
+  }
 
   // Mediabunny Output setup.
   const target = new BufferTarget();
@@ -650,7 +670,7 @@ export async function exportVideoGrid(
     if (audioSource) {
       try {
         const audioEnabledIds = collectAudioEnabledMediaIds(getAllLeaves(root), mediaTypeMap);
-        const mixedBuffer = await mixAudioForExport(mediaRegistry, audioEnabledIds, totalDuration);
+        const mixedBuffer = await mixAudioForExport(mediaRegistry, audioEnabledIds, totalDuration, gestureAudioContext);
         if (mixedBuffer) {
           await audioSource.add(mixedBuffer);
         }
@@ -671,6 +691,10 @@ export async function exportVideoGrid(
     for (const { input, iter } of videoStreams.values()) {
       try { await iter.return?.(); } catch { /* ignore */ }
       input.dispose();
+    }
+    // D-04A: Close pre-created AudioContext (created before first await).
+    if (gestureAudioContext) {
+      try { gestureAudioContext.close(); } catch { /* ignore */ }
     }
   }
 }

@@ -65,16 +65,53 @@ function makeRoot() {
   return createLeaf();
 }
 
+/**
+ * Install a stub canvas so that document.createElement('canvas').getContext('2d')
+ * returns a non-null context. jsdom does not implement canvas rendering without
+ * the optional 'canvas' npm package; this stub is enough to pass the guard in
+ * exportVideoGrid and allow the codec pre-flight to run.
+ */
+function stubCanvas() {
+  const fakeCtx = {
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    fillRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    clip: vi.fn(),
+    roundRect: vi.fn(),
+    fillText: vi.fn(),
+    measureText: vi.fn().mockReturnValue({ width: 0 }),
+    createLinearGradient: vi.fn().mockReturnValue({ addColorStop: vi.fn() }),
+    putImageData: vi.fn(),
+    getImageData: vi.fn().mockReturnValue({ data: new Uint8ClampedArray() }),
+    canvas: {} as HTMLCanvasElement,
+  } as unknown as CanvasRenderingContext2D;
+
+  const origCreateElement = document.createElement.bind(document);
+  vi.spyOn(document, 'createElement').mockImplementation((tag: string, ...rest: unknown[]) => {
+    if (tag === 'canvas') {
+      const el = origCreateElement(tag) as HTMLCanvasElement;
+      vi.spyOn(el, 'getContext').mockReturnValue(fakeCtx as unknown as null);
+      return el;
+    }
+    return origCreateElement(tag, ...(rest as [ElementCreationOptions?]));
+  });
+}
+
 // ---------------------------------------------------------------------------
 // D-01: Runtime codec pre-flight
 // ---------------------------------------------------------------------------
 
 describe('D-01: exportVideoGrid codec pre-flight', () => {
   beforeEach(() => {
-    // Reset global mocks
     vi.clearAllMocks();
-    // Default: codec resolves
     vi.mocked(getFirstEncodableVideoCodec).mockResolvedValue('avc');
+
     // VideoEncoder must be defined for the guard to pass
     if (typeof (globalThis as Record<string, unknown>).VideoEncoder === 'undefined') {
       Object.defineProperty(globalThis, 'VideoEncoder', {
@@ -83,6 +120,8 @@ describe('D-01: exportVideoGrid codec pre-flight', () => {
         writable: true,
       });
     }
+
+    stubCanvas();
   });
 
   afterEach(() => {
@@ -144,6 +183,8 @@ describe('D-04A: AudioContext pre-creation before first await', () => {
         writable: true,
       });
     }
+
+    stubCanvas();
 
     // Track AudioContext construction order.
     // jsdom does not expose AudioContext natively, so use Object.defineProperty

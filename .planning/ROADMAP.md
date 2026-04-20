@@ -98,3 +98,13 @@ Plans:
 - [x] 32-02-PLAN.md — Toolbar mobile header compaction (h-12 → h-11)
 
 </details>
+
+### Phase 33: iOS Safari video compatibility — fix export codec pre-flight, video preview first-frame reliability, audio context timing, and detectAudioTrack iOS compat
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 33 to break down)

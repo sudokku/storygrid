@@ -243,6 +243,7 @@ None yet.
 - Phase 29.1 inserted after Phase 29: Fix drag-and-drop starting and ghost cell (URGENT)
 - Phase 31 added: Improve mobile interactions UI/UX
 - Phase 32 added: Update mobile cell tray UI/UX
+- Phase 33 added: iOS Safari video compatibility — fix export codec pre-flight, video preview first-frame reliability, audio context timing, and detectAudioTrack iOS compat
 
 ### Blockers/Concerns
 

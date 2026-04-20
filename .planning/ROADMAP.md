@@ -85,4 +85,12 @@
 Plans:
 - [x] 31-01-PLAN.md — Fix touch-action, viewport meta, divider hit area, and test assertions
 
+- [ ] Phase 32: Update mobile cell tray UI/UX
+
+Goal: Update mobile cell tray UI/UX
+
+Depends on: Phase 31
+
+Plans: none yet
+
 </details>

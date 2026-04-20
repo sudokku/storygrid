@@ -242,6 +242,7 @@ None yet.
 - v1.4 phases 22–26 added: Mobile-First Overhaul & Instagram Fonts (2026-04-15)
 - Phase 29.1 inserted after Phase 29: Fix drag-and-drop starting and ghost cell (URGENT)
 - Phase 31 added: Improve mobile interactions UI/UX
+- Phase 32 added: Update mobile cell tray UI/UX
 
 ### Blockers/Concerns
 

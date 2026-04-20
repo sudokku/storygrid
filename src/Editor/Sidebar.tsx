@@ -197,9 +197,10 @@ export function CanvasSettingsPanel() {
 
 interface SelectedCellPanelProps {
   nodeId: string;
+  disableVideoUpload?: boolean;
 }
 
-export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId }: SelectedCellPanelProps) {
+export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId, disableVideoUpload = false }: SelectedCellPanelProps) {
   const node = useGridStore(s => findNode(s.root, nodeId) as LeafNode | null);
   const mediaUrl = useGridStore(s => {
     const n = findNode(s.root, nodeId) as LeafNode | null;
@@ -472,7 +473,7 @@ export const SelectedCellPanel = React.memo(function SelectedCellPanel({ nodeId 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,video/*"
+        accept={disableVideoUpload ? 'image/*' : 'image/*,video/*'}
         multiple
         className="hidden"
         onChange={handleFileChange}

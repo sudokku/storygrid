@@ -93,7 +93,7 @@ export const MobileSheet = React.memo(function MobileSheet() {
         ) : selectedOverlayId !== null ? (
           <OverlayPanel />
         ) : selectedNodeId ? (
-          <SelectedCellPanel nodeId={selectedNodeId} key={selectedNodeId} />
+          <SelectedCellPanel nodeId={selectedNodeId} key={selectedNodeId} disableVideoUpload />
         ) : (
           <CanvasSettingsPanel />
         )}

@@ -30,9 +30,9 @@ describe('createLeaf', () => {
     expect(a.id).not.toBe(b.id);
   });
 
-  it('initializes audioEnabled to true', () => {
+  it('initializes audioEnabled to false (D-04B: opt-in default)', () => {
     const leaf = createLeaf();
-    expect(leaf.audioEnabled).toBe(true);
+    expect(leaf.audioEnabled).toBe(false);
   });
 });
 

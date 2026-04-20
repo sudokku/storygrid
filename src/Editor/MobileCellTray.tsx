@@ -238,7 +238,7 @@ export const MobileCellTray = React.memo(function MobileCellTray() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,video/*"
+        accept="image/*"
         className="hidden"
         onChange={handleFileChange}
         aria-hidden="true"

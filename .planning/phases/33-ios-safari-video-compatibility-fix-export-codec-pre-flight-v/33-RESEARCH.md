@@ -404,7 +404,7 @@ async function mixAudioForExport(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **LeafNode video.muted for play() on iOS**
    - What we know: `captureVideoThumbnail` sets `muted = true` (safe). LeafNode intentionally does NOT mute (Web Audio wiring). File drop is a user gesture — `play()` should be allowed.

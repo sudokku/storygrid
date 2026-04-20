@@ -87,10 +87,14 @@ Plans:
 
 - [ ] Phase 32: Update mobile cell tray UI/UX
 
-Goal: Update mobile cell tray UI/UX
+Goal: Redesign MobileCellTray as the primary mobile editing surface — add Effects and Audio buttons with text labels, horizontal scroll layout, sheetSnapState visibility gate, remove cell-selection sheet auto-expand, compact header and tab strip heights.
 
 Depends on: Phase 31
 
-Plans: none yet
+**Plans:** 2 plans
+
+Plans:
+- [ ] 32-01-PLAN.md — Tray redesign (buttons, labels, scroll, visibility gate) + MobileSheet height updates + tests
+- [ ] 32-02-PLAN.md — Toolbar mobile header compaction (h-12 → h-11)
 
 </details>

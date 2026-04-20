@@ -10,6 +10,7 @@ import { useEditorStore } from '../store/editorStore';
 import { useDragStore } from '../dnd';
 import { useGridStore } from '../store/gridStore';
 import { findNode } from '../lib/tree';
+import { detectAudioTrack } from '../lib/media';
 import type { LeafNode } from '../types';
 import {
   Upload,
@@ -76,6 +77,7 @@ export const MobileCellTray = React.memo(function MobileCellTray() {
     return leaf && leaf.type === 'leaf' ? ((leaf as LeafNode).hasAudioTrack ?? false) : false;
   });
   const toggleAudioEnabled = useGridStore(s => s.toggleAudioEnabled);
+  const setHasAudioTrack = useGridStore(s => s.setHasAudioTrack);
   const isVideo = mediaType === 'video';
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,8 +105,12 @@ export const MobileCellTray = React.memo(function MobileCellTray() {
         addMedia(newId, dataUri, 'image');
       }
       setMedia(nodeId, newId);
+      const hasAudio = file.type.startsWith('video/')
+        ? await detectAudioTrack(file)
+        : false;
+      setHasAudioTrack(nodeId, hasAudio);
     },
-    [addMedia, setMedia],
+    [addMedia, setMedia, setHasAudioTrack],
   );
 
   const handleSplitH = useCallback(() => {
